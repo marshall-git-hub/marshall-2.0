@@ -404,6 +404,8 @@
         window.AuthService = AuthService;
     </script>
     <script>
+        let redirecting = false; // Prevent multiple redirects
+        
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const email = document.getElementById('email').value;
@@ -419,8 +421,12 @@
 
         // Observe auth state
         AuthService.onAuthStateChanged(user => {
-            if (user) {
-                window.location.href = 'pneu/storage.html';
+            console.log('=== MAIN INDEX AUTH STATE CHANGE ===');
+            console.log('User:', user);
+            if (user && !redirecting) {
+                console.log('User logged in, redirecting to flotila');
+                redirecting = true;
+                window.location.href = 'flotila/index.html';
             }
         });
     </script>

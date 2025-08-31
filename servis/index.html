@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+  <meta charset="UTF-8">
+  <title>Servis</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../navbar/navbar.css">
+  <script defer src="../navbar/navbar.js"></script>
+</head>
+<body>
+  <div id="navbar-include"></div>
+  <script>fetch('../navbar/navbar.html').then(r=>r.text()).then(t=>{document.getElementById('navbar-include').innerHTML=t})</script>
+  <div class="panel-page" style="margin-left:210px;">
+    <h1>Servis</h1>
+    <p>Podstránka pre správu servisu.</p>
+  </div>
+</body>
+</html>
