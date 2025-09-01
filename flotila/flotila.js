@@ -426,7 +426,7 @@ class FlotilaManager {
             <div class="vehicle-type" style="color: #6b7280; font-size: 0.95rem; letter-spacing: 1px;">${vehicle.type || 'Neznámy typ'}</div>
           </div>
           <div class="vehicle-header-right" style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
-            <div class="vehicle-km-large" style="color: #374151; font-size: 1rem; font-weight: 600;">${vehicle.kilometers.toLocaleString()} km</div>
+            <div class="vehicle-km-large" style="color: #374151; font-size: 1rem; font-weight: 600;">${vehicle.currentKm.toLocaleString()} km</div>
             <div class="vehicle-vin" style="color: #6b7280; font-size: 0.85rem; letter-spacing: 1px;">${vehicle.vin}</div>
           </div>
         </div>
@@ -609,31 +609,70 @@ class FlotilaManager {
 
     const workItemsHtml = activeWorkSession.items.map(item => {
       const statusClass = item.status === 'completed' ? 'completed' : (item.status === 'in-progress' ? 'in-progress' : 'pending');
-      const statusText = item.status === 'completed' ? 'Dokončené' : (item.status === 'in-progress' ? 'V práci' : 'Čaká');
       
       return `
         <div class="work-item ${statusClass}">
-          <div class="work-item-checkbox">
-            <input type="checkbox" 
-                   id="work-item-${item.id}" 
-                   ${item.status === 'completed' ? 'checked' : ''} 
-                   onchange="window.flotilaManager.toggleWorkItemStatus(${item.id})">
-            <label for="work-item-${item.id}"></label>
-          </div>
-          <div class="work-item-info">
-            <div class="work-item-name">${item.name}</div>
-            <div class="work-item-details">
-              <span class="service-value">${item.type === 'km' ? item.value + ' km' : item.value}</span>
+          <div class="work-item-header" onclick="window.flotilaManager.toggleWorkItemDetails(${item.id})">
+            <div class="work-item-checkbox" onclick="event.stopPropagation()">
+              <input type="checkbox" 
+                     id="work-item-${item.id}" 
+                     ${item.status === 'completed' ? 'checked' : ''} 
+                     onchange="window.flotilaManager.toggleWorkItemStatus(${item.id})">
+              <label for="work-item-${item.id}"></label>
             </div>
-            <div class="work-item-status">${statusText}</div>
+            <div class="work-item-info">
+              <div class="work-item-name">
+                <div class="input-with-dropdown">
+                  <input type="text" 
+                         id="work-item-name-${item.id}" 
+                         value="${item.name}" 
+                         placeholder="Názov servisu"
+                         onchange="window.flotilaManager.updateWorkItemName(${item.id}, this.value)">
+                  <button type="button" class="dropdown-btn" onclick="window.flotilaManager.toggleWorkItemNameDropdown(${item.id})">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="6,9 12,15 18,9"></polyline>
+                    </svg>
+                  </button>
+                  <div class="dropdown-menu" id="work-item-name-dropdown-${item.id}" style="display: none;">
+                    <div class="dropdown-item" onclick="window.flotilaManager.selectWorkItemName(${item.id}, 'Výmena oleja v motore')">Výmena oleja v motore</div>
+                    <div class="dropdown-item" onclick="window.flotilaManager.selectWorkItemName(${item.id}, 'Výmena filtrov')">Výmena filtrov</div>
+                    <div class="dropdown-item" onclick="window.flotilaManager.selectWorkItemName(${item.id}, 'Kontrola bŕzd')">Kontrola bŕzd</div>
+                    <div class="dropdown-item" onclick="window.flotilaManager.selectWorkItemName(${item.id}, 'Kontrola klimatizácie')">Kontrola klimatizácie</div>
+                    <div class="dropdown-item" onclick="window.flotilaManager.selectWorkItemName(${item.id}, 'Kontrola oleja')">Kontrola oleja</div>
+                    <div class="dropdown-item" onclick="window.flotilaManager.selectWorkItemName(${item.id}, 'Kontrola pneumatík')">Kontrola pneumatík</div>
+                    <div class="dropdown-item" onclick="window.flotilaManager.selectWorkItemName(${item.id}, 'Výmena sviečok')">Výmena sviečok</div>
+                    <div class="dropdown-item" onclick="window.flotilaManager.selectWorkItemName(${item.id}, 'Kontrola chladiča')">Kontrola chladiča</div>
+                  </div>
+                </div>
+              </div>
+              <div class="work-item-details">
+                <span class="service-value">${item.type === 'km' ? item.value + ' km' : item.value}</span>
+              </div>
+            </div>
+            <div class="work-item-actions">
+              <button class="work-item-toggle" onclick="event.stopPropagation(); window.flotilaManager.toggleWorkItemDetails(${item.id})" title="Zobraziť detaily">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="6,9 12,15 18,9"></polyline>
+                </svg>
+              </button>
+              <button class="btn-delete-work-item" onclick="event.stopPropagation(); window.flotilaManager.deleteWorkItem(${item.id})" title="Vymazať úlohu">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3,6 5,6 21,6"></polyline>
+                  <path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6m3,0V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2V6"></path>
+                </svg>
+              </button>
+            </div>
           </div>
-          <div class="work-item-actions">
-            <button class="btn-delete-work-item" onclick="window.flotilaManager.deleteWorkItem(${item.id})" title="Vymazať úlohu">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="3,6 5,6 21,6"></polyline>
-                <path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6m3,0V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2V6"></path>
-              </svg>
-            </button>
+          <div class="work-item-details-panel" id="work-item-details-${item.id}">
+            <div class="work-item-notes">
+              <label for="work-item-notes-${item.id}">Poznámky:</label>
+              <textarea 
+                id="work-item-notes-${item.id}" 
+                placeholder="Pridajte poznámky k tejto úlohe..."
+                onchange="window.flotilaManager.updateWorkItemNotes(${item.id}, this.value)"
+              >${item.notes || ''}</textarea>
+            </div>
+            ${this.renderWorkItemServiceDetails(item)}
           </div>
         </div>
       `;
@@ -711,8 +750,22 @@ class FlotilaManager {
           <div class="completed-session-items">
             ${entry.items.map(item => `
               <div class="completed-session-item">
-                <span class="item-name">${item.name}</span>
-                <span class="item-value">${item.type === 'km' ? item.value + ' km' : item.value}</span>
+                <div class="completed-item-main">
+                  <span class="item-name">${item.name}</span>
+                  <span class="item-value">${item.type === 'km' ? item.value + ' km' : item.value}</span>
+                </div>
+                ${item.notes ? `
+                  <div class="completed-item-notes">
+                    <strong>Poznámky:</strong> ${item.notes}
+                  </div>
+                ` : ''}
+                ${item.serviceDetails && Object.keys(item.serviceDetails).length > 0 ? `
+                  <div class="completed-item-details">
+                    ${Object.entries(item.serviceDetails).map(([key, value]) => `
+                      <span class="detail-item"><strong>${this.formatServiceDetailLabel(key)}:</strong> ${value}</span>
+                    `).join('')}
+                  </div>
+                ` : ''}
               </div>
             `).join('')}
           </div>
@@ -776,7 +829,7 @@ class FlotilaManager {
   }
 
   // Add service to work list
-  addToWorkList(serviceName, serviceType, serviceValue) {
+  async addToWorkList(serviceName, serviceType, serviceValue) {
     // Check if there's already an active work session
     if (!this.selectedVehicle.activeWorkSession) {
       this.selectedVehicle.activeWorkSession = {
@@ -787,6 +840,9 @@ class FlotilaManager {
       };
     }
     
+    // Find the service definition to get default details
+    const serviceDefinition = this.selectedVehicle.services?.find(s => s.name === serviceName);
+    
     // Add the service to the work list
     const workItem = {
       id: Date.now() + Math.random(),
@@ -794,7 +850,9 @@ class FlotilaManager {
       type: serviceType,
       value: serviceValue,
       status: 'pending', // pending -> in-progress -> completed
-      addedAt: new Date().toISOString()
+      addedAt: new Date().toISOString(),
+      notes: serviceDefinition?.notes || '',
+      serviceDetails: serviceDefinition?.serviceDetails || {}
     };
     
     this.selectedVehicle.activeWorkSession.items.push(workItem);
@@ -802,11 +860,11 @@ class FlotilaManager {
     // Update the selectedVehicle reference to ensure consistency
     this.selectedVehicle = { ...this.selectedVehicle };
     
-    // Save to database
-    this.saveWorkSession();
+    // Save to database first
+    await this.saveWorkSession();
     
-    // Refresh the detail view to update UI
-    this.showDetail(this.selectedVehicle.type === 'truck' ? 'truck' : 'trailer', this.selectedVehicle.licensePlate);
+    // Update UI immediately without reloading from database
+    this.updateWorkSessionUI();
     
     // Show success message
     this.showNotification(`${serviceName} pridané do práce`, 'success');
@@ -986,6 +1044,34 @@ class FlotilaManager {
               </div>
             </div>
             
+            <div class="form-section" id="service-details-section">
+              <div class="section-header">
+                <h4>Detaily servisu</h4>
+                <div class="section-line"></div>
+              </div>
+              
+              <div class="service-details-form">
+                <div class="form-group">
+                  <label for="service-notes">Poznámky k servisu:</label>
+                  <textarea id="service-notes" placeholder="Pridajte poznámky k servisu...">${serviceType?.notes || ''}</textarea>
+                </div>
+                
+                <div class="service-details-list" id="service-details-list">
+                  ${this.renderServiceDetailsList(serviceType?.serviceDetails || {})}
+                </div>
+                
+                <div class="add-detail-section">
+                  <button type="button" class="btn-add-detail" onclick="window.flotilaManager.showServiceDetailModal()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <line x1="12" y1="5" x2="12" y2="19"></line>
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    Pridať detail
+                  </button>
+                </div>
+              </div>
+            </div>
+            
             <div class="form-actions">
               <button type="button" class="btn-secondary" onclick="this.closest('.service-type-modal-overlay').remove()">Zrušiť</button>
               ${isEditing ? `
@@ -1002,9 +1088,9 @@ class FlotilaManager {
     
     // Handle form submission
     const form = modal.querySelector('#service-type-form');
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      this.handleServiceTypeSubmit(serviceIndex);
+      await this.handleServiceTypeSubmit(serviceIndex);
     });
     
     // Handle interval type selection
@@ -1041,7 +1127,7 @@ class FlotilaManager {
   }
 
   // Handle service type form submission
-  handleServiceTypeSubmit(serviceIndex = null) {
+  async handleServiceTypeSubmit(serviceIndex = null) {
     const modal = document.querySelector('.service-type-modal-overlay');
     const name = document.getElementById('service-type-name').value.trim();
     const selectedType = modal.querySelector('input[name="interval-type"]:checked');
@@ -1115,6 +1201,28 @@ class FlotilaManager {
         break;
     }
     
+    // Add service notes
+    const notes = document.getElementById('service-notes')?.value;
+    if (notes) {
+      serviceData.notes = notes;
+    }
+
+    // Add service details
+    const serviceDetails = this.getCurrentServiceDetails();
+    if (Object.keys(serviceDetails).length > 0) {
+      // Convert to simple key-value format for storage
+      const simpleDetails = {};
+      Object.keys(serviceDetails).forEach(key => {
+        const detail = serviceDetails[key];
+        if (typeof detail === 'object') {
+          simpleDetails[key] = detail.value;
+        } else {
+          simpleDetails[key] = detail;
+        }
+      });
+      serviceData.serviceDetails = simpleDetails;
+    }
+
     // Only add lastService for new services
     if (serviceIndex === null) {
       serviceData.lastService = {
@@ -1125,10 +1233,10 @@ class FlotilaManager {
     
     if (serviceIndex !== null) {
       // Editing existing service
-      this.updateService(serviceIndex, serviceData);
+      await this.updateService(serviceIndex, serviceData);
     } else {
       // Adding new service
-      this.addService(serviceData);
+      await this.addService(serviceData);
     }
     
     // Close modal
@@ -1136,27 +1244,27 @@ class FlotilaManager {
   }
 
   // Add new service
-  addService(serviceData) {
+  async addService(serviceData) {
     if (!this.selectedVehicle.services) {
       this.selectedVehicle.services = [];
     }
     
     this.selectedVehicle.services.push(serviceData);
     
-    // Save to database
-    this.saveServices();
+    // Save to database first
+    await this.saveServices();
     
     // Update the selectedVehicle reference to ensure consistency
     this.selectedVehicle = { ...this.selectedVehicle };
     
-    // Refresh the detail view
-    this.showDetail(this.selectedVehicle.type === 'truck' ? 'truck' : 'trailer', this.selectedVehicle.licensePlate);
+    // Update services UI without reloading from database
+    this.updateServicesUI();
     
     this.showNotification('Servis bol úspešne pridaný!', 'success');
   }
 
   // Update existing service
-  updateService(serviceIndex, serviceData) {
+  async updateService(serviceIndex, serviceData) {
     if (this.selectedVehicle.services && this.selectedVehicle.services[serviceIndex]) {
       // Preserve existing lastService data
       const existingService = this.selectedVehicle.services[serviceIndex];
@@ -1168,30 +1276,30 @@ class FlotilaManager {
       
       this.selectedVehicle.services[serviceIndex] = updatedService;
       
-      // Save to database
-      this.saveServices();
+      // Save to database first
+      await this.saveServices();
       
       // Update the selectedVehicle reference to ensure consistency
       this.selectedVehicle = { ...this.selectedVehicle };
       
-      // Refresh the detail view
-      this.showDetail(this.selectedVehicle.type === 'truck' ? 'truck' : 'trailer', this.selectedVehicle.licensePlate);
+      // Update services UI without reloading from database
+      this.updateServicesUI();
       
       this.showNotification('Servis bol úspešne upravený!', 'success');
     }
   }
 
   // Delete service
-  deleteService(serviceIndex) {
+  async deleteService(serviceIndex) {
     if (confirm('Naozaj chcete vymazať tento servis?')) {
       if (this.selectedVehicle.services) {
         this.selectedVehicle.services.splice(serviceIndex, 1);
         
-        // Save to database
-        this.saveServices();
+        // Save to database first
+        await this.saveServices();
         
-        // Refresh the detail view
-        this.showDetail(this.selectedVehicle.type === 'truck' ? 'truck' : 'trailer', this.selectedVehicle.licensePlate);
+        // Update services UI without reloading from database
+        this.updateServicesUI();
         
         this.showNotification('Servis bol úspešne vymazaný!', 'success');
       }
@@ -1226,6 +1334,296 @@ class FlotilaManager {
       input.value = name;
       this.toggleServiceDropdown();
     }
+  }
+
+  // Toggle oil type dropdown
+  toggleOilTypeDropdown() {
+    const dropdown = document.getElementById('oil-type-dropdown');
+    if (dropdown) {
+      dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+    }
+  }
+
+  // Select oil type from dropdown
+  selectOilType(type) {
+    const input = document.getElementById('service-oil-type');
+    if (input) {
+      input.value = type;
+      this.toggleOilTypeDropdown();
+    }
+  }
+
+  // Toggle filter type dropdown
+  toggleFilterTypeDropdown() {
+    const dropdown = document.getElementById('filter-type-dropdown');
+    if (dropdown) {
+      dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+    }
+  }
+
+  // Select filter type from dropdown
+  selectFilterType(type) {
+    const input = document.getElementById('service-filter-type');
+    if (input) {
+      input.value = type;
+      this.toggleFilterTypeDropdown();
+    }
+  }
+
+  // Toggle work item oil dropdown
+  toggleWorkItemOilDropdown(itemId) {
+    const dropdown = document.getElementById(`work-oil-dropdown-${itemId}`);
+    if (dropdown) {
+      dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+    }
+  }
+
+  // Select work item oil type
+  async selectWorkItemOilType(itemId, type) {
+    const input = document.getElementById(`oil-type-${itemId}`);
+    if (input) {
+      input.value = type;
+      this.toggleWorkItemOilDropdown(itemId);
+      await this.updateWorkItemServiceDetail(itemId, 'oilType', type);
+    }
+  }
+
+  // Toggle work item filter dropdown
+  toggleWorkItemFilterDropdown(itemId) {
+    const dropdown = document.getElementById(`work-filter-dropdown-${itemId}`);
+    if (dropdown) {
+      dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+    }
+  }
+
+  // Select work item filter type
+  async selectWorkItemFilterType(itemId, type) {
+    const input = document.getElementById(`filter-type-${itemId}`);
+    if (input) {
+      input.value = type;
+      this.toggleWorkItemFilterDropdown(itemId);
+      await this.updateWorkItemServiceDetail(itemId, 'filterType', type);
+    }
+  }
+
+  // Toggle work item name dropdown
+  toggleWorkItemNameDropdown(itemId) {
+    const dropdown = document.getElementById(`work-item-name-dropdown-${itemId}`);
+    if (dropdown) {
+      dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+    }
+  }
+
+  // Select work item name from dropdown
+  async selectWorkItemName(itemId, name) {
+    const input = document.getElementById(`work-item-name-${itemId}`);
+    if (input) {
+      input.value = name;
+      this.toggleWorkItemNameDropdown(itemId);
+      await this.updateWorkItemName(itemId, name);
+    }
+  }
+
+  // Update work item name
+  async updateWorkItemName(itemId, name) {
+    const workItem = this.selectedVehicle.activeWorkSession.items.find(item => item.id === itemId);
+    if (workItem) {
+      workItem.name = name;
+      await this.saveWorkSession();
+      this.updateWorkSessionUI();
+    }
+  }
+
+
+
+  // Remove work item detail
+  async removeWorkItemDetail(itemId, key) {
+    const workItem = this.selectedVehicle.activeWorkSession.items.find(item => item.id === itemId);
+    if (workItem && workItem.serviceDetails) {
+      delete workItem.serviceDetails[key];
+      await this.saveWorkSession();
+      this.updateWorkSessionUI();
+    }
+  }
+
+  // Render service details list for service creation/editing
+  renderServiceDetailsList(serviceDetails) {
+    const detailKeys = Object.keys(serviceDetails);
+    
+    if (detailKeys.length === 0) {
+      return '<div class="no-details">Žiadne detaily neboli pridané</div>';
+    }
+    
+    return detailKeys.map(key => {
+      const detail = serviceDetails[key];
+      const label = typeof detail === 'object' ? detail.label : key;
+      const value = typeof detail === 'object' ? detail.value : detail;
+      const fullDetail = value ? `${label}: ${value}` : label;
+      
+      return `
+        <div class="service-detail-item" id="service-detail-${key}">
+          <div class="input-with-delete">
+            <input 
+              type="text" 
+              id="service-detail-${key}" 
+              value="${fullDetail}"
+              placeholder="Napríklad: Typ oleja: 5W-30"
+              onchange="window.flotilaManager.updateServiceDetail('${key}', this.value)"
+            >
+            <button type="button" class="remove-detail-btn" onclick="window.flotilaManager.removeServiceDetail('${key}')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Show service detail modal
+  showServiceDetailModal() {
+    const modal = document.createElement('div');
+    modal.className = 'detail-modal-overlay';
+    modal.innerHTML = `
+      <div class="detail-modal">
+        <div class="modal-header">
+          <h3>Pridať detail servisu</h3>
+          <button class="close-btn" onclick="this.closest('.detail-modal-overlay').remove()">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="service-detail-value">Detail:</label>
+            <input type="text" id="service-detail-value" placeholder="Napríklad: Typ oleja: 5W-30, Množstvo: 6.5 l...">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" onclick="this.closest('.detail-modal-overlay').remove()">Zrušiť</button>
+          <button class="btn-primary" onclick="window.flotilaManager.addServiceDetail()">Pridať</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+  }
+
+  // Add service detail
+  addServiceDetail() {
+    const valueInput = document.getElementById('service-detail-value');
+    
+    if (!valueInput || !valueInput.value.trim()) {
+      alert('Prosím vyplňte detail.');
+      return;
+    }
+    
+    const detailText = valueInput.value.trim();
+    
+    // Parse the detail text (format: "Label: Value")
+    let label, value;
+    if (detailText.includes(':')) {
+      const parts = detailText.split(':');
+      label = parts[0].trim();
+      value = parts.slice(1).join(':').trim();
+    } else {
+      label = detailText;
+      value = '';
+    }
+    
+    // Store the original label for display and use a clean key for storage
+    const key = label.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+    
+    // Get current service details
+    const detailsList = document.getElementById('service-details-list');
+    if (detailsList) {
+      const currentDetails = this.getCurrentServiceDetails();
+      currentDetails[key] = {
+        label: label,
+        value: value
+      };
+      
+      // Update the display
+      detailsList.innerHTML = this.renderServiceDetailsList(currentDetails);
+    }
+    
+    // Close modal
+    const modal = document.querySelector('.detail-modal-overlay');
+    if (modal) {
+      modal.remove();
+    }
+  }
+
+  // Remove service detail
+  removeServiceDetail(key) {
+    const detailsList = document.getElementById('service-details-list');
+    if (detailsList) {
+      const currentDetails = this.getCurrentServiceDetails();
+      delete currentDetails[key];
+      
+      // Update the display
+      detailsList.innerHTML = this.renderServiceDetailsList(currentDetails);
+    }
+  }
+
+  // Update service detail
+  updateServiceDetail(key, value) {
+    const detailsList = document.getElementById('service-details-list');
+    if (detailsList) {
+      const currentDetails = this.getCurrentServiceDetails();
+      
+      // Parse the full detail text (format: "Label: Value")
+      let label, detailValue;
+      if (value.includes(':')) {
+        const parts = value.split(':');
+        label = parts[0].trim();
+        detailValue = parts.slice(1).join(':').trim();
+      } else {
+        label = value;
+        detailValue = '';
+      }
+      
+      if (typeof currentDetails[key] === 'object') {
+        currentDetails[key].label = label;
+        currentDetails[key].value = detailValue;
+      } else {
+        currentDetails[key] = {
+          label: label,
+          value: detailValue
+        };
+      }
+    }
+  }
+
+  // Get current service details from the form
+  getCurrentServiceDetails() {
+    const detailsList = document.getElementById('service-details-list');
+    if (!detailsList) return {};
+    
+    const details = {};
+    const detailInputs = detailsList.querySelectorAll('input[id^="service-detail-"]');
+    
+    detailInputs.forEach(input => {
+      const key = input.id.replace('service-detail-', '');
+      const fullDetail = input.value.trim();
+      
+      // Parse the full detail text (format: "Label: Value")
+      let label, value;
+      if (fullDetail.includes(':')) {
+        const parts = fullDetail.split(':');
+        label = parts[0].trim();
+        value = parts.slice(1).join(':').trim();
+      } else {
+        label = fullDetail;
+        value = '';
+      }
+      
+      details[key] = {
+        label: label,
+        value: value
+      };
+    });
+    
+    return details;
   }
 
   // Show interval details based on type
@@ -1286,17 +1684,17 @@ class FlotilaManager {
   }
 
   // Toggle service from work list
-  toggleServiceFromWorkList(serviceName, serviceType, serviceInterval, serviceIndex) {
+  async toggleServiceFromWorkList(serviceName, serviceType, serviceInterval, serviceIndex) {
     if (this.isServiceInWorkList(serviceName)) {
       // Remove from work list
-      this.removeFromWorkList(serviceName);
+      await this.removeFromWorkList(serviceName);
     } else {
       // Add to work list
-      this.addToWorkList(serviceName, serviceType, serviceInterval);
+      await this.addToWorkList(serviceName, serviceType, serviceInterval);
     }
     
-    // Refresh the entire detail view to update all UI elements
-    this.showDetail(this.selectedVehicle.type === 'truck' ? 'truck' : 'trailer', this.selectedVehicle.licensePlate);
+    // Update service button state
+    this.updateServiceButtonState(serviceName, serviceIndex);
   }
 
   // Update service button state
@@ -1321,7 +1719,7 @@ class FlotilaManager {
   }
 
   // Remove from work list
-  removeFromWorkList(serviceName) {
+  async removeFromWorkList(serviceName) {
     if (!this.selectedVehicle.activeWorkSession || !this.selectedVehicle.activeWorkSession.items) {
       return;
     }
@@ -1338,8 +1736,11 @@ class FlotilaManager {
     // Update the selectedVehicle reference to ensure consistency
     this.selectedVehicle = { ...this.selectedVehicle };
     
-    // Save to database
-    this.saveWorkSession();
+    // Save to database first
+    await this.saveWorkSession();
+    
+    // Update UI immediately without reloading from database
+    this.updateWorkSessionUI();
     
     this.showNotification(`${serviceName} odobrané z práce`, 'success');
   }
@@ -1512,40 +1913,8 @@ class FlotilaManager {
     }, 3000);
   }
 
-  // Start working on a work item
-  startWorkItem(itemId) {
-    if (!this.selectedVehicle.activeWorkSession) return;
-    
-    const item = this.selectedVehicle.activeWorkSession.items.find(i => i.id === itemId);
-    if (item) {
-      item.status = 'in-progress';
-      item.startedAt = new Date().toISOString();
-      
-      // Refresh the detail view
-      this.showDetail(this.selectedVehicle.type === 'truck' ? 'truck' : 'trailer', this.selectedVehicle.licensePlate);
-      
-      this.showNotification(`${item.name} - práca začala`, 'info');
-    }
-  }
-
-  // Complete a work item
-  completeWorkItem(itemId) {
-    if (!this.selectedVehicle.activeWorkSession) return;
-    
-    const item = this.selectedVehicle.activeWorkSession.items.find(i => i.id === itemId);
-    if (item) {
-      item.status = 'completed';
-      item.completedAt = new Date().toISOString();
-      
-      // Refresh the detail view
-      this.showDetail(this.selectedVehicle.type === 'truck' ? 'truck' : 'trailer', this.selectedVehicle.licensePlate);
-      
-      this.showNotification(`${item.name} - dokončené!`, 'success');
-    }
-  }
-
   // Toggle work item status (checkbox functionality)
-  toggleWorkItemStatus(itemId) {
+  async toggleWorkItemStatus(itemId) {
     if (!this.selectedVehicle.activeWorkSession) return;
     
     const item = this.selectedVehicle.activeWorkSession.items.find(i => i.id === itemId);
@@ -1560,18 +1929,18 @@ class FlotilaManager {
       // Update the selectedVehicle reference to ensure consistency
       this.selectedVehicle = { ...this.selectedVehicle };
       
-      // Save to database
-      this.saveWorkSession();
+      // Save to database first
+      await this.saveWorkSession();
       
-      // Refresh the detail view
-      this.showDetail(this.selectedVehicle.type === 'truck' ? 'truck' : 'trailer', this.selectedVehicle.licensePlate);
+      // Update UI immediately without reloading from database
+      this.updateWorkSessionUI();
       
       this.showNotification(`${item.name} ${item.status === 'completed' ? 'označené ako dokončené' : 'označené ako nedokončené'}`, 'info');
     }
   }
 
   // Delete work item
-  deleteWorkItem(itemId) {
+  async deleteWorkItem(itemId) {
     if (!this.selectedVehicle.activeWorkSession) return;
     
     const item = this.selectedVehicle.activeWorkSession.items.find(i => i.id === itemId);
@@ -1587,11 +1956,11 @@ class FlotilaManager {
         // Update the selectedVehicle reference to ensure consistency
         this.selectedVehicle = { ...this.selectedVehicle };
         
-        // Save to database
-        this.saveWorkSession();
+        // Save to database first
+        await this.saveWorkSession();
         
-        // Refresh the detail view
-        this.showDetail(this.selectedVehicle.type === 'truck' ? 'truck' : 'trailer', this.selectedVehicle.licensePlate);
+        // Update UI immediately without reloading from database
+        this.updateWorkSessionUI();
         
         this.showNotification(`${item.name} vymazané z práce`, 'info');
       }
@@ -1599,25 +1968,29 @@ class FlotilaManager {
   }
 
   // Update work start date
-  updateWorkStartDate(newDate) {
+  async updateWorkStartDate(newDate) {
     if (!this.selectedVehicle.activeWorkSession) return;
     
     this.selectedVehicle.activeWorkSession.startedAt = new Date(newDate).toISOString();
-    this.saveWorkSession();
+    await this.saveWorkSession();
     this.showNotification('Dátum začiatku práce aktualizovaný', 'info');
   }
 
   // Update work current kilometers
-  updateWorkCurrentKm(newKm) {
+  async updateWorkCurrentKm(newKm) {
     if (!this.selectedVehicle.activeWorkSession) return;
     
     this.selectedVehicle.currentKm = parseInt(newKm) || 0;
-    this.saveVehicleData();
+    await this.saveVehicleData();
+    
+    // Update services UI to reflect new current kilometers
+    this.updateServicesUI();
+    
     this.showNotification('Aktuálne km aktualizované', 'info');
   }
 
   // Finish job - move completed items to history
-  finishJob() {
+  async finishJob() {
     if (!this.selectedVehicle.activeWorkSession) return;
     
     const completedItems = this.selectedVehicle.activeWorkSession.items.filter(item => item.status === 'completed');
@@ -1664,12 +2037,16 @@ class FlotilaManager {
     // Update the selectedVehicle reference to ensure consistency
     this.selectedVehicle = { ...this.selectedVehicle };
     
-    // Save to database
-    this.saveWorkSession();
-    this.saveVehicleData();
+    // Save to database first
+    await Promise.all([
+      this.saveWorkSession(),
+      this.saveVehicleData()
+    ]);
     
-    // Refresh the detail view
-    this.showDetail(this.selectedVehicle.type === 'truck' ? 'truck' : 'trailer', this.selectedVehicle.licensePlate);
+    // Update UI immediately without reloading from database
+    this.updateWorkSessionUI();
+    this.updateHistoryUI();
+    this.updateServicesUI(); // Update services to show new calculations
     
     this.showNotification(`${completedItems.length} úloh dokončených a uložených do histórie!`, 'success');
   }
@@ -1687,9 +2064,161 @@ class FlotilaManager {
     }
   }
 
-  // Finish the entire work session (legacy method - kept for compatibility)
-  finishWorkSession() {
-    this.finishJob();
+  // Update work session UI without reloading from database
+  updateWorkSessionUI() {
+    const historiaTab = document.getElementById('historia-tab');
+    if (historiaTab) {
+      const activeWorkSection = historiaTab.querySelector('.history-section');
+      if (activeWorkSection) {
+        const activeWorkContent = this.renderActiveWorkSession(this.selectedVehicle.activeWorkSession);
+        activeWorkSection.innerHTML = `
+          <h3 class="section-title">Aktuálna práca</h3>
+          ${activeWorkContent}
+        `;
+      }
+    }
+  }
+
+  // Update history UI without reloading from database
+  updateHistoryUI() {
+    const historiaTab = document.getElementById('historia-tab');
+    if (historiaTab) {
+      const historySections = historiaTab.querySelectorAll('.history-section');
+      if (historySections.length > 1) {
+        const completedWorkSection = historySections[1];
+        const completedWorkContent = this.renderCompletedWorkSessions(this.selectedVehicle.history || []);
+        completedWorkSection.innerHTML = `
+          <h3 class="section-title">História práce</h3>
+          <div class="completed-work-sessions">
+            ${completedWorkContent}
+          </div>
+        `;
+      }
+    }
+  }
+
+  // Toggle work item details dropdown
+  toggleWorkItemDetails(itemId) {
+    const detailsPanel = document.getElementById(`work-item-details-${itemId}`);
+    const toggleButton = document.querySelector(`[onclick*="toggleWorkItemDetails(${itemId})"]`);
+    
+    if (detailsPanel && toggleButton) {
+      const isExpanded = detailsPanel.classList.contains('expanded');
+      
+      if (isExpanded) {
+        detailsPanel.classList.remove('expanded');
+        toggleButton.classList.remove('expanded');
+      } else {
+        detailsPanel.classList.add('expanded');
+        toggleButton.classList.add('expanded');
+      }
+    }
+  }
+
+  // Update work item notes
+  async updateWorkItemNotes(itemId, notes) {
+    if (!this.selectedVehicle.activeWorkSession) return;
+    
+    const item = this.selectedVehicle.activeWorkSession.items.find(i => i.id === itemId);
+    if (item) {
+      item.notes = notes;
+      
+      // Update the selectedVehicle reference to ensure consistency
+      this.selectedVehicle = { ...this.selectedVehicle };
+      
+      // Save to database
+      await this.saveWorkSession();
+      
+      this.showNotification('Poznámky uložené', 'info');
+    }
+  }
+
+  // Update work item service detail
+  async updateWorkItemServiceDetail(itemId, field, value) {
+    if (!this.selectedVehicle.activeWorkSession) return;
+    
+    const item = this.selectedVehicle.activeWorkSession.items.find(i => i.id === itemId);
+    if (item) {
+      if (!item.serviceDetails) {
+        item.serviceDetails = {};
+      }
+      item.serviceDetails[field] = value;
+      
+      // Update the selectedVehicle reference to ensure consistency
+      this.selectedVehicle = { ...this.selectedVehicle };
+      
+      // Save to database
+      await this.saveWorkSession();
+    }
+  }
+
+  // Format service detail label
+  formatServiceDetailLabel(key) {
+    const labels = {
+      oilType: 'Typ oleja',
+      oilQuantity: 'Množstvo oleja',
+      filterType: 'Typ filtru',
+      filterQuantity: 'Počet filtrov',
+      brakeType: 'Typ brzdových doštičiek',
+      brakePosition: 'Pozícia brzd',
+      tireSize: 'Rozmer pneumatík',
+      tireQuantity: 'Počet pneumatík',
+      tireBrand: 'Značka pneumatík',
+      tirePosition: 'Pozícia pneumatík',
+      customDetail: 'Dodatočné informácie'
+    };
+    return labels[key] || key;
+  }
+
+  // Render work item service details
+  renderWorkItemServiceDetails(item) {
+    // Get existing service details
+    const serviceDetails = item.serviceDetails || {};
+    const detailKeys = Object.keys(serviceDetails);
+    
+    // Generate HTML for existing detail fields
+    const detailFields = detailKeys.map(key => `
+      <div class="work-item-service-detail" id="detail-${item.id}-${key}">
+        <div class="detail-header">
+          <label for="${key}-${item.id}">${this.formatServiceDetailLabel(key)}:</label>
+          <button type="button" class="remove-detail-btn" onclick="window.flotilaManager.removeWorkItemDetail(${item.id}, '${key}')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <input 
+          type="text" 
+          id="${key}-${item.id}" 
+          value="${serviceDetails[key]}"
+          placeholder="Zadajte hodnotu..."
+          onchange="window.flotilaManager.updateWorkItemServiceDetail(${item.id}, '${key}', this.value)"
+        >
+      </div>
+    `).join('');
+    
+    return `
+      <div class="work-item-service-details" id="service-details-${item.id}">
+        ${detailFields}
+      </div>
+    `;
+  }
+
+  // Update services UI without reloading from database
+  updateServicesUI() {
+    const servisTab = document.getElementById('servis-tab');
+    if (servisTab) {
+      const servicesSection = servisTab.querySelector('.services-section');
+      if (servicesSection) {
+        const servicesContent = this.renderServiceTypes(this.selectedVehicle.services || []);
+        servicesSection.innerHTML = `
+          <div class="services-grid">
+            ${servicesContent}
+          </div>
+        `;
+      }
+    }
   }
 
   // Show settings modal with drag and drop system
@@ -2115,7 +2644,7 @@ class FlotilaManager {
   getKmServiceStatus(service) {
     if (!service.lastService?.km) return 'normal';
     
-    const currentKm = this.selectedVehicle?.kilometers || 0;
+    const currentKm = this.selectedVehicle?.currentKm || this.selectedVehicle?.kilometers || 0;
     const targetKm = service.lastService.km + parseInt(service.interval);
     const reminderKm = targetKm - (service.reminderKm || 15000);
     
@@ -2134,7 +2663,7 @@ class FlotilaManager {
       return 'Nastaviť km';
     }
     
-    const currentKm = this.selectedVehicle?.kilometers || 0;
+    const currentKm = this.selectedVehicle?.currentKm || this.selectedVehicle?.kilometers || 0;
     const targetKm = service.lastService.km + parseInt(service.interval);
     const remainingKm = targetKm - currentKm;
     
