@@ -189,20 +189,29 @@ body {
   flex-direction: column;
 }
 
+/* Desktop: shift main app to start from sidebar edge */
+@media (min-width: 901px) {
+  .app-container {
+    margin-left: 200px !important;
+    width: calc(100% - 200px);
+  }
+}
+
 .main-content {
   flex: 1;
   padding-bottom: 5rem;
 }
 
 .page-container {
-  max-width: 28rem;
-  margin: 0 auto;
+  width: 100%;
+  max-width: none;
+  margin: 0;
   padding: 1rem;
 }
 
 @media (min-width: 1024px) {
   .page-container {
-    max-width: 80rem;
+    max-width: none;
   }
 }
 
@@ -1071,13 +1080,31 @@ body {
   justify-content: space-around;
   align-items: center;
   padding: 0.5rem 1rem;
-  max-width: 28rem;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
 }
 
 @media (min-width: 1024px) {
   .bottom-nav {
-    max-width: 80rem;
+    max-width: none;
+  }
+}
+
+/* Make layout fill from sidebar (200px) to right on desktop */
+@media (min-width: 901px) {
+  .bottom-nav {
+    margin-left: 200px !important;
+    width: calc(100% - 200px);
+  }
+}
+
+/* Mobile: bottom nav spans full width */
+@media (max-width: 900px) {
+  .bottom-nav {
+    margin-left: 0 !important;
+    width: 100vw;
+    left: 0;
+    right: 0;
   }
 }
 

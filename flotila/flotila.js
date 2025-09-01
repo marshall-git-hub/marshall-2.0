@@ -358,14 +358,20 @@ class FlotilaManager {
         const data = vehicleInfo.data();
         vehicle.services = data.services || [];
         vehicle.activeWorkSession = data.activeWorkSession || null;
+        vehicle.history = data.history || [];
+        vehicle.currentKm = data.currentKm || vehicle.kilometers || 0;
       } else {
         vehicle.services = [];
         vehicle.activeWorkSession = null;
+        vehicle.history = [];
+        vehicle.currentKm = vehicle.kilometers || 0;
       }
     } catch (error) {
       console.error('Error loading services and work session:', error);
       vehicle.services = [];
       vehicle.activeWorkSession = null;
+      vehicle.history = [];
+      vehicle.currentKm = vehicle.kilometers || 0;
     }
     
     this.renderDetailPanel(vehicle, type);
@@ -607,6 +613,13 @@ class FlotilaManager {
       
       return `
         <div class="work-item ${statusClass}">
+          <div class="work-item-checkbox">
+            <input type="checkbox" 
+                   id="work-item-${item.id}" 
+                   ${item.status === 'completed' ? 'checked' : ''} 
+                   onchange="window.flotilaManager.toggleWorkItemStatus(${item.id})">
+            <label for="work-item-${item.id}"></label>
+          </div>
           <div class="work-item-info">
             <div class="work-item-name">${item.name}</div>
             <div class="work-item-details">
@@ -615,34 +628,48 @@ class FlotilaManager {
             <div class="work-item-status">${statusText}</div>
           </div>
           <div class="work-item-actions">
-            ${item.status === 'pending' ? `
-              <button class="btn-start" onclick="window.flotilaManager.startWorkItem(${item.id})">
-                Začať
-              </button>
-            ` : item.status === 'in-progress' ? `
-              <button class="btn-complete" onclick="window.flotilaManager.completeWorkItem(${item.id})">
-                Dokončiť
-              </button>
-            ` : `
-              <span class="completed-badge">✓ Dokončené</span>
-            `}
+            <button class="btn-delete-work-item" onclick="window.flotilaManager.deleteWorkItem(${item.id})" title="Vymazať úlohu">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3,6 5,6 21,6"></polyline>
+                <path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6m3,0V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2V6"></path>
+              </svg>
+            </button>
           </div>
         </div>
       `;
     }).join('');
 
+    // Get current vehicle kilometers
+    const currentKm = this.selectedVehicle?.currentKm || 0;
+    const startDate = new Date(activeWorkSession.startedAt);
+    const formattedDate = startDate.toISOString().split('T')[0]; // YYYY-MM-DD format for input
+
     return `
       <div class="active-work-session">
         <div class="work-session-header">
           <div class="work-session-info">
-            <span class="work-session-date">Začaté: ${new Date(activeWorkSession.startedAt).toLocaleDateString('sk-SK')}</span>
+            <div class="work-session-date-input">
+              <label for="work-start-date">Dátum začiatku:</label>
+              <input type="date" 
+                     id="work-start-date" 
+                     value="${formattedDate}" 
+                     onchange="window.flotilaManager.updateWorkStartDate(this.value)">
+            </div>
+            <div class="work-session-km-input">
+              <label for="work-current-km">Aktuálne km:</label>
+              <input type="number" 
+                     id="work-current-km" 
+                     value="${currentKm}" 
+                     onchange="window.flotilaManager.updateWorkCurrentKm(this.value)"
+                     placeholder="Zadajte km">
+            </div>
             <span class="work-session-count">${activeWorkSession.items.filter(item => item.status === 'completed').length}/${activeWorkSession.items.length} dokončené</span>
           </div>
-          ${activeWorkSession.items.every(item => item.status === 'completed') ? `
-            <button class="btn-finish-session" onclick="window.flotilaManager.finishWorkSession()">
+          <div class="work-session-actions">
+            <button class="btn-finish-job" onclick="window.flotilaManager.finishJob()">
               Dokončiť prácu
             </button>
-          ` : ''}
+          </div>
         </div>
         <div class="work-items-list">
           ${workItemsHtml}
@@ -653,7 +680,10 @@ class FlotilaManager {
 
   // Render completed work sessions
   renderCompletedWorkSessions(completedWorkSessions) {
-    if (!completedWorkSessions || completedWorkSessions.length === 0) {
+    // Use history array if available, otherwise fall back to completedWorkSessions
+    const history = this.selectedVehicle?.history || completedWorkSessions || [];
+    
+    if (!history || history.length === 0) {
       return `
         <div class="no-completed-work">
           <svg width="48" height="48" fill="none" stroke="#9ca3af" stroke-width="1.5">
@@ -665,15 +695,21 @@ class FlotilaManager {
       `;
     }
 
-    return completedWorkSessions.map(session => {
+    return history.map(entry => {
+      const entryDate = new Date(entry.date || entry.completedAt);
+      const kilometers = entry.kilometers || 0;
+      
       return `
         <div class="completed-work-session">
           <div class="completed-session-header">
-            <div class="session-date">${new Date(session.completedAt).toLocaleDateString('sk-SK')}</div>
-            <div class="session-summary">${session.items.length} úloh dokončených</div>
+            <div class="session-info">
+              <div class="session-date">${entryDate.toLocaleDateString('sk-SK')}</div>
+              <div class="session-kilometers">${kilometers.toLocaleString()} km</div>
+            </div>
+            <div class="session-summary">${entry.items.length} úloh dokončených</div>
           </div>
           <div class="completed-session-items">
-            ${session.items.map(item => `
+            ${entry.items.map(item => `
               <div class="completed-session-item">
                 <span class="item-name">${item.name}</span>
                 <span class="item-value">${item.type === 'km' ? item.value + ' km' : item.value}</span>
@@ -763,8 +799,14 @@ class FlotilaManager {
     
     this.selectedVehicle.activeWorkSession.items.push(workItem);
     
+    // Update the selectedVehicle reference to ensure consistency
+    this.selectedVehicle = { ...this.selectedVehicle };
+    
     // Save to database
     this.saveWorkSession();
+    
+    // Refresh the detail view to update UI
+    this.showDetail(this.selectedVehicle.type === 'truck' ? 'truck' : 'trailer', this.selectedVehicle.licensePlate);
     
     // Show success message
     this.showNotification(`${serviceName} pridané do práce`, 'success');
@@ -1077,7 +1119,7 @@ class FlotilaManager {
     if (serviceIndex === null) {
       serviceData.lastService = {
         date: new Date(),
-        km: this.selectedVehicle.kilometers || 0
+        km: this.selectedVehicle.currentKm || this.selectedVehicle.kilometers || 0
       };
     }
     
@@ -1104,6 +1146,9 @@ class FlotilaManager {
     // Save to database
     this.saveServices();
     
+    // Update the selectedVehicle reference to ensure consistency
+    this.selectedVehicle = { ...this.selectedVehicle };
+    
     // Refresh the detail view
     this.showDetail(this.selectedVehicle.type === 'truck' ? 'truck' : 'trailer', this.selectedVehicle.licensePlate);
     
@@ -1125,6 +1170,9 @@ class FlotilaManager {
       
       // Save to database
       this.saveServices();
+      
+      // Update the selectedVehicle reference to ensure consistency
+      this.selectedVehicle = { ...this.selectedVehicle };
       
       // Refresh the detail view
       this.showDetail(this.selectedVehicle.type === 'truck' ? 'truck' : 'trailer', this.selectedVehicle.licensePlate);
@@ -1247,8 +1295,8 @@ class FlotilaManager {
       this.addToWorkList(serviceName, serviceType, serviceInterval);
     }
     
-    // Update the button state immediately
-    this.updateServiceButtonState(serviceName, serviceIndex);
+    // Refresh the entire detail view to update all UI elements
+    this.showDetail(this.selectedVehicle.type === 'truck' ? 'truck' : 'trailer', this.selectedVehicle.licensePlate);
   }
 
   // Update service button state
@@ -1282,6 +1330,14 @@ class FlotilaManager {
       item => item.name !== serviceName
     );
     
+    // If no items left, clear the work session
+    if (this.selectedVehicle.activeWorkSession.items.length === 0) {
+      this.selectedVehicle.activeWorkSession = null;
+    }
+    
+    // Update the selectedVehicle reference to ensure consistency
+    this.selectedVehicle = { ...this.selectedVehicle };
+    
     // Save to database
     this.saveWorkSession();
     
@@ -1303,6 +1359,41 @@ class FlotilaManager {
     } catch (error) {
       console.error('Error saving work session:', error);
       this.showNotification('Chyba pri ukladaní pracovnej sessiony', 'error');
+    }
+  }
+
+  // Save vehicle data to database
+  async saveVehicleData() {
+    if (!this.selectedVehicle) return;
+    
+    try {
+      const updateData = {};
+      
+      // Update current kilometers
+      if (this.selectedVehicle.currentKm !== undefined) {
+        updateData.currentKm = this.selectedVehicle.currentKm;
+      }
+      
+      // Update services if they exist
+      if (this.selectedVehicle.services) {
+        updateData.services = this.selectedVehicle.services;
+      }
+      
+      // Update history if it exists
+      if (this.selectedVehicle.history) {
+        updateData.history = this.selectedVehicle.history;
+      }
+      
+      if (Object.keys(updateData).length > 0) {
+        await window.db.collection('vehicles')
+          .doc(this.selectedVehicle.licensePlate)
+          .collection('info')
+          .doc('basic')
+          .update(updateData);
+      }
+    } catch (error) {
+      console.error('Error saving vehicle data:', error);
+      this.showNotification('Chyba pri ukladaní dát vozidla', 'error');
     }
   }
 
@@ -1453,28 +1544,152 @@ class FlotilaManager {
     }
   }
 
-  // Finish the entire work session
-  finishWorkSession() {
+  // Toggle work item status (checkbox functionality)
+  toggleWorkItemStatus(itemId) {
     if (!this.selectedVehicle.activeWorkSession) return;
     
-    // Mark session as completed
-    this.selectedVehicle.activeWorkSession.status = 'completed';
-    this.selectedVehicle.activeWorkSession.completedAt = new Date().toISOString();
-    
-    // Move to completed work sessions
-    if (!this.selectedVehicle.completedWorkSessions) {
-      this.selectedVehicle.completedWorkSessions = [];
-    }
-    
-    this.selectedVehicle.completedWorkSessions.push(this.selectedVehicle.activeWorkSession);
-    
-    // Clear active work session
-    this.selectedVehicle.activeWorkSession = null;
-    
-    // Refresh the detail view
+    const item = this.selectedVehicle.activeWorkSession.items.find(i => i.id === itemId);
+    if (item) {
+      item.status = item.status === 'completed' ? 'pending' : 'completed';
+      if (item.status === 'completed') {
+        item.completedAt = new Date().toISOString();
+      } else {
+        delete item.completedAt;
+      }
+      
+      // Update the selectedVehicle reference to ensure consistency
+      this.selectedVehicle = { ...this.selectedVehicle };
+      
+      // Save to database
+      this.saveWorkSession();
+      
+      // Refresh the detail view
       this.showDetail(this.selectedVehicle.type === 'truck' ? 'truck' : 'trailer', this.selectedVehicle.licensePlate);
       
-    this.showNotification('Práca dokončená a uložená do histórie!', 'success');
+      this.showNotification(`${item.name} ${item.status === 'completed' ? 'označené ako dokončené' : 'označené ako nedokončené'}`, 'info');
+    }
+  }
+
+  // Delete work item
+  deleteWorkItem(itemId) {
+    if (!this.selectedVehicle.activeWorkSession) return;
+    
+    const item = this.selectedVehicle.activeWorkSession.items.find(i => i.id === itemId);
+    if (item) {
+      if (confirm(`Naozaj chcete vymazať úlohu "${item.name}"?`)) {
+        this.selectedVehicle.activeWorkSession.items = this.selectedVehicle.activeWorkSession.items.filter(i => i.id !== itemId);
+        
+        // If no items left, clear the work session
+        if (this.selectedVehicle.activeWorkSession.items.length === 0) {
+          this.selectedVehicle.activeWorkSession = null;
+        }
+        
+        // Update the selectedVehicle reference to ensure consistency
+        this.selectedVehicle = { ...this.selectedVehicle };
+        
+        // Save to database
+        this.saveWorkSession();
+        
+        // Refresh the detail view
+        this.showDetail(this.selectedVehicle.type === 'truck' ? 'truck' : 'trailer', this.selectedVehicle.licensePlate);
+        
+        this.showNotification(`${item.name} vymazané z práce`, 'info');
+      }
+    }
+  }
+
+  // Update work start date
+  updateWorkStartDate(newDate) {
+    if (!this.selectedVehicle.activeWorkSession) return;
+    
+    this.selectedVehicle.activeWorkSession.startedAt = new Date(newDate).toISOString();
+    this.saveWorkSession();
+    this.showNotification('Dátum začiatku práce aktualizovaný', 'info');
+  }
+
+  // Update work current kilometers
+  updateWorkCurrentKm(newKm) {
+    if (!this.selectedVehicle.activeWorkSession) return;
+    
+    this.selectedVehicle.currentKm = parseInt(newKm) || 0;
+    this.saveVehicleData();
+    this.showNotification('Aktuálne km aktualizované', 'info');
+  }
+
+  // Finish job - move completed items to history
+  finishJob() {
+    if (!this.selectedVehicle.activeWorkSession) return;
+    
+    const completedItems = this.selectedVehicle.activeWorkSession.items.filter(item => item.status === 'completed');
+    const pendingItems = this.selectedVehicle.activeWorkSession.items.filter(item => item.status !== 'completed');
+    
+    if (completedItems.length === 0) {
+      this.showNotification('Žiadne úlohy nie sú dokončené', 'warning');
+      return;
+    }
+    
+    // Create history entry for completed items
+    const historyEntry = {
+      id: Date.now(),
+      date: new Date().toISOString(),
+      kilometers: this.selectedVehicle.currentKm || 0,
+      items: completedItems.map(item => ({
+        name: item.name,
+        type: item.type,
+        value: item.value,
+        completedAt: item.completedAt
+      })),
+      workSessionId: this.selectedVehicle.activeWorkSession.id
+    };
+    
+    // Add to history
+    if (!this.selectedVehicle.history) {
+      this.selectedVehicle.history = [];
+    }
+    this.selectedVehicle.history.push(historyEntry);
+    
+    // Update services with completion data
+    completedItems.forEach(item => {
+      this.updateServiceLastService(item.name, historyEntry.date, historyEntry.kilometers);
+    });
+    
+    // Update active work session - keep only pending items
+    if (pendingItems.length > 0) {
+      this.selectedVehicle.activeWorkSession.items = pendingItems;
+    } else {
+      // All items completed, clear the work session
+      this.selectedVehicle.activeWorkSession = null;
+    }
+    
+    // Update the selectedVehicle reference to ensure consistency
+    this.selectedVehicle = { ...this.selectedVehicle };
+    
+    // Save to database
+    this.saveWorkSession();
+    this.saveVehicleData();
+    
+    // Refresh the detail view
+    this.showDetail(this.selectedVehicle.type === 'truck' ? 'truck' : 'trailer', this.selectedVehicle.licensePlate);
+    
+    this.showNotification(`${completedItems.length} úloh dokončených a uložených do histórie!`, 'success');
+  }
+
+  // Update service last service data
+  updateServiceLastService(serviceName, date, kilometers) {
+    if (!this.selectedVehicle.services) return;
+    
+    const service = this.selectedVehicle.services.find(s => s.name === serviceName);
+    if (service) {
+      service.lastService = {
+        date: date,
+        km: kilometers  // Use 'km' to match the calculation methods
+      };
+    }
+  }
+
+  // Finish the entire work session (legacy method - kept for compatibility)
+  finishWorkSession() {
+    this.finishJob();
   }
 
   // Show settings modal with drag and drop system
