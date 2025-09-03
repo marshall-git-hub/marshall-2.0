@@ -1,0 +1,284 @@
+/* Service Management Styles */
+.servis-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 2rem 0;
+  margin-bottom: 2rem;
+}
+
+.header-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.btn-primary {
+  background: #3b82f6;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: #6b7280;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: #4b5563;
+  transform: translateY(-1px);
+}
+
+
+
+/* Header Actions */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.search-container {
+  flex: 0 0 auto;
+  min-width: 180px;
+  max-width: 250px;
+}
+
+.search-container input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  transition: border-color 0.2s ease;
+}
+
+.search-container input:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+/* Main Grid Layout */
+.maintenance-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.grid-column {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Maintenance Tables */
+.maintenance-table {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.maintenance-table:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  color: white;
+  font-weight: 600;
+}
+
+.table-header h3 {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.add-row-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1.2rem;
+  font-weight: bold;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.add-row-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+/* Table Header Colors */
+.stk-header { background: #ef4444; }
+.tachograph-header { background: #3b82f6; }
+.dpf-header { background: #8b5cf6; }
+.calibration-header { background: #06b6d4; }
+.l-cert-header { background: #10b981; }
+.engine-oil-header { background: #3b82f6; }
+.diff-oil-header { background: #6366f1; }
+.annual-tractor-header { background: #10b981; }
+.annual-trailer-header { background: #059669; }
+.brake-check-header { background: #3b82f6; }
+.other-header { background: #f59e0b; }
+.personal-header { background: #8b6cf6; }
+
+.transmission-oil-header { background: #06b6d4; }
+
+/* Table Content */
+.table-content {
+  padding: 0;
+  overflow-x: auto;
+}
+
+.table-content table {
+  width: 100%;
+  min-width: 280px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.table-content td:first-child {
+  width: 35%;
+}
+
+.table-content td:last-child {
+  width: 65%;
+}
+
+.table-content th {
+  background: #f8fafc;
+  padding: 0.35rem 0.5rem;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.table-content td {
+  padding: 0.25rem 0.4rem;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.table-content td:last-child {
+  padding-left: 0.6rem;
+  padding-right: 0.6rem;
+}
+
+.table-content tbody tr:hover {
+  background: #f8fafc;
+}
+
+.table-content tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Vehicle and Status Styling */
+.vehicle-plate {
+  font-weight: 600;
+  color: #1f2937;
+  font-family: 'Courier New', monospace;
+  background: #f3f4f6;
+  padding: 0.1rem 0.3rem;
+  border-radius: 2px;
+  font-size: 0.75rem;
+}
+
+.date-cell {
+  color: #6b7280;
+  font-size: 0.7rem;
+  padding: 0.2rem 0.3rem !important;
+  
+}
+
+.km-cell {
+  color: #059669;
+  font-weight: 600;
+  font-size: 0.7rem;
+  padding: 0.2rem 0.3rem !important;
+}
+
+.note-cell {
+  color: #6b7280;
+  font-size: 0.65rem;
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+
+
+
+/* Responsive Design */
+@media (max-width: 1400px) {
+  .maintenance-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .table-content table {
+    min-width: 320px;
+  }
+}
+
+@media (max-width: 768px) {
+  .maintenance-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .header-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .search-container {
+    min-width: 100%;
+    max-width: 100%;
+  }
+  
+  .table-content {
+    overflow-x: auto;
+  }
+  
+  .table-content table {
+    min-width: 350px;
+  }
+}
+
+
