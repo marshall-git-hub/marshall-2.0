@@ -7,6 +7,9 @@
   <link rel="stylesheet" href="../styles.css">
   <link rel="stylesheet" href="../navbar/navbar.css">
   <link rel="stylesheet" href="servis.css">
+  <!-- Add SheetJS library for Excel export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <script defer src="../navbar/navbar.js"></script>
   <script src="../firebase-config.js"></script>
   <script src="../database-service.js"></script>
@@ -225,7 +228,7 @@
               <div class="table-header other-header">
                 <h3>Ostatné</h3>
               </div>
-              <div class="table-content">
+              <div class="table-content" data-columns="3">
                 <table>
                   <tbody id="other-tbody">
                     <!-- Data will be populated by JavaScript -->
@@ -239,7 +242,7 @@
               <div class="table-header personal-header">
                 <h3>Osobné</h3>
               </div>
-              <div class="table-content">
+              <div class="table-content" data-columns="3">
                 <table>
                   <tbody id="personal-tbody">
                     <!-- Data will be populated by JavaScript -->

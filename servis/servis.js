@@ -186,10 +186,14 @@ class ServiceManager {
 
     const services = this.services[category] || [];
     
+    // Check if this is a 3-column table
+    const isThreeColumn = category === 'other' || category === 'personal';
+    const colSpan = isThreeColumn ? 3 : 2;
+    
     if (services.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="2" style="text-align: center; padding: 1rem; color: #6b7280;">
+          <td colspan="${colSpan}" style="text-align: center; padding: 1rem; color: #6b7280;">
             Žiadne úlohy
           </td>
         </tr>
@@ -227,7 +231,7 @@ class ServiceManager {
         dateCell = '<td>-</td>';
         kmCell = `<td class="km-cell">${service.km.toLocaleString()} km</td>`;
       } else if (service.dateKm) {
-        dateCell = `<td class="km-cell">${service.dateKm}</td>`;
+        dateCell = `<td class="km-cell">${parseInt(service.dateKm).toLocaleString()} km</td>`;
         kmCell = '<td>-</td>';
       } else {
         dateCell = '<td>-</td>';
@@ -239,13 +243,58 @@ class ServiceManager {
         descriptionCell = `<td class="note-cell">${service.description}</td>`;
       }
 
-      return `
-        <tr>
-          <td><span class="vehicle-plate">${vehicleName}</span></td>
-          ${dateCell}
-          ${descriptionCell}
-        </tr>
-      `;
+      // Render different layouts for 3-column vs 2-column tables
+      if (isThreeColumn) {
+        // 3-column layout: Vehicle | Km/Date | Description
+        let kmDateCell;
+        if (service.date) {
+          const daysLeft = this.calculateDaysLeft(service.date);
+          const indicator = this.getDateIndicator(daysLeft);
+          kmDateCell = `<td class="date-cell">${this.formatDate(service.date)} ${indicator}</td>`;
+        } else if (service.km) {
+          const kmLeft = this.calculateKmLeft(service.km);
+          const indicator = this.getKmIndicator(kmLeft);
+          kmDateCell = `<td class="km-cell">${service.km.toLocaleString()} km ${indicator}</td>`;
+        } else if (service.dateKm) {
+          // For Ostatné table, calculate km left and add indicator
+          const kmLeft = this.calculateKmLeft(service.dateKm);
+          const indicator = this.getKmIndicator(kmLeft);
+          kmDateCell = `<td class="km-cell">${parseInt(service.dateKm).toLocaleString()} km ${indicator}</td>`;
+        } else {
+          kmDateCell = '<td>-</td>';
+        }
+
+        return `
+          <tr>
+            <td><span class="vehicle-plate">${vehicleName}</span></td>
+            ${kmDateCell}
+            <td class="note-cell">${service.description || '-'}</td>
+          </tr>
+        `;
+      } else {
+        // 2-column layout: Vehicle | Date only (NO descriptions)
+        let content = '';
+        if (service.date) {
+          const daysLeft = this.calculateDaysLeft(service.date);
+          const indicator = this.getDateIndicator(daysLeft);
+          content = `${this.formatDate(service.date)} ${indicator}`;
+        } else if (service.km) {
+          const kmLeft = this.calculateKmLeft(service.km);
+          const indicator = this.getKmIndicator(kmLeft);
+          content = `${service.km.toLocaleString()} km ${indicator}`;
+        } else if (service.dateKm) {
+          content = `${parseInt(service.dateKm).toLocaleString()} km`;
+        } else {
+          content = '-';
+        }
+        
+        return `
+          <tr>
+            <td><span class="vehicle-plate">${vehicleName}</span></td>
+            <td>${content}</td>
+          </tr>
+        `;
+      }
     }).join('');
   }
 
@@ -336,6 +385,84 @@ class ServiceManager {
     });
   }
 
+  // Calculate days left until deadline (positive = days left, negative = days overdue)
+  calculateDaysLeft(deadlineDate) {
+    const today = new Date();
+    const deadline = new Date(deadlineDate);
+    const diffTime = deadline - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  }
+
+  // Calculate kilometers left until service (positive = km left, negative = km overdue)
+  calculateKmLeft(serviceKm) {
+    // This would need to be connected to actual vehicle current km
+    // For now, using a placeholder calculation
+    const currentKm = 400000; // Placeholder - should get from vehicle data
+    const diffKm = serviceKm - currentKm;
+    return diffKm;
+  }
+
+  // Get date indicator with color coding
+  getDateIndicator(daysLeft) {
+    if (daysLeft > 30) {
+      return `<span class="indicator good">+${daysLeft} dní</span>`;
+    } else if (daysLeft > 7) {
+      return `<span class="indicator warning">+${daysLeft} dní</span>`;
+    } else if (daysLeft > 0) {
+      return `<span class="indicator urgent">+${daysLeft} dní</span>`;
+    } else if (daysLeft === 0) {
+      return `<span class="indicator overdue">Dnes</span>`;
+    } else {
+      return `<span class="indicator overdue">-${Math.abs(daysLeft)} dní</span>`;
+    }
+  }
+
+  // Get kilometer indicator with color coding
+  getKmIndicator(kmLeft) {
+    if (kmLeft > 10000) {
+      return `<span class="indicator good">+${kmLeft.toLocaleString()} km</span>`;
+    } else if (kmLeft > 5000) {
+      return `<span class="indicator warning">+${kmLeft.toLocaleString()} km</span>`;
+    } else if (kmLeft > 0) {
+      return `<span class="indicator urgent">+${kmLeft.toLocaleString()} km</span>`;
+    } else if (kmLeft === 0) {
+      return `<span class="indicator overdue">Teraz</span>`;
+    } else {
+      return `<span class="indicator overdue">-${Math.abs(kmLeft).toLocaleString()} km</span>`;
+    }
+  }
+
+  // Get status text for Excel export (date-based)
+  getStatusText(daysLeft) {
+    if (daysLeft > 30) {
+      return 'OK';
+    } else if (daysLeft > 7) {
+      return 'Varovanie';
+    } else if (daysLeft > 0) {
+      return 'Urgentné';
+    } else if (daysLeft === 0) {
+      return 'Dnes';
+    } else {
+      return 'Po termíne';
+    }
+  }
+
+  // Get status text for Excel export (km-based)
+  getKmStatusText(kmLeft) {
+    if (kmLeft > 10000) {
+      return 'OK';
+    } else if (kmLeft > 5000) {
+      return 'Varovanie';
+    } else if (kmLeft > 0) {
+      return 'Urgentné';
+    } else if (kmLeft === 0) {
+      return 'Teraz';
+    } else {
+      return 'Po termíne';
+    }
+  }
+
 
 
 
@@ -348,42 +475,249 @@ class ServiceManager {
 
   exportData() {
     try {
-      // Create CSV content
-      let csvContent = 'Vozidlo,Kategória,Dátum/Kilometre,Popis\n';
+      // Check if XLSX is available
+      if (typeof XLSX === 'undefined') {
+        alert('Excel export library not loaded. Please refresh the page and try again.');
+        return;
+      }
       
-      Object.entries(this.services).forEach(([category, services]) => {
-        services.forEach(service => {
-          const vehicle = this.vehicles.find(v => v.id === service.vehicle);
-          const vehicleName = vehicle ? vehicle.name : service.vehicle;
-          const categoryName = this.getCategoryDisplayName(category);
-          
-          const row = [
-            vehicleName,
-            categoryName,
-            service.date || service.km || service.dateKm || '',
-            service.description || ''
-          ].map(field => `"${field}"`).join(',');
-          
-          csvContent += row + '\n';
-        });
-      });
+      // Create workbook and worksheet
+      const wb = XLSX.utils.book_new();
+      const ws = wb.active;
       
-      // Create and download file
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', `servis_udrzba_${new Date().toISOString().split('T')[0]}.csv`);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // Set column widths similar to your Python script
+      // Note: SheetJS uses 0-based indexing, so we need to set widths for all columns
+      const columnWidths = [];
+      for (let i = 0; i < 26; i++) { // A-Z columns
+        if (i === 1) columnWidths.push({ width: 17.8 });      // Column B
+        else if (i === 2) columnWidths.push({ width: 18.5 }); // Column C
+        else if (i === 3) columnWidths.push({ width: 17.5 }); // Column D
+        else if (i === 5) columnWidths.push({ width: 14.75 }); // Column F
+        else if (i === 6) columnWidths.push({ width: 18.5 }); // Column G
+        else if (i === 7) columnWidths.push({ width: 17.5 }); // Column H
+        else if (i === 9) columnWidths.push({ width: 10.4 }); // Column J
+        else if (i === 10) columnWidths.push({ width: 18.7 }); // Column K
+        else if (i === 11) columnWidths.push({ width: 37 });  // Column L
+        else if (i === 12) columnWidths.push({ width: 17.5 }); // Column M
+        else columnWidths.push({ width: 10 }); // Default width for other columns
+      }
+      ws['!cols'] = columnWidths;
       
-      console.log('Data exported successfully');
+      let currentRow = 2; // Start from row 2
+      
+      // Debug: Log the entire services object
+      console.log('All services:', this.services);
+      console.log('Services keys:', Object.keys(this.services));
+      
+      // Create STK + EK section
+      console.log('Creating STK section with data:', this.services.stk);
+      currentRow = this.createExcelSection(ws, 'B', 'D', currentRow, 
+        ['STK + EK', 'Datum', 'Poznamka'], 
+        this.services.stk || [], 'stk_ek', 'TableStyleMedium10');
+      
+      // Create Tachograph section
+      currentRow = this.createExcelSection(ws, 'B', 'D', currentRow,
+        ['Stiahnutie Tach.', 'Datum', 'Poznamka'],
+        this.services.tachograph || [], 'tachograph', 'TableStyleMedium13');
+      
+      // Create DPF section
+      currentRow = this.createExcelSection(ws, 'B', 'D', currentRow,
+        ['DPF čistenie', 'Kilometrov', 'Poznamka'],
+        this.services.dpf || [], 'dpf', 'TableStyleMedium11');
+      
+      // Create Ciachovanie section
+      currentRow = this.createExcelSection(ws, 'B', 'D', currentRow,
+        ['Ciachovanie', 'Datum', 'Poznamka'],
+        this.services.calibration || [], 'ciachovanie', 'TableStyleMedium9');
+      
+      // Create L-Certifikát section
+      currentRow = this.createExcelSection(ws, 'B', 'D', currentRow,
+        ['L-Certifikát', 'Datum', 'Poznamka'],
+        this.services.lCert || [], 'l_certifikat', 'TableStyleMedium11');
+      
+      // Reset to column F for second column
+      currentRow = 2;
+      
+      // Create Motor. olej section
+      currentRow = this.createExcelSection(ws, 'F', 'H', currentRow,
+        ['Motor. olej', 'Kilometrov', 'Poznamka'],
+        this.services.engineOil || [], 'motor_olej', 'TableStyleMedium9');
+      
+      // Create Diferenciálny olej section
+      currentRow = this.createExcelSection(ws, 'F', 'H', currentRow,
+        ['Difer. olej', 'Kilometrov', 'Poznamka'],
+        this.services.diffOil || [], 'difer_olej', 'TableStyleMedium9');
+      
+      // Create Prevodovka olej section
+      currentRow = this.createExcelSection(ws, 'F', 'H', currentRow,
+        ['Prevodovka olej', 'Kilometrov', 'Poznamka'],
+        this.services.transmissionOil || [], 'prevodovka_olej', 'TableStyleMedium9');
+      
+      // Create Ročná tahač section
+      currentRow = this.createExcelSection(ws, 'F', 'H', currentRow,
+        ['Ročná tahač', 'Datum', 'Poznamka'],
+        this.services.annualTractor || [], 'rocna_tahac', 'TableStyleMedium11');
+      
+      // Create Ročná náves section
+      currentRow = this.createExcelSection(ws, 'F', 'H', currentRow,
+        ['Ročná náves', 'Datum', 'Poznamka'],
+        this.services.annualTrailer || [], 'rocna_naves', 'TableStyleMedium11');
+      
+      // Create Kontrola bŕzd section
+      currentRow = this.createExcelSection(ws, 'F', 'H', currentRow,
+        ['Kontrola Bŕzd', 'Datum', 'Poznamka'],
+        this.services.brakeCheck || [], 'kontrola_brzd', 'TableStyleMedium9');
+      
+      // Reset to column J for third column
+      currentRow = 2;
+      
+      // Create Ostatné section (3 columns)
+      currentRow = this.createExcelSection(ws, 'J', 'M', currentRow,
+        ['Ostatné', 'Datum', 'Kontrola', 'Poznamka'],
+        this.services.other || [], 'ostatne', 'TableStyleMedium14', true);
+      
+      // Create Osobné section (3 columns)
+      currentRow = this.createExcelSection(ws, 'J', 'M', currentRow + 20,
+        ['Osobné', 'Datum', 'Kontrola', 'Poznamka'],
+        this.services.personal || [], 'osobne', 'TableStyleMedium12', true);
+      
+      // Add worksheet to workbook
+      XLSX.utils.book_append_sheet(wb, ws, 'Servis Údržba');
+      
+      // Generate filename with current date
+      const fileName = `servis_udrzba_${new Date().toISOString().split('T')[0]}.xlsx`;
+      
+      // Save the file
+      XLSX.writeFile(wb, fileName);
+      
+      console.log('Data exported successfully to Excel');
     } catch (error) {
       console.error('Error exporting data:', error);
       alert('Chyba pri exporte dát');
     }
+  }
+
+  // Helper method to create Excel sections with proper styling
+  createExcelSection(ws, startCol, endCol, startRow, headers, services, sectionName, tableStyle, isThreeColumn = false) {
+    console.log(`Creating section ${sectionName} with ${services.length} services`);
+    const startColNum = startCol.charCodeAt(0) - 65 + 1;
+    const endColNum = endCol.charCodeAt(0) - 65 + 1;
+    
+    // Set headers with styling
+    for (let col = 0; col < headers.length; col++) {
+      const cellAddress = XLSX.utils.encode_cell({ r: startRow - 1, c: startColNum - 1 + col });
+      ws[cellAddress] = { v: headers[col] };
+      
+      // Style header
+      ws[cellAddress].s = {
+        font: { bold: true, color: { rgb: "FFFFFF" } },
+        fill: { fgColor: { rgb: this.getHeaderColor(sectionName) } },
+        alignment: { horizontal: "center", vertical: "center" },
+        border: {
+          top: { style: "thin", color: { rgb: "000000" } },
+          bottom: { style: "thin", color: { rgb: "000000" } },
+          left: { style: "thin", color: { rgb: "000000" } },
+          right: { style: "thin", color: { rgb: "000000" } }
+        }
+      };
+    }
+    
+         // Add data rows
+     let dataRow = startRow;
+     
+     // If no services, just return the header row
+     if (!services || services.length === 0) {
+       console.log(`No services for section ${sectionName}`);
+       return startRow + 2;
+     }
+     
+     services.forEach(service => {
+      const vehicle = this.vehicles.find(v => v.id === service.vehicle);
+      const vehicleName = vehicle ? vehicle.name : service.vehicle;
+      
+      // Vehicle column
+      const vehicleCell = XLSX.utils.encode_cell({ r: dataRow - 1, c: startColNum - 1 });
+      ws[vehicleCell] = { v: vehicleName };
+      ws[vehicleCell].s = {
+        font: { name: "Courier New", size: 10, bold: true },
+        fill: { fgColor: { rgb: "F3F4F6" } },
+        border: { style: "thin", color: { rgb: "E5E7EB" } },
+        alignment: { vertical: "center" }
+      };
+      
+      // Date/KM column
+      const dateKmCell = XLSX.utils.encode_cell({ r: dataRow - 1, c: startColNum });
+      let dateKmValue = '';
+      let isOverdue = false;
+      
+      if (service.date) {
+        const daysLeft = this.calculateDaysLeft(service.date);
+        dateKmValue = `${this.formatDate(service.date)} (${daysLeft > 0 ? '+' : ''}${daysLeft} dní)`;
+        isOverdue = daysLeft < 0;
+      } else if (service.km) {
+        const kmLeft = this.calculateKmLeft(service.km);
+        dateKmValue = `${service.km.toLocaleString()} km (${kmLeft > 0 ? '+' : ''}${kmLeft} km)`;
+        isOverdue = kmLeft < 0;
+      } else if (service.dateKm) {
+        const kmLeft = this.calculateKmLeft(service.dateKm);
+        dateKmValue = `${service.dateKm} (${kmLeft > 0 ? '+' : ''}${kmLeft} km)`;
+        isOverdue = kmLeft < 0;
+      }
+      
+      ws[dateKmCell] = { v: dateKmValue };
+      ws[dateKmCell].s = {
+        font: { color: { rgb: isOverdue ? "DC2626" : "059669" } },
+        border: { style: "thin", color: { rgb: "E5E7EB" } },
+        alignment: { vertical: "center" }
+      };
+      
+      // Description column (for 3-column tables)
+      if (isThreeColumn) {
+        const descCell = XLSX.utils.encode_cell({ r: dataRow - 1, c: startColNum + 1 });
+        ws[descCell] = { v: service.description || '' };
+        ws[descCell].s = {
+          border: { style: "thin", color: { rgb: "E5E7EB" } },
+          alignment: { vertical: "center", wrapText: true }
+        };
+      }
+      
+      // Note column
+      const noteCol = isThreeColumn ? startColNum + 2 : startColNum + 1;
+      const noteCell = XLSX.utils.encode_cell({ r: dataRow - 1, c: noteCol });
+      ws[noteCell] = { v: service.note || '' };
+      ws[noteCell].s = {
+        border: { style: "thin", color: { rgb: "E5E7EB" } },
+        alignment: { vertical: "center", wrapText: true }
+      };
+      
+      dataRow++;
+    });
+    
+         // Add table formatting - simplified for better compatibility
+     // Note: Excel table styles are applied through cell styling instead
+     // of the !tables property for better compatibility
+    
+    return dataRow + 2; // Return next starting row
+  }
+
+  // Get header color based on section name
+  getHeaderColor(sectionName) {
+    const colors = {
+      'stk_ek': 'EF4444',        // Red
+      'tachograph': '3B82F6',    // Blue
+      'dpf': '8B5CF6',          // Purple
+      'ciachovanie': '06B6D4',   // Teal
+      'l_certifikat': '10B981',  // Green
+      'motor_olej': '3B82F6',    // Blue
+      'difer_olej': '6366F1',    // Indigo
+      'prevodovka_olej': '06B6D4', // Teal
+      'rocna_tahac': '10B981',   // Green
+      'rocna_naves': '059669',   // Dark Green
+      'kontrola_brzd': '3B82F6', // Blue
+      'ostatne': 'F59E0B',       // Orange
+      'osobne': '8B6CF6'         // Purple
+    };
+    return colors[sectionName] || '6B7280';
   }
 }
 
