@@ -116,6 +116,10 @@ class FlotilaManager {
       this.showSettings();
     });
     
+    document.getElementById('populate-real-data-btn')?.addEventListener('click', () => {
+      this.populateRealData();
+    });
+    
     // Search functionality
     document.getElementById('flotilaSearch')?.addEventListener('input', (e) => {
       this.renderPairs(e.target.value);
@@ -2348,6 +2352,63 @@ class FlotilaManager {
     
     // Initialize drag and drop
     this.initializeDragAndDrop();
+  }
+
+  // Populate database with real data from ccc.xls
+  async populateRealData() {
+    try {
+      // Show confirmation dialog
+      const confirmed = confirm(
+        'Táto akcia naplní databázu skutočnými dátami z ccc.xls súboru.\n\n' +
+        'Toto môže prepísať existujúce dáta. Chcete pokračovať?'
+      );
+      
+      if (!confirmed) {
+        return;
+      }
+
+      // Disable button during processing
+      const button = document.getElementById('populate-real-data-btn');
+      const originalText = button.innerHTML;
+      button.disabled = true;
+      button.innerHTML = '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg> Spracovávam...';
+
+      // Check if the populate function is available; if not, try to load it dynamically
+      if (typeof window.populateRealFlotilaData !== 'function') {
+        try {
+          await new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.defer = true;
+            script.src = '../populate-flotila-data.js?v=3';
+            script.onload = resolve;
+            script.onerror = () => reject(new Error('Nepodarilo sa načítať skript populate-flotila-data.js'));
+            document.head.appendChild(script);
+          });
+        } catch (e) {
+          throw e;
+        }
+      }
+
+      if (typeof window.populateRealFlotilaData === 'function') {
+        await window.populateRealFlotilaData();
+        await this.loadDataAndRender();
+        alert('Databáza bola úspešne naplnená skutočnými dátami!');
+      } else {
+        throw new Error('Populate function not available. Skúste obnoviť stránku (Ctrl+F5).');
+      }
+      
+    } catch (error) {
+      console.error('Error populating real data:', error);
+      alert('Chyba pri naplňovaní databázy: ' + error.message);
+    } finally {
+      // Re-enable button
+      const button = document.getElementById('populate-real-data-btn');
+      if (button) {
+        button.disabled = false;
+        // originalText is defined earlier in this function scope
+        button.innerHTML = originalText;
+      }
+    }
   }
 
   // Render trucks for drag and drop

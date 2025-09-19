@@ -1,730 +1,529 @@
-// Script to populate Firebase with initial flotila data
-// Run this script once to set up the initial vehicle data
+// Script to populate Firebase with real flotila data from ccc.xls
+// This script reads the CSV data and categorizes vehicles properly
 
-const initialVehicleData = {
-  // Trucks
-  "AA466SN": {
-    vin: "AA466SNVIN",
-    kilometers: 34238,
-    trailer: "ZC 206 YD",
-    type: "Mercedes Actros",
-    vehicleType: "truck",
-    services: [
-      {
-        name: "Výmena oleja v motore",
-        type: "km",
-        interval: 50000,
-        reminderKm: 15000,
-        lastService: {
-          date: new Date('2024-01-15'),
-          km: 25000
-        }
-      },
-      {
-        name: "Výmena filtrov",
-        type: "km",
-        interval: 25000,
-        reminderKm: 10000,
-        lastService: {
-          date: new Date('2024-02-01'),
-          km: 30000
-        }
-      },
-      {
-        name: "Kontrola bŕzd",
-        type: "date",
-        interval: 365, // days
-        reminderDays: 30,
-        lastService: {
-          date: new Date('2023-12-15'),
-          km: 20000
-        }
-      },
-      {
-        name: "Kontrola klimatizácie",
-        type: "date",
-        interval: 180, // days
-        reminderDays: 14,
-        lastService: {
-          date: new Date('2023-11-20'),
-          km: 18000
-        }
-      }
-    ]
-  },
-  "AA732GJ": {
-    vin: "AA732GJVIN",
-    kilometers: 36358,
-    trailer: "ZC 212 YC",
-    type: "Schwazmüller",
-    vehicleType: "truck",
-    services: [
-      {
-        name: "Výmena oleja v motore",
-        type: "km",
-        interval: 50000,
-        reminderKm: 15000,
-        lastService: {
-          date: new Date('2024-01-20'),
-          km: 30000
-        }
-      },
-      {
-        name: "Výmena filtrov",
-        type: "km",
-        interval: 25000,
-        reminderKm: 10000,
-        lastService: {
-          date: new Date('2024-02-10'),
-          km: 34000
-        }
-      },
-      {
-        name: "Kontrola bŕzd",
-        type: "date",
-        interval: 365,
-        reminderDays: 30,
-        lastService: {
-          date: new Date('2023-12-10'),
-          km: 25000
-        }
-      }
-    ]
-  },
-  "ZC153BL": {
-    vin: "ZC153BLVIN",
-    kilometers: 828513,
-    trailer: null,
-    type: "Mercedes Sprinter",
-    vehicleType: "truck",
-    services: [
-      {
-        name: "Výmena oleja v motore",
-        type: "km",
-        interval: 30000,
-        reminderKm: 10000,
-        lastService: {
-          date: new Date('2023-10-01'),
-          km: 800000
-        }
-      },
-      {
-        name: "Výmena filtrov",
-        type: "km",
-        interval: 15000,
-        reminderKm: 5000,
-        lastService: {
-          date: new Date('2023-11-15'),
-          km: 815000
-        }
-      },
-      {
-        name: "Kontrola bŕzd",
-        type: "date",
-        interval: 365,
-        reminderDays: 30,
-        lastService: {
-          date: new Date('2023-11-05'),
-          km: 810000
-        }
-      }
-    ]
-  },
-  "ZC328BL": {
-    vin: "ZC328BLVIN",
-    kilometers: 0,
-    trailer: null,
-    type: "Mercedes Actros",
-    vehicleType: "truck",
-    services: [
-      {
-        name: "Výmena oleja v motore",
-        type: "km",
-        interval: 50000,
-        reminderKm: 15000
-      },
-      {
-        name: "Výmena filtrov",
-        type: "km",
-        interval: 25000,
-        reminderKm: 10000
-      }
-    ]
-  },
-  "ZC352BP": {
-    vin: "ZC352BPVIN",
-    kilometers: 0,
-    trailer: "ZC 235 YC",
-    type: "Schwazmüller",
-    vehicleType: "truck",
-    services: [
-      {
-        name: "Výmena oleja v motore",
-        type: "km",
-        interval: 50000,
-        reminderKm: 15000
-      },
-      {
-        name: "Výmena filtrov",
-        type: "km",
-        interval: 25000,
-        reminderKm: 10000
-      }
-    ]
-  },
-  "ZC383BL": {
-    vin: "ZC383BLVIN",
-    kilometers: 0,
-    trailer: null,
-    type: "Mercedes Actros",
-    vehicleType: "truck",
-    services: [
-      {
-        name: "Výmena oleja v motore",
-        type: "km",
-        interval: 50000,
-        reminderKm: 15000
-      },
-      {
-        name: "Výmena filtrov",
-        type: "km",
-        interval: 25000,
-        reminderKm: 10000
-      }
-    ]
-  },
-  "ZC441BV": {
-    vin: "ZC441BVVIN",
-    kilometers: 0,
-    trailer: null,
-    type: "Mercedes Sprinter",
-    vehicleType: "truck",
-    services: [
-      {
-        name: "Výmena oleja v motore",
-        type: "km",
-        interval: 30000,
-        reminderKm: 10000
-      },
-      {
-        name: "Výmena filtrov",
-        type: "km",
-        interval: 15000,
-        reminderKm: 5000
-      }
-    ]
-  },
-  "ZC449BV": {
-    vin: "ZC449BVVIN",
-    kilometers: 0,
-    trailer: null,
-    type: "Mercedes Actros",
-    vehicleType: "truck",
-    services: [
-      {
-        name: "Výmena oleja v motore",
-        type: "km",
-        interval: 50000,
-        reminderKm: 15000
-      },
-      {
-        name: "Výmena filtrov",
-        type: "km",
-        interval: 25000,
-        reminderKm: 10000
-      }
-    ]
-  },
-  "ZC465BS": {
-    vin: "ZC465BSVIN",
-    kilometers: 0,
-    trailer: null,
-    type: "Schwazmüller",
-    vehicleType: "truck",
-    services: [
-      {
-        name: "Výmena oleja v motore",
-        type: "km",
-        interval: 50000,
-        reminderKm: 15000
-      },
-      {
-        name: "Výmena filtrov",
-        type: "km",
-        interval: 25000,
-        reminderKm: 10000
-      }
-    ]
-  },
-  "ZC469BS": {
-    vin: "ZC469BSVIN",
-    kilometers: 0,
-    trailer: null,
-    type: "Mercedes Actros",
-    vehicleType: "truck",
-    services: [
-      {
-        name: "Výmena oleja v motore",
-        type: "km",
-        interval: 50000,
-        reminderKm: 15000
-      },
-      {
-        name: "Výmena filtrov",
-        type: "km",
-        interval: 25000,
-        reminderKm: 10000
-      }
-    ]
-  },
+const isBrowser = typeof window !== 'undefined' && typeof window.document !== 'undefined';
 
-  // Trailers
-  "ZC 206 YD": {
-    vin: "ZC206YDVIN",
-    kilometers: 20660,
-    type: "Schwazmüller",
-    vehicleType: "trailer",
-    services: [
-      {
-        name: "Kontrola oleja",
-        type: "km",
-        interval: 50000,
-        reminderKm: 15000,
-        lastService: {
-          date: new Date('2024-01-10'),
-          km: 15000
-        }
-      },
-      {
-        name: "Kontrola filtrov",
-        type: "km",
-        interval: 25000,
-        reminderKm: 10000,
-        lastService: {
-          date: new Date('2024-02-05'),
-          km: 18000
-        }
-      }
-    ]
-  },
-  "ZC 212 YC": {
-    vin: "ZC212YCVIN",
-    kilometers: 0,
-    type: "Schwazmüller",
-    vehicleType: "trailer",
-    services: [
-      {
-        name: "Kontrola oleja",
-        type: "km",
-        interval: 50000,
-        reminderKm: 15000
-      },
-      {
-        name: "Kontrola filtrov",
-        type: "km",
-        interval: 25000,
-        reminderKm: 10000
-      }
-    ]
-  },
-  "ZC 235 YC": {
-    vin: "ZC235YCVIN",
-    kilometers: 0,
-    type: "Schwazmüller",
-    vehicleType: "trailer",
-    services: [
-      {
-        name: "Kontrola oleja",
-        type: "km",
-        interval: 50000,
-        reminderKm: 15000
-      },
-      {
-        name: "Kontrola filtrov",
-        type: "km",
-        interval: 25000,
-        reminderKm: 10000
-      }
-    ]
-  },
-  "ZC 237 YC": {
-    vin: "ZC237YCVIN",
-    kilometers: 0,
-    type: "Schwazmüller",
-    vehicleType: "trailer",
-    services: [
-      {
-        name: "Kontrola oleja",
-        type: "km",
-        interval: 50000,
-        reminderKm: 15000
-      },
-      {
-        name: "Kontrola filtrov",
-        type: "km",
-        interval: 25000,
-        reminderKm: 10000
-      }
-    ]
-  },
-  "ZC 278 YC": {
-    vin: "ZC278YCVIN",
-    kilometers: 0,
-    type: "Schwazmüller",
-    vehicleType: "trailer",
-    services: [
-      {
-        name: "Kontrola oleja",
-        type: "km",
-        interval: 50000,
-        reminderKm: 15000
-      },
-      {
-        name: "Kontrola filtrov",
-        type: "km",
-        interval: 25000,
-        reminderKm: 10000
-      }
-    ]
-  },
-  "ZC 291 YD": {
-    vin: "ZC291YDVIN",
-    kilometers: 0,
-    type: "Schwazmüller",
-    vehicleType: "trailer",
-    services: [
-      {
-        name: "Kontrola oleja",
-        type: "km",
-        interval: 50000,
-        reminderKm: 15000
-      },
-      {
-        name: "Kontrola filtrov",
-        type: "km",
-        interval: 25000,
-        reminderKm: 10000
-      }
-    ]
-  },
-  "ZC 336 YD": {
-    vin: "ZC336YDVIN",
-    kilometers: 0,
-    type: "Schwazmüller",
-    vehicleType: "trailer",
-    services: [
-      {
-        name: "Kontrola oleja",
-        type: "km",
-        interval: 50000,
-        reminderKm: 15000
-      },
-      {
-        name: "Kontrola filtrov",
-        type: "km",
-        interval: 25000,
-        reminderKm: 10000
-      }
-    ]
-  },
-  "ZC 388 YC": {
-    vin: "ZC388YCVIN",
-    kilometers: 0,
-    type: "Schwazmüller",
-    vehicleType: "trailer",
-    services: [
-      {
-        name: "Kontrola oleja",
-        type: "km",
-        interval: 50000,
-        reminderKm: 15000
-      },
-      {
-        name: "Kontrola filtrov",
-        type: "km",
-        interval: 25000,
-        reminderKm: 10000
-      }
-    ]
-  },
-  "ZC 390 YC": {
-    vin: "ZC390YCVIN",
-    kilometers: 0,
-    type: "Schwazmüller",
-    vehicleType: "trailer",
-    services: [
-      {
-        name: "Kontrola oleja",
-        type: "km",
-        interval: 50000,
-        reminderKm: 15000
-      },
-      {
-        name: "Kontrola filtrov",
-        type: "km",
-        interval: 25000,
-        reminderKm: 10000
-      }
-    ]
+let fs = null;
+let nodePath = null;
+let csv = null;
+let SheetJS = null;
+
+if (!isBrowser) {
+  try { fs = require('fs'); } catch {}
+  try { nodePath = require('path'); } catch {}
+  try { csv = require('csv-parser'); } catch {}
+  try { SheetJS = require('xlsx'); } catch {}
+} else {
+  // In browser, expect XLSX to be available globally if included via script tag
+  if (typeof window.XLSX !== 'undefined') {
+    SheetJS = window.XLSX;
   }
-};
+}
 
-// Function to populate the database
-async function populateFlotilaData() {
+// Function to determine vehicle type based on "druh vozidla"
+function determineVehicleType(druhVozidla) {
+  const type = druhVozidla.toLowerCase().trim();
+  
+  if (type.includes('nákladné vozidlo') || type.includes('nakladné vozidlo') || type.includes('nakladné vozidlo')) {
+    return 'truck';
+  } else if (type.includes('náves') || type.includes('náves') || type.includes('príves') || type.includes('prives')) {
+    return 'trailer';
+  } else if (type.includes('osobné auto') || type.includes('osobne auto')) {
+    return 'personal';
+  } else if (type.includes('dodávka') || type.includes('dodavka')) {
+    return 'personal';
+  } else if (type.includes('žeriav') || type.includes('vysokozdvižný') || type.includes('pracovný stroj') || type.includes('kompresor')) {
+    return 'equipment';
+  } else if (type.includes('specialne obyt')) {
+    return 'personal';
+  } else {
+    return 'equipment';
+  }
+}
+
+// Function to clean and format license plate
+function cleanLicensePlate(spz) {
+  return spz.trim().replace(/\s+/g, ' ').toUpperCase();
+}
+
+// Function to clean VIN
+function cleanVIN(vin) {
+  return vin ? vin.trim().toUpperCase() : null;
+}
+
+// Function to clean type/brand
+function cleanType(typovaZnacka) {
+  return typovaZnacka ? typovaZnacka.trim() : null;
+}
+
+// Build services from servis_data Excel files (B name, D norma, Signalizovať reminder, H/G last date)
+function loadServisDataFromExcels(servisDir) {
+  const plateToServices = {};
+
+  // Only supported in Node environment with fs/path/xlsx available
+  if (!SheetJS || !fs || !nodePath) {
+    console.warn('XLSX library not available. Skipping servis_data import.');
+    return plateToServices;
+  }
+
+  let files = [];
   try {
+    files = fs.readdirSync(servisDir)
+      .filter(f => f.toLowerCase().endsWith('.xls') || f.toLowerCase().endsWith('.xlsx'));
+  } catch (e) {
+    console.warn(`Could not read servis_data directory at ${servisDir}:`, e.message);
+    return plateToServices;
+  }
+
+  const toCleanPlate = (filenamePlate) => cleanLicensePlate(filenamePlate);
+
+  for (const file of files) {
+    const fullPath = nodePath.join(servisDir, file);
+    let workbook;
+    try {
+      workbook = SheetJS.readFile(fullPath, { cellDates: true, WTF: false });
+    } catch (e) {
+      console.warn(`Failed to read Excel file ${fullPath}: ${e.message}`);
+      continue;
+    }
+
+    const firstSheetName = workbook.SheetNames[0];
+    const ws = workbook.Sheets[firstSheetName];
+    if (!ws) continue;
+
+    const rows = SheetJS.utils.sheet_to_json(ws, { header: 1, raw: true });
+    if (!rows || rows.length < 2) continue;
+
+    // Header is first row
+    const header = rows[0].map(h => (h || '').toString().trim());
+
+    // Find column indices by letters/rules
+    // B -> index 1, D -> index 3, G -> 6, H -> 7
+    const COL_B = 1;
+    const COL_D = 3;
+    const COL_G = 6;
+    const COL_H = 7;
+
+    // Try to locate "Signalizovať" column in header, fallback to E (index 4)
+    let signalIdx = header.findIndex(h => h.toLowerCase().includes('signal'));
+    if (signalIdx === -1) signalIdx = 4; // column E
+
+    const plate = toCleanPlate(nodePath.basename(file, nodePath.extname(file)));
+    const services = [];
+
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      if (!row || row.length === 0) continue;
+
+      const name = (row[COL_B] || '').toString().trim();
+      if (!name) continue;
+
+      const normaRaw = row[COL_D];
+      const signalRaw = signalIdx >= 0 ? row[signalIdx] : undefined;
+      const lastH = row[COL_H];
+      const lastG = row[COL_G];
+
+      // Determine type and interval
+      let type = 'km';
+      let interval = null;
+
+      const toNumber = (v) => {
+        if (v === null || v === undefined || v === '') return null;
+        const num = Number(String(v).replace(/[^0-9.\-]/g, ''));
+        return Number.isFinite(num) ? num : null;
+      };
+
+      const isDateObj = (v) => Object.prototype.toString.call(v) === '[object Date]' && !isNaN(v);
+      const parseDateLike = (v) => {
+        if (isDateObj(v)) return v;
+        if (typeof v === 'number') {
+          // Excel date serial
+          try { return SheetJS.SSF.parse_date_code(v) ? SheetJS.SSF.parse_date_code(v) : null; } catch { return null; }
+        }
+        if (typeof v === 'string') {
+          const d = new Date(v);
+          return isNaN(d) ? null : d;
+        }
+        return null;
+      };
+
+      let normaIsDate = false;
+      let normaDate = null;
+
+      if (isDateObj(normaRaw)) {
+        normaIsDate = true;
+        normaDate = normaRaw;
+      } else {
+        const maybeDate = parseDateLike(normaRaw);
+        if (maybeDate) {
+          normaIsDate = true;
+          normaDate = maybeDate;
+        }
+      }
+
+      if (normaIsDate) {
+        type = 'date';
+        // Derive an interval in days if possible using last done date; else default yearly
+        let lastDateForInterval = null;
+        const lastHDate = parseDateLike(lastH);
+        const lastGDate = parseDateLike(lastG);
+        if (lastHDate) lastDateForInterval = lastHDate;
+        else if (lastGDate) lastDateForInterval = lastGDate;
+        if (lastDateForInterval) {
+          const ms = normaDate - lastDateForInterval;
+          const days = Math.max(1, Math.round(ms / (1000 * 60 * 60 * 24)));
+          interval = days;
+        } else {
+          interval = 365; // sensible default
+        }
+      } else {
+        const n = toNumber(normaRaw);
+        if (n === null) continue; // skip if no norma
+        if (n < 999) {
+          type = 'date';
+          interval = n; // days
+        } else {
+          type = 'km';
+          interval = n; // km
+        }
+      }
+
+      // Reminder from Signalizovať
+      const reminderNum = toNumber(signalRaw);
+      const serviceObj = {
+        name,
+        type,
+        interval
+      };
+      if (type === 'date') {
+        if (reminderNum !== null) serviceObj.reminderDays = reminderNum;
+        // Last made date (only for day-based per requirement). Use H, else G
+        const lastDate = parseDateLike(lastH) || parseDateLike(lastG);
+        if (lastDate) {
+          serviceObj.lastService = { date: lastDate };
+        }
+      } else if (type === 'km') {
+        if (reminderNum !== null) serviceObj.reminderKm = reminderNum;
+        // Optionally include lastService date if present (won't affect km calculation much)
+        const lastDate = parseDateLike(lastH) || parseDateLike(lastG);
+        if (lastDate) {
+          serviceObj.lastService = { date: lastDate };
+        }
+      }
+
+      services.push(serviceObj);
+    }
+
+    if (services.length) {
+      plateToServices[plate] = services;
+    }
+  }
+
+  return plateToServices;
+}
+
+// Main function to process CSV and populate database
+async function populateRealFlotilaData() {
+  try {
+    console.log('Starting to process real flotila data...');
+    
+    const vehicles = [];
+    const plateToServices = (!isBrowser && nodePath)
+      ? loadServisDataFromExcels(nodePath.join(__dirname, 'servis_data'))
+      : {};
+    const vehicleStats = {
+      trucks: 0,
+      trailers: 0,
+      personal: 0,
+      vans: 0,
+      equipment: 0,
+      special: 0,
+      other: 0,
+      total: 0
+    };
+
+    // Read and parse CSV/XLS in Node vs Browser
+    if (!isBrowser && fs && csv) {
+      await new Promise((resolve, reject) => {
+        fs.createReadStream('ccc.csv')
+          .pipe(csv())
+          .on('data', (row) => {
+            const spz = cleanLicensePlate(row.SPZ);
+            const druhVozidla = row['Druh vozidla'];
+            const typovaZnacka = cleanType(row['Typová značka']);
+            const vin = cleanVIN(row.VIN);
+
+            if (!spz || spz === 'SPZ' || !druhVozidla) return;
+
+            const vehicleType = determineVehicleType(druhVozidla);
+            const vehicleData = {
+              licensePlate: spz,
+              vin: vin,
+              type: typovaZnacka,
+              vehicleType: vehicleType,
+              druhVozidla: druhVozidla,
+              kilometers: 0,
+              services: plateToServices[spz] || [],
+              createdAt: new Date(),
+              updatedAt: new Date()
+            };
+
+            vehicles.push(vehicleData);
+            vehicleStats[vehicleType]++;
+            vehicleStats.total++;
+          })
+          .on('end', resolve)
+          .on('error', reject);
+      });
+    } else {
+      // Browser: try to fetch ccc.xls first (preferred), then ccc.csv
+      let parsedRows = [];
+      try {
+        if (SheetJS) {
+          const fileUrl = window.location.pathname.includes('/flotila/') ? '../ccc.xls' : 'ccc.xls';
+          const resp = await fetch(fileUrl);
+          if (!resp.ok) throw new Error('Failed to fetch ccc.xls');
+          const arrayBuf = await resp.arrayBuffer();
+          const wb = SheetJS.read(arrayBuf, { type: 'array' });
+          const firstSheetName = wb.SheetNames[0];
+          const ws = wb.Sheets[firstSheetName];
+          parsedRows = SheetJS.utils.sheet_to_json(ws);
+        }
+      } catch (_) {
+        // Fallback to CSV fetch
+        const fileUrlCsv = window.location.pathname.includes('/flotila/') ? '../ccc.csv' : 'ccc.csv';
+        const resp = await fetch(fileUrlCsv);
+        if (!resp.ok) throw new Error('Failed to fetch ccc.csv');
+        const text = await resp.text();
+        const lines = text.split(/\r?\n/).filter(Boolean);
+        const headers = lines.shift().split(',').map(h => h.trim());
+        parsedRows = lines.map(line => {
+          const cols = line.split(',');
+          const row = {};
+          headers.forEach((h, i) => row[h] = cols[i]);
+          return row;
+        });
+      }
+
+      for (const row of parsedRows) {
+        const spz = cleanLicensePlate(row.SPZ || row['SPZ ']);
+        const druhVozidla = row['Druh vozidla'] || row['Druh vozidla '];
+        const typovaZnacka = cleanType(row['Typová značka'] || row['Typová značka ']);
+        const vin = cleanVIN(row.VIN);
+        if (!spz || spz === 'SPZ' || !druhVozidla) continue;
+        const vehicleType = determineVehicleType(druhVozidla);
+        vehicles.push({
+          licensePlate: spz,
+          vin: vin,
+          type: typovaZnacka,
+          vehicleType: vehicleType,
+          druhVozidla: druhVozidla,
+          kilometers: 0,
+          services: [],
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+        vehicleStats[vehicleType]++;
+        vehicleStats.total++;
+      }
+    }
+
+    console.log('Vehicle statistics:', vehicleStats);
+    console.log(`Total vehicles to process: ${vehicles.length}`);
+
+    // Process vehicles in batches
     let processedCount = 0;
     let errorCount = 0;
-    
-    for (const [licensePlate, vehicleData] of Object.entries(initialVehicleData)) {
-      try {
-        // First, create the main vehicle document
-        await window.db.collection('vehicles').doc(licensePlate).set({
-          licensePlate: licensePlate,
-          createdAt: new Date()
-        });
-        
-        // Then save vehicle info in the info subcollection
-        await window.db.collection('vehicles')
-          .doc(licensePlate)
-          .collection('info')
-          .doc('basic')
-          .set(vehicleData);
-        
-        // Add some sample history entries for vehicles with lastService data
-        if (vehicleData.services) {
-          for (const service of vehicleData.services) {
-            if (service.lastService) {
-              await window.db.collection('vehicles')
-                .doc(licensePlate)
-                .collection('history')
-                .add({
-                  serviceName: service.name,
-                  kilometers: service.lastService.km,
-                  date: service.lastService.date,
-                  description: `Posledná výmena: ${service.name}`,
-                  cost: Math.floor(Math.random() * 500) + 100, // Random cost between 100-600
-                  mechanic: "Servis Bratislava",
-                  createdAt: new Date()
-                });
-            }
-          }
+    const batchSize = 10;
+
+    for (let i = 0; i < vehicles.length; i += batchSize) {
+      const batch = vehicles.slice(i, i + batchSize);
+      
+      for (const vehicle of batch) {
+        try {
+          // First, create the main vehicle document
+          await window.db.collection('vehicles').doc(vehicle.licensePlate).set({
+            licensePlate: vehicle.licensePlate,
+            createdAt: vehicle.createdAt
+          });
+          
+          // Then save vehicle info in the info subcollection
+          await window.db.collection('vehicles')
+            .doc(vehicle.licensePlate)
+            .collection('info')
+            .doc('basic')
+            .set(vehicle);
+          
+          processedCount++;
+          console.log(`Processed: ${vehicle.licensePlate} (${vehicle.vehicleType})`);
+          
+        } catch (vehicleError) {
+          errorCount++;
+          console.error(`Error processing vehicle ${vehicle.licensePlate}:`, vehicleError);
         }
-        
-        processedCount++;
-        
-      } catch (vehicleError) {
-        errorCount++;
-        console.error(`Error processing vehicle ${licensePlate}:`, vehicleError);
       }
+      
+      // Small delay between batches to avoid overwhelming Firebase
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
+    
+    console.log(`\nProcessing completed!`);
+    console.log(`Successfully processed: ${processedCount} vehicles`);
+    console.log(`Errors: ${errorCount} vehicles`);
+    console.log('\nVehicle type breakdown:');
+    Object.entries(vehicleStats).forEach(([type, count]) => {
+      if (type !== 'total') {
+        console.log(`  ${type}: ${count}`);
+      }
+    });
     
     if (errorCount === 0) {
-      alert(`Flotila data has been populated successfully! Processed ${processedCount} vehicles.`);
+      alert(`Real flotila data has been populated successfully! Processed ${processedCount} vehicles.`);
     } else {
-      alert(`Flotila data populated with errors! Processed: ${processedCount}, Errors: ${errorCount}. Check console for details.`);
+      alert(`Real flotila data populated with errors! Processed: ${processedCount}, Errors: ${errorCount}. Check console for details.`);
     }
     
   } catch (error) {
-    console.error('Error populating flotila data:', error);
-    alert('Error populating flotila data: ' + error.message);
+    console.error('Error populating real flotila data:', error);
+    alert('Error populating real flotila data: ' + error.message);
   }
 }
 
-// Export the function for use in browser console
-window.populateFlotilaData = populateFlotilaData;
-
-// Test function to check Firebase connection
-window.testFirebaseConnection = async function() {
+// Function to preview the data before populating
+async function previewRealFlotilaData() {
   try {
-    console.log('Testing Firebase connection...');
-    console.log('Firebase object:', window.firebase);
-    console.log('DatabaseService object:', window.DatabaseService);
+    console.log('Previewing real flotila data...');
     
-    // Check what methods are available in DatabaseService
-    console.log('DatabaseService methods:', Object.keys(window.DatabaseService));
-    console.log('saveVehicleInfo available:', typeof window.DatabaseService.saveVehicleInfo);
-    console.log('addHistoryEntry available:', typeof window.DatabaseService.addHistoryEntry);
-    
-    // Test if we can read from existing collections
-    try {
-      const tiresSnapshot = await window.db.collection('tires').limit(1).get();
-      console.log('Can read from tires collection:', tiresSnapshot.docs.length > 0);
-    } catch (readError) {
-      console.log('Cannot read from tires collection:', readError.message);
-    }
-    
-    // Test if we can write to vehicles collection
-    try {
-      const testDoc = await window.db.collection('vehicles').doc('test-vehicle').set({
-        test: true,
-        timestamp: new Date()
+    const vehicles = [];
+    const vehicleStats = {
+      trucks: 0,
+      trailers: 0,
+      personal: 0,
+      vans: 0,
+      equipment: 0,
+      special: 0,
+      other: 0,
+      total: 0
+    };
+
+    if (!isBrowser && fs && csv) {
+      await new Promise((resolve, reject) => {
+        fs.createReadStream('ccc.csv')
+          .pipe(csv())
+          .on('data', (row) => {
+            const spz = cleanLicensePlate(row.SPZ);
+            const druhVozidla = row['Druh vozidla'];
+            const typovaZnacka = cleanType(row['Typová značka']);
+            const vin = cleanVIN(row.VIN);
+            if (!spz || spz === 'SPZ' || !druhVozidla) return;
+            const vehicleType = determineVehicleType(druhVozidla);
+            vehicles.push({
+              licensePlate: spz,
+              vin: vin,
+              type: typovaZnacka,
+              vehicleType: vehicleType,
+              druhVozidla: druhVozidla
+            });
+            vehicleStats[vehicleType]++;
+            vehicleStats.total++;
+          })
+          .on('end', resolve)
+          .on('error', reject);
       });
-      console.log('Can write to vehicles collection');
-      
-      // Clean up test document
-      await window.db.collection('vehicles').doc('test-vehicle').delete();
-      console.log('Test document cleaned up');
-      
-    } catch (writeError) {
-      console.log('Cannot write to vehicles collection:', writeError.message);
+    } else {
+      let parsedRows = [];
+      try {
+        if (SheetJS) {
+          const fileUrl = window.location.pathname.includes('/flotila/') ? '../ccc.xls' : 'ccc.xls';
+          const resp = await fetch(fileUrl);
+          if (!resp.ok) throw new Error('Failed to fetch ccc.xls');
+          const arrayBuf = await resp.arrayBuffer();
+          const wb = SheetJS.read(arrayBuf, { type: 'array' });
+          const firstSheetName = wb.SheetNames[0];
+          const ws = wb.Sheets[firstSheetName];
+          parsedRows = SheetJS.utils.sheet_to_json(ws);
+        }
+      } catch (_) {
+        const fileUrlCsv = window.location.pathname.includes('/flotila/') ? '../ccc.csv' : 'ccc.csv';
+        const resp = await fetch(fileUrlCsv);
+        if (!resp.ok) throw new Error('Failed to fetch ccc.csv');
+        const text = await resp.text();
+        const lines = text.split(/\r?\n/).filter(Boolean);
+        const headers = lines.shift().split(',').map(h => h.trim());
+        parsedRows = lines.map(line => {
+          const cols = line.split(',');
+          const row = {};
+          headers.forEach((h, i) => row[h] = cols[i]);
+          return row;
+        });
+      }
+
+      for (const row of parsedRows) {
+        const spz = cleanLicensePlate(row.SPZ || row['SPZ ']);
+        const druhVozidla = row['Druh vozidla'] || row['Druh vozidla '];
+        const typovaZnacka = cleanType(row['Typová značka'] || row['Typová značka ']);
+        const vin = cleanVIN(row.VIN);
+        if (!spz || spz === 'SPZ' || !druhVozidla) continue;
+        const vehicleType = determineVehicleType(druhVozidla);
+        vehicles.push({
+          licensePlate: spz,
+          vin: vin,
+          type: typovaZnacka,
+          vehicleType: vehicleType,
+          druhVozidla: druhVozidla
+        });
+        vehicleStats[vehicleType]++;
+        vehicleStats.total++;
+      }
     }
+
+    console.log('\n=== VEHICLE DATA PREVIEW ===');
+    console.log('Vehicle statistics:', vehicleStats);
+    console.log('\nFirst 10 vehicles:');
+    vehicles.slice(0, 10).forEach((vehicle, index) => {
+      console.log(`${index + 1}. ${vehicle.licensePlate} - ${vehicle.vehicleType} - ${vehicle.type || 'N/A'} - ${vehicle.vin || 'N/A'}`);
+    });
     
-    alert('Firebase connection test completed! Check console for details.');
+    console.log('\nVehicle type examples:');
+    const typeExamples = {};
+    vehicles.forEach(vehicle => {
+      if (!typeExamples[vehicle.vehicleType]) {
+        typeExamples[vehicle.vehicleType] = vehicle.druhVozidla;
+      }
+    });
+    Object.entries(typeExamples).forEach(([type, example]) => {
+      console.log(`  ${type}: "${example}"`);
+    });
+    
+    return vehicles;
     
   } catch (error) {
-    console.error('Firebase connection test failed:', error);
-    alert('Firebase connection test failed: ' + error.message);
-  }
-};
-
-// Wait for DatabaseService to be available
-function waitForDatabaseService() {
-  if (typeof window !== 'undefined' && window.DatabaseService) {
-    // Script loaded successfully
-  } else {
-    // Wait a bit and try again
-    setTimeout(waitForDatabaseService, 100);
+    console.error('Error previewing real flotila data:', error);
+    throw error;
   }
 }
 
-// Start waiting for DatabaseService
-waitForDatabaseService();
-
-// Test login function
-window.testLogin = async function(email, password) {
+// Export functions for use in browser console
+if (typeof window !== 'undefined') {
+  window.populateRealFlotilaData = populateRealFlotilaData;
+  window.previewRealFlotilaData = previewRealFlotilaData;
   try {
-    console.log('=== TESTING LOGIN ===');
-    console.log('Attempting login with:', email);
-    
-    const userCredential = await window.auth.signInWithEmailAndPassword(email, password);
-    console.log('Login successful!');
-    console.log('User:', userCredential.user);
-    
-    // Test data access after login
-    setTimeout(() => {
-      testFlotilaData();
-    }, 1000);
-    
-  } catch (error) {
-    console.error('Login failed:', error);
-    console.error('Error code:', error.code);
-    console.error('Error message:', error.message);
-  }
-};
+    console.log('[populate-flotila-data v3] Functions attached to window:', {
+      populateRealFlotilaData: typeof window.populateRealFlotilaData,
+      previewRealFlotilaData: typeof window.previewRealFlotilaData
+    });
+  } catch {}
+}
 
-// Simple test function to check data structure
-window.testFlotilaData = async function() {
-  try {
-    console.log('=== TESTING FLOTILA DATA STRUCTURE ===');
-    
-    // Check authentication first
-    console.log('Auth object:', !!window.auth);
-    console.log('Current user:', window.auth.currentUser);
-    console.log('User authenticated:', !!window.auth.currentUser);
-    
-    if (!window.auth.currentUser) {
-      console.log('No authenticated user - this is why data access fails');
-      return;
-    }
-    
-    // Check if we can read from vehicles collection
-    const vehiclesSnapshot = await window.db.collection('vehicles').get();
-    console.log('Total vehicles found:', vehiclesSnapshot.docs.length);
-    
-    if (vehiclesSnapshot.docs.length > 0) {
-      // Check first vehicle structure
-      const firstVehicle = vehiclesSnapshot.docs[0];
-      console.log('First vehicle ID:', firstVehicle.id);
-      
-      // Check if it has info subcollection
-      const infoSnapshot = await window.db.collection('vehicles')
-        .doc(firstVehicle.id)
-        .collection('info')
-        .get();
-      
-      console.log('Info documents found:', infoSnapshot.docs.length);
-      
-      if (infoSnapshot.docs.length > 0) {
-        const infoDoc = infoSnapshot.docs[0];
-        console.log('Info document ID:', infoDoc.id);
-        console.log('Info document data:', infoDoc.data());
-      }
-    }
-    
-    console.log('=== END TEST ===');
-    
-  } catch (error) {
-    console.error('Test error:', error);
-    console.error('Error code:', error.code);
-    console.error('Error message:', error.message);
-  }
-};
+// If running in Node.js environment
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    populateRealFlotilaData,
+    previewRealFlotilaData,
+    determineVehicleType,
+    cleanLicensePlate,
+    cleanVIN,
+    cleanType
+  };
+}
 
-// Debug function to check what's in the database
-window.debugDatabase = async function() {
-  try {
-    console.log('=== DEBUGGING DATABASE ===');
-    
-    // Check if we're connected to the right project
-    console.log('Firebase app:', window.firebase.app().name);
-    console.log('Firebase project ID:', window.firebase.app().options.projectId);
-    
-    // Check all collections
-    const collections = ['vehicles', 'trucks', 'trailers', 'tires'];
-    
-    for (const collectionName of collections) {
-      try {
-        const snapshot = await window.db.collection(collectionName).get();
-        console.log(`${collectionName} collection has ${snapshot.docs.length} documents`);
-        if (snapshot.docs.length > 0) {
-          console.log(`  - Document IDs:`, snapshot.docs.map(doc => doc.id));
-        }
-      } catch (error) {
-        console.log(`${collectionName} collection error:`, error.message);
-      }
-    }
-    
-    // Check vehicles collection specifically
-    const vehiclesSnapshot = await window.db.collection('vehicles').get();
-    console.log('\nVehicles collection has', vehiclesSnapshot.docs.length, 'documents');
-    console.log('Vehicle IDs found:', vehiclesSnapshot.docs.map(doc => doc.id));
-    
-    if (vehiclesSnapshot.docs.length > 0) {
-      // Check first vehicle in detail
-      const firstVehicle = vehiclesSnapshot.docs[0];
-      console.log(`\nChecking first vehicle: ${firstVehicle.id}`);
-      
-      // Check info subcollection
-      const infoSnapshot = await window.db.collection('vehicles').doc(firstVehicle.id).collection('info').get();
-      console.log(`  - Info subcollection has ${infoSnapshot.docs.length} documents`);
-      
-      for (const infoDoc of infoSnapshot.docs) {
-        console.log(`  - Info doc ID: ${infoDoc.id}, exists: ${infoDoc.exists}`);
-        if (infoDoc.exists) {
-          console.log(`  - Data:`, infoDoc.data());
-        }
-      }
-      
-      // Check history subcollection
-      const historySnapshot = await window.db.collection('vehicles').doc(firstVehicle.id).collection('history').get();
-      console.log(`  - History subcollection has ${historySnapshot.docs.length} documents`);
-    } else {
-      console.log('\nNo vehicles found. Let\'s check if data is in trucks/trailers collections instead...');
-      
-      // Check trucks collection
-      const trucksSnapshot = await window.db.collection('trucks').get();
-      console.log(`Trucks collection has ${trucksSnapshot.docs.length} documents`);
-      
-      // Check trailers collection
-      const trailersSnapshot = await window.db.collection('trailers').get();
-      console.log(`Trailers collection has ${trailersSnapshot.docs.length} documents`);
-    }
-    
-    console.log('=== END DEBUG ===');
-    
-  } catch (error) {
-    console.error('Debug error:', error);
-    console.error('Error code:', error.code);
-    console.error('Error message:', error.message);
-  }
-};
