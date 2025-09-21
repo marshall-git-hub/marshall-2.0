@@ -1,0 +1,4138 @@
+{
+  "AA 466 SN": [
+    {
+      "name": "Ciachovanie tachografu",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-05-11T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Stiahnutie tachografu",
+      "type": "day",
+      "interval": 90,
+      "reminder": 14,
+      "lastService": {
+        "date": "2025-08-01T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena motorového oleje",
+      "type": "km",
+      "interval": 100000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2025-05-13T12:00:04.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Diferenciali",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2025-05-13T12:00:05.000Z"
+      }
+    },
+    {
+      "name": "Výmena chladiacej zmesi",
+      "type": "km",
+      "interval": 360000,
+      "reminder": 25000,
+      "lastService": {
+        "date": "2025-05-13T12:00:36.000Z"
+      }
+    },
+    {
+      "name": "Výmena spojky",
+      "type": "km",
+      "interval": 600000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2025-05-13T12:00:05.000Z"
+      }
+    },
+    {
+      "name": "Servis DPF filtra",
+      "type": "km",
+      "interval": 300000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2025-05-13T12:00:05.000Z"
+      }
+    },
+    {
+      "name": "Ročná prehliadka ťahača",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-05-11T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola bŕzd",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-05-11T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola hasiaci prístroj",
+      "type": "year",
+      "interval": 1,
+      "reminder": 15,
+      "lastService": {
+        "date": "2025-05-11T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Nastavenie ventilov",
+      "type": "km",
+      "interval": 360000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2025-05-13T12:00:04.000Z"
+      }
+    },
+    {
+      "name": "L-Certifikát",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-05-11T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Poistenie výmena zelenej karty",
+      "type": "year",
+      "interval": 1,
+      "reminder": 14,
+      "lastService": {
+        "date": "2025-08-15T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Retardery",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2025-05-13T12:00:06.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Prevodovke",
+      "type": "km",
+      "interval": 180000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2025-05-13T12:00:04.000Z"
+      }
+    },
+    {
+      "name": "Prihlásenie nového vozidla do PZP, KASKO",
+      "type": "day",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-05-13T11:51:47.000Z"
+      }
+    },
+    {
+      "name": "Výmena trisiek",
+      "type": "km",
+      "interval": 600000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2025-07-11T05:23:30.000Z"
+      }
+    }
+  ],
+  "AA 732 GJ": [
+    {
+      "name": "Ciachovanie tachografu",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-05-11T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Stiahnutie tachografu",
+      "type": "day",
+      "interval": 90,
+      "reminder": 14,
+      "lastService": {
+        "date": "2025-08-01T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena motorového oleje",
+      "type": "km",
+      "interval": 100000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2025-05-15T12:47:09.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Diferenciali",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2025-05-15T12:47:10.000Z"
+      }
+    },
+    {
+      "name": "Výmena chladiacej zmesi",
+      "type": "km",
+      "interval": 360000,
+      "reminder": 25000,
+      "lastService": {
+        "date": "2025-05-15T12:47:27.000Z"
+      }
+    },
+    {
+      "name": "Výmena spojky",
+      "type": "km",
+      "interval": 600000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2025-05-15T12:47:10.000Z"
+      }
+    },
+    {
+      "name": "Servis DPF filtra",
+      "type": "km",
+      "interval": 300000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2025-05-15T12:47:10.000Z"
+      }
+    },
+    {
+      "name": "Ročná prehliadka ťahača",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-05-11T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola bŕzd",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-05-11T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola hasiaci prístroj",
+      "type": "year",
+      "interval": 1,
+      "reminder": 15,
+      "lastService": {
+        "date": "2025-05-11T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Nastavenie ventilov",
+      "type": "km",
+      "interval": 360000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2025-05-15T12:47:09.000Z"
+      }
+    },
+    {
+      "name": "Servis kontrola rozvodov remeň a kladiek",
+      "type": "km",
+      "interval": 120000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2025-05-15T12:47:09.000Z"
+      }
+    },
+    {
+      "name": "L-Certifikát",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-05-11T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Poistenie výmena zelenej karty",
+      "type": "year",
+      "interval": 1,
+      "reminder": 14,
+      "lastService": {
+        "date": "2025-08-15T14:28:49.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Retardery",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2025-05-15T12:47:11.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Prevodovke",
+      "type": "km",
+      "interval": 180000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2025-05-15T12:47:09.000Z"
+      }
+    },
+    {
+      "name": "Prihlásenie nového vozidla do PZP, KASKO",
+      "type": "day",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-05-15T12:44:05.000Z"
+      }
+    },
+    {
+      "name": "Výmena trisiek",
+      "type": "km",
+      "interval": 600000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2025-07-11T05:23:44.000Z"
+      }
+    }
+  ],
+  "BL 040 EE": [
+    {
+      "name": "Kontrola technická  STK",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-09-01T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Mýto  diaľničná známka ročná SK",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-01-30T23:00:00.000Z"
+      }
+    }
+  ],
+  "EL 449 AR": [
+    {
+      "name": "Poistenie výmena zelenej karty",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-08-15T22:00:00.000Z"
+      }
+    }
+  ],
+  "VZV": [
+    {
+      "name": "Technická kontrola  a emisná",
+      "type": "year",
+      "interval": 1,
+      "reminder": 20,
+      "lastService": {
+        "date": "2025-03-20T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Motore",
+      "type": "month",
+      "interval": 17,
+      "reminder": 30,
+      "lastService": {
+        "date": "2023-02-27T23:00:00.000Z"
+      }
+    }
+  ],
+  "VZV2": [
+    {
+      "name": "Technická kontrola  a emisná",
+      "type": "year",
+      "interval": 1,
+      "reminder": 20,
+      "lastService": {
+        "date": "2025-03-20T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Motore",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-05-29T22:00:00.000Z"
+      }
+    }
+  ],
+  "ZC 153 BL": [
+    {
+      "name": "Kontrola technická  STK",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-10-11T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Emisná kontrola (EK)",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-10-11T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ciachovanie tachografu",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-10-11T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Stiahnutie tachografu",
+      "type": "day",
+      "interval": 90,
+      "reminder": 21,
+      "lastService": {
+        "date": "2025-07-17T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena motorového oleje",
+      "type": "km",
+      "interval": 100000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2024-12-31T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Prevodovke",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2024-12-30T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Diferenciali",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2024-12-30T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena chladiacej zmesi",
+      "type": "km",
+      "interval": 345000,
+      "reminder": 25000,
+      "lastService": {
+        "date": "2024-08-27T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena spojky",
+      "type": "km",
+      "interval": 600000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2023-09-04T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Servis DPF filtra",
+      "type": "km",
+      "interval": 240000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2024-08-27T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ročná prehliadka ťahača",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-08-17T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola bŕzd",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-12-30T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Servis kontrola nastavenie geometrie",
+      "type": "year",
+      "interval": 3,
+      "reminder": 30,
+      "lastService": {
+        "date": "2023-06-22T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola hasiaci prístroj",
+      "type": "year",
+      "interval": 1,
+      "reminder": 15,
+      "lastService": {
+        "date": "2024-10-30T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Nastavenie ventilov",
+      "type": "km",
+      "interval": 360000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2022-09-22T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "L-Certifikát",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-08-29T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Poistenie výmena zelenej karty",
+      "type": "year",
+      "interval": 1,
+      "reminder": 14,
+      "lastService": {
+        "date": "2025-08-15T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Mýto Poľske  ETOLL odhlásiť/prihlásiť",
+      "type": "month",
+      "interval": 5,
+      "reminder": 15,
+      "lastService": {
+        "date": "2022-05-30T09:55:20.000Z"
+      }
+    }
+  ],
+  "ZC 206 YD": [
+    {
+      "name": "Kontrola technická  STK",
+      "type": "year",
+      "interval": 4,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-09-30T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Mýto  diaľničná známka ročná SK",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-01-30T23:00:00.000Z"
+      }
+    }
+  ],
+  "ZC 212YC": [
+    {
+      "name": "Kontrola technická  STK",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-05-22T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ročná prehliadka návese",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-05-04T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola bŕzd",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-05-04T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Poistenie výmena zelenej karty",
+      "type": "year",
+      "interval": 1,
+      "reminder": 14,
+      "lastService": {
+        "date": "2025-08-15T22:00:00.000Z"
+      }
+    }
+  ],
+  "ZC 235YC": [
+    {
+      "name": "Kontrola technická  STK",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-02-06T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ročná prehliadka návese",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-04-09T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola bŕzd",
+      "type": "month",
+      "interval": 12,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-04-09T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Poistenie výmena zelenej karty",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-08-15T22:00:00.000Z"
+      }
+    }
+  ],
+  "ZC 237YC": [
+    {
+      "name": "Kontrola technická  STK",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-01-06T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ročná prehliadka návese",
+      "type": "month",
+      "interval": 10,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-12-04T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola bŕzd",
+      "type": "month",
+      "interval": 10,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-12-04T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Poistenie výmena zelenej karty",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-08-15T22:00:00.000Z"
+      }
+    }
+  ],
+  "ZC 278 YC": [
+    {
+      "name": "Kontrola technická  STK",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-01-06T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ročná prehliadka návese",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-04-23T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola bŕzd",
+      "type": "month",
+      "interval": 8,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-04-23T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Poistenie výmena zelenej karty",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-08-15T22:00:00.000Z"
+      }
+    }
+  ],
+  "ZC 291 YD": [
+    {
+      "name": "Kontrola technická  STK",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-04-23T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ročná prehliadka návese",
+      "type": "month",
+      "interval": 15,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-04-22T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola bŕzd",
+      "type": "month",
+      "interval": 15,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-04-22T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Poistenie výmena zelenej karty",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-08-15T22:00:00.000Z"
+      }
+    }
+  ],
+  "ZC 298YC": [
+    {
+      "name": "Kontrola technická  STK",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-05-29T07:29:23.000Z"
+      }
+    },
+    {
+      "name": "Emisná kontrola (EK)",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-05-29T07:29:23.000Z"
+      }
+    },
+    {
+      "name": "Kontrola bŕzd",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-05-29T07:29:23.000Z"
+      }
+    },
+    {
+      "name": "Poistenie výmena zelenej karty",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-08-15T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Zaručná kontrola SAF nový náves/km",
+      "type": "km",
+      "interval": 60000,
+      "reminder": 800,
+      "lastService": {
+        "date": "2025-05-29T07:29:23.000Z"
+      }
+    }
+  ],
+  "ZC 324 BL": [
+    {
+      "name": "Kontrola technická  STK",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2023-10-05T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Emisná kontrola (EK)",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2023-10-05T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena motorového oleje",
+      "type": "month",
+      "interval": 6,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-03-26T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Prevodovke",
+      "type": "km",
+      "interval": 120000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2023-06-01T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena chladiacej zmesi",
+      "type": "month",
+      "interval": 180,
+      "reminder": 60,
+      "lastService": {
+        "date": "2023-06-01T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola bŕzd",
+      "type": "year",
+      "interval": 3,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-07-30T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Poistenie výmena zelenej karty",
+      "type": "year",
+      "interval": 1,
+      "reminder": 14,
+      "lastService": {
+        "date": "2025-08-15T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Mýto  diaľničná známka ročná SK",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-01-30T23:00:00.000Z"
+      }
+    }
+  ],
+  "ZC 328 BL": [
+    {
+      "name": "Kontrola technická  STK",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-09-16T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Emisná kontrola (EK)",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-09-16T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ciachovanie tachografu",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-02-09T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Stiahnutie tachografu",
+      "type": "day",
+      "interval": 90,
+      "reminder": 21,
+      "lastService": {
+        "date": "2025-07-17T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena motorového oleje",
+      "type": "km",
+      "interval": 100000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2024-09-02T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Prevodovke",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2023-03-23T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Diferenciali",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2023-03-23T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena chladiacej zmesi s retardérom",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 25000,
+      "lastService": {
+        "date": "2023-08-23T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena spojky",
+      "type": "km",
+      "interval": 600000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2023-08-23T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Servis DPF filtra",
+      "type": "km",
+      "interval": 240000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2023-08-23T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ročná prehliadka ťahača",
+      "type": "month",
+      "interval": 15,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-09-02T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola bŕzd",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-11-20T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola hasiaci prístroj",
+      "type": "year",
+      "interval": 1,
+      "reminder": 15,
+      "lastService": {
+        "date": "2024-10-30T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Nastavenie ventilov",
+      "type": "km",
+      "interval": 360000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2021-06-28T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Poistenie výmena zelenej karty",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-08-15T22:00:00.000Z"
+      }
+    }
+  ],
+  "ZC 336 YD": [
+    {
+      "name": "Kontrola technická  STK",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-09-16T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Emisná kontrola (EK)",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-09-16T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ciachovanie tachografu",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-02-09T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Stiahnutie tachografu",
+      "type": "day",
+      "interval": 90,
+      "reminder": 21,
+      "lastService": {
+        "date": "2025-07-17T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena motorového oleje",
+      "type": "km",
+      "interval": 100000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2024-09-02T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Prevodovke",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2023-03-23T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Diferenciali",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2023-03-23T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena chladiacej zmesi s retardérom",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 25000,
+      "lastService": {
+        "date": "2023-08-23T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena spojky",
+      "type": "km",
+      "interval": 600000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2023-08-23T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Servis DPF filtra",
+      "type": "km",
+      "interval": 240000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2023-08-23T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ročná prehliadka ťahača",
+      "type": "month",
+      "interval": 15,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-09-02T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola bŕzd",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-11-20T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola hasiaci prístroj",
+      "type": "year",
+      "interval": 1,
+      "reminder": 15,
+      "lastService": {
+        "date": "2024-10-30T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Nastavenie ventilov",
+      "type": "km",
+      "interval": 360000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2021-06-28T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Poistenie výmena zelenej karty",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-08-15T22:00:00.000Z"
+      }
+    }
+  ],
+  "ZC 352 BP": [
+    {
+      "name": "Kontrola technická  STK",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-07-03T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ročná prehliadka návese",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-07-02T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola bŕzd",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-07-02T22:00:00.000Z"
+      }
+    }
+  ],
+  "ZC 375 YC": [
+    {
+      "name": "Kontrola technická  STK",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-09-08T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Emisná kontrola (EK)",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-09-08T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ciachovanie tachografu",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-06-30T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Stiahnutie tachografu",
+      "type": "day",
+      "interval": 90,
+      "reminder": 21,
+      "lastService": {
+        "date": "2025-06-26T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena motorového oleje",
+      "type": "km",
+      "interval": 100000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2024-12-26T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Prevodovke",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2024-03-07T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Diferenciali",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2024-03-07T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena chladiacej zmesi",
+      "type": "km",
+      "interval": 400000,
+      "reminder": 25000,
+      "lastService": {
+        "date": "2023-08-20T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena spojky",
+      "type": "km",
+      "interval": 600000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2025-03-30T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Servis DPF filtra",
+      "type": "km",
+      "interval": 240000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2025-03-30T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ročná prehliadka ťahača",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-06-23T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola bŕzd",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-01-26T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Servis kontrola nastavenie geometrie",
+      "type": "year",
+      "interval": 3,
+      "reminder": 30,
+      "lastService": {
+        "date": "2022-07-11T13:26:13.000Z"
+      }
+    },
+    {
+      "name": "Kontrola hasiaci prístroj",
+      "type": "year",
+      "interval": 1,
+      "reminder": 15,
+      "lastService": {
+        "date": "2024-10-30T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Nastavenie ventilov",
+      "type": "km",
+      "interval": 360000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2024-04-07T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "L-Certifikát",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-08-29T22:00:00.000Z"
+      }
+    }
+  ],
+  "ZC 383 BL": [
+    {
+      "name": "Kontrola technická  STK",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-01-06T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ročná prehliadka návese",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-07-31T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola bŕzd",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-07-31T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Poistenie výmena zelenej karty",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-08-15T22:00:00.000Z"
+      }
+    }
+  ],
+  "ZC 388 BS": [
+    {
+      "name": "Kontrola technická  STK",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-03-16T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Emisná kontrola (EK)",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-03-16T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ciachovanie tachografu",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-10-02T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Stiahnutie tachografu",
+      "type": "day",
+      "interval": 90,
+      "reminder": 21,
+      "lastService": {
+        "date": "2025-06-27T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena motorového oleje",
+      "type": "km",
+      "interval": 100000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2025-02-03T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Prevodovke",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2024-12-19T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Diferenciali",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2025-06-08T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena chladiacej zmesi",
+      "type": "km",
+      "interval": 400000,
+      "reminder": 25000,
+      "lastService": {
+        "date": "2024-12-08T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena spojky",
+      "type": "km",
+      "interval": 600000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2023-09-26T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Servis DPF filtra",
+      "type": "km",
+      "interval": 240000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2024-07-11T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ročná prehliadka ťahača",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-07-10T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola bŕzd",
+      "type": "month",
+      "interval": 10,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-05-01T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Servis kontrola nastavenie geometrie",
+      "type": "year",
+      "interval": 3,
+      "reminder": 30,
+      "lastService": {
+        "date": "2022-06-20T13:23:55.000Z"
+      }
+    },
+    {
+      "name": "Kontrola hasiaci prístroj",
+      "type": "year",
+      "interval": 1,
+      "reminder": 15,
+      "lastService": {
+        "date": "2024-10-30T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Nastavenie ventilov",
+      "type": "km",
+      "interval": 360000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2025-07-10T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "L-Certifikát",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-08-29T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Poistenie výmena zelenej karty",
+      "type": "year",
+      "interval": 1,
+      "reminder": 14,
+      "lastService": {
+        "date": "2025-08-15T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Mýto Poľske  ETOLL odhlásiť/prihlásiť",
+      "type": "month",
+      "interval": 5,
+      "reminder": 15,
+      "lastService": {
+        "date": "2022-06-20T13:23:56.000Z"
+      }
+    }
+  ],
+  "ZC 388 YC": [
+    {
+      "name": "Technická kontrola (STK)",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-04-11T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Emisná kontrola (EK)",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-04-11T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena motorového oleje",
+      "type": "month",
+      "interval": 29,
+      "reminder": 20,
+      "lastService": {
+        "date": "2022-02-15T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena chladiacej zmesi",
+      "type": "year",
+      "interval": 3,
+      "reminder": 30,
+      "lastService": {
+        "date": "2022-02-15T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Mýto  diaľničná známka ročná SK",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-04-30T22:00:00.000Z"
+      }
+    }
+  ],
+  "ZC 390YC": [
+    {
+      "name": "Kontrola technická  STK",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-12-18T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola bŕzd",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-02-17T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "PZP",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-08-15T22:00:00.000Z"
+      }
+    }
+  ],
+  "ZC 397YD": [
+    {
+      "name": "Kontrola technická  STK",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-01-27T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ročná prehliadka návese",
+      "type": "month",
+      "interval": 8,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-04-28T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola bŕzd",
+      "type": "month",
+      "interval": 11,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-04-28T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Poistenie výmena zelenej karty",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-08-15T22:00:00.000Z"
+      }
+    }
+  ],
+  "ZC 398 YC": [
+    {
+      "name": "Kontrola technická  STK",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-04-13T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ročná prehliadka návese",
+      "type": "month",
+      "interval": 11,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-02-12T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola bŕzd",
+      "type": "month",
+      "interval": 10,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-02-12T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Poistenie výmena zelenej karty",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-08-15T22:00:00.000Z"
+      }
+    }
+  ],
+  "ZC 421 YD": [
+    {
+      "name": "Ročná prehliadka návese",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-01-08T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola bŕzd",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-01-08T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Poistenie výmena zelenej karty",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-08-15T22:00:00.000Z"
+      }
+    }
+  ],
+  "ZC 426 YD": [
+    {
+      "name": "Ročná prehliadka návese",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-01-08T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola bŕzd",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-01-08T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Poistenie výmena zelenej karty",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-08-15T22:00:00.000Z"
+      }
+    }
+  ],
+  "ZC 441 BV": [
+    {
+      "name": "Kontrola technická  STK",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-03-03T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ročná prehliadka návese",
+      "type": "month",
+      "interval": 11,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-03-06T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola bŕzd",
+      "type": "month",
+      "interval": 11,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-03-06T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Poistenie výmena zelenej karty",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-08-15T22:00:00.000Z"
+      }
+    }
+  ],
+  "ZC 441 YD": [
+    {
+      "name": "Kontrola technická  STK",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-03-13T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ročná prehliadka návese",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-03-11T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola bŕzd",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-03-11T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Poistenie výmena zelenej karty",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-08-15T22:00:00.000Z"
+      }
+    }
+  ],
+  "ZC 449 BV": [
+    {
+      "name": "Kontrola technická  STK",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-01-09T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Emisná kontrola (EK)",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-01-09T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ciachovanie tachografu",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-01-23T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Stiahnutie tachografu",
+      "type": "day",
+      "interval": 90,
+      "reminder": 21,
+      "lastService": {
+        "date": "2025-07-10T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena motorového oleje",
+      "type": "km",
+      "interval": 100000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2025-02-25T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Prevodovke",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2024-06-09T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Diferenciali",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2024-06-09T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena chladiacej zmesi s retardérom",
+      "type": "km",
+      "interval": 400000,
+      "reminder": 25000,
+      "lastService": {
+        "date": "2024-06-09T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena spojky",
+      "type": "km",
+      "interval": 600000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2023-01-26T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Servis DPF filtra",
+      "type": "km",
+      "interval": 240000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2025-07-08T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Retardery",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2024-10-13T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ročná prehliadka ťahača",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-05-28T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Servis kontrola chlad.zmesi (retardér)",
+      "type": "km",
+      "interval": 100000,
+      "reminder": 10000,
+      "lastService": {
+        "date": "2025-04-16T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola bŕzd",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-04-24T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola hasiaci prístroj",
+      "type": "year",
+      "interval": 1,
+      "reminder": 15,
+      "lastService": {
+        "date": "2024-10-30T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Nastavenie ventilov",
+      "type": "km",
+      "interval": 360000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2023-11-08T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "L-Certifikát",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-01-14T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Poistenie výmena zelenej karty",
+      "type": "year",
+      "interval": 1,
+      "reminder": 14,
+      "lastService": {
+        "date": "2025-08-15T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena trisiek",
+      "type": "km",
+      "interval": 600000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2025-07-11T05:24:26.000Z"
+      }
+    }
+  ],
+  "ZC 451 YD": [
+    {
+      "name": "Kontrola technická  STK",
+      "type": "year",
+      "interval": 1,
+      "reminder": 21,
+      "lastService": {
+        "date": "2025-06-18T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ročná prehliadka návese",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-06-25T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola bŕzd",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-06-25T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Poistenie výmena zelenej karty",
+      "type": "year",
+      "interval": 1,
+      "reminder": 14,
+      "lastService": {
+        "date": "2025-08-15T22:00:00.000Z"
+      }
+    }
+  ],
+  "ZC 460 YC": [
+    {
+      "name": "Kontrola technická  STK",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-01-13T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Emisná kontrola (EK)",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-01-13T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ciachovanie tachografu",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-01-21T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Stiahnutie tachografu",
+      "type": "day",
+      "interval": 90,
+      "reminder": 21,
+      "lastService": {
+        "date": "2025-07-03T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena motorového oleje",
+      "type": "km",
+      "interval": 100000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2025-04-10T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Prevodovke",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2024-06-25T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Diferenciali",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2024-06-26T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena chladiacej zmesi s retardérom",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 25000,
+      "lastService": {
+        "date": "2024-06-26T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena spojky",
+      "type": "km",
+      "interval": 600000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2023-01-26T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Servis DPF filtra",
+      "type": "km",
+      "interval": 360000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2025-07-31T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Retardery",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2024-10-13T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ročná prehliadka ťahača",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-06-18T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Servis kontrola chlad.zmesi (retardér)",
+      "type": "km",
+      "interval": 100000,
+      "reminder": 10000,
+      "lastService": {
+        "date": "2025-04-28T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola bŕzd",
+      "type": "month",
+      "interval": 30,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-08-05T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola hasiaci prístroj",
+      "type": "year",
+      "interval": 1,
+      "reminder": 15,
+      "lastService": {
+        "date": "2024-10-30T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Nastavenie ventilov",
+      "type": "km",
+      "interval": 360000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2023-11-12T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena trisiek",
+      "type": "km",
+      "interval": 600000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2025-07-11T05:25:06.000Z"
+      }
+    }
+  ],
+  "ZC 465 BS": [
+    {
+      "name": "Kontrola technická  STK",
+      "type": "year",
+      "interval": 1,
+      "reminder": 31,
+      "lastService": {
+        "date": "2025-06-16T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ročná prehliadka návese",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-04-24T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola bŕzd",
+      "type": "month",
+      "interval": 12,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-04-24T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Poistenie výmena zelenej karty",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-08-18T05:57:50.000Z"
+      }
+    }
+  ],
+  "ZC 469 BS": [
+    {
+      "name": "Kontrola technická  STK",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-01-13T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ročná prehliadka návese",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-12-18T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola bŕzd",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-12-18T23:00:00.000Z"
+      }
+    }
+  ],
+  "ZC 491 BS": [
+    {
+      "name": "Kontrola technická  STK",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-08-11T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Emisná kontrola (EK)",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-08-11T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ciachovanie tachografu",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-07-03T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Stiahnutie tachografu",
+      "type": "day",
+      "interval": 90,
+      "reminder": 21,
+      "lastService": {
+        "date": "2025-07-03T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena motorového oleje",
+      "type": "km",
+      "interval": 100000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2025-03-02T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Prevodovke",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2025-03-05T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Diferenciali",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2025-03-05T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena chladiacej zmesi",
+      "type": "km",
+      "interval": 360000,
+      "reminder": 25000,
+      "lastService": {
+        "date": "2023-08-14T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Servis DPF filtra",
+      "type": "km",
+      "interval": 360000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2023-08-14T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Retardery",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2025-03-02T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ročná prehliadka ťahača",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-06-12T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola bŕzd",
+      "type": "month",
+      "interval": 11,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-01-01T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Servis kontrola nastavenie geometrie",
+      "type": "year",
+      "interval": 3,
+      "reminder": 30,
+      "lastService": {
+        "date": "2023-08-18T13:04:28.000Z"
+      }
+    },
+    {
+      "name": "Kontrola hasiaci prístroj",
+      "type": "year",
+      "interval": 1,
+      "reminder": 15,
+      "lastService": {
+        "date": "2024-10-30T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Nastavenie ventilov",
+      "type": "km",
+      "interval": 360000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2024-06-11T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "L-Certifikát",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-06-03T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Poistenie výmena zelenej karty",
+      "type": "year",
+      "interval": 1,
+      "reminder": 14,
+      "lastService": {
+        "date": "2025-08-15T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena trisiek",
+      "type": "km",
+      "interval": 600000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2025-07-11T05:24:39.000Z"
+      }
+    }
+  ],
+  "ZC 594 BN": [
+    {
+      "name": "Kontrola technická  STK",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-07-31T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Emisná kontrola (EK)",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-07-31T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ciachovanie tachografu",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-07-07T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Stiahnutie tachografu",
+      "type": "day",
+      "interval": 90,
+      "reminder": 21,
+      "lastService": {
+        "date": "2025-08-28T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena motorového oleje",
+      "type": "km",
+      "interval": 100000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2025-03-31T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Prevodovke",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2025-03-30T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Diferenciali",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2025-03-30T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena chladiacej zmesi",
+      "type": "km",
+      "interval": 360000,
+      "reminder": 25000,
+      "lastService": {
+        "date": "2023-08-14T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena spojky",
+      "type": "km",
+      "interval": 600000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2023-08-14T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Servis DPF filtra",
+      "type": "km",
+      "interval": 360000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2023-08-14T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Retardery",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2025-03-31T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ročná prehliadka ťahača",
+      "type": "month",
+      "interval": 11,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-03-31T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Servis kontrola chlad.zmesi",
+      "type": "km",
+      "interval": 100000,
+      "reminder": 10000,
+      "lastService": {
+        "date": "2025-04-27T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola bŕzd",
+      "type": "month",
+      "interval": 11,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-12-30T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Servis kontrola nastavenie geometrie",
+      "type": "year",
+      "interval": 3,
+      "reminder": 30,
+      "lastService": {
+        "date": "2023-08-21T05:38:42.000Z"
+      }
+    },
+    {
+      "name": "Kontrola hasiaci prístroj",
+      "type": "year",
+      "interval": 1,
+      "reminder": 15,
+      "lastService": {
+        "date": "2024-10-30T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Nastavenie ventilov",
+      "type": "km",
+      "interval": 360000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2024-06-11T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "L-Certifikát",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-06-01T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Poistenie výmena zelenej karty",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-08-15T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena trisiek",
+      "type": "km",
+      "interval": 600000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2025-07-11T05:24:54.000Z"
+      }
+    }
+  ],
+  "ZC 595 YB": [
+    {
+      "name": "Kontrola technická  STK",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-12-18T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Emisná kontrola (EK)",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-12-18T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Stiahnutie tachografu",
+      "type": "day",
+      "interval": 90,
+      "reminder": 21,
+      "lastService": {
+        "date": "2025-08-26T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena motorového oleje",
+      "type": "km",
+      "interval": 100000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2024-11-11T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Prevodovke",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2024-05-23T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Diferenciali",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2024-01-18T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena chladiacej zmesi s retardérom",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 25000,
+      "lastService": {
+        "date": "2024-04-21T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena spojky",
+      "type": "km",
+      "interval": 600000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2022-10-17T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Servis DPF filtra",
+      "type": "km",
+      "interval": 240000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2024-11-11T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ročná prehliadka ťahača",
+      "type": "month",
+      "interval": 10,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-08-24T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Servis kontrola chlad.zmesi (retardér)",
+      "type": "km",
+      "interval": 100000,
+      "reminder": 10000,
+      "lastService": {
+        "date": "2025-03-12T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola bŕzd",
+      "type": "month",
+      "interval": 10,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-08-24T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Servis kontrola nastavenie geometrie",
+      "type": "year",
+      "interval": 3,
+      "reminder": 30,
+      "lastService": {
+        "date": "2022-08-01T08:53:22.000Z"
+      }
+    },
+    {
+      "name": "Kontrola hasiaci prístroj",
+      "type": "year",
+      "interval": 1,
+      "reminder": 15,
+      "lastService": {
+        "date": "2024-10-30T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Nastavenie ventilov",
+      "type": "km",
+      "interval": 360000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2022-12-27T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "L-Certifikát",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-03-06T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Poistenie výmena zelenej karty",
+      "type": "year",
+      "interval": 1,
+      "reminder": 14,
+      "lastService": {
+        "date": "2025-08-15T22:00:00.000Z"
+      }
+    }
+  ],
+  "ZC 598YD": [
+    {
+      "name": "Kontrola technická  STK",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-02-21T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Emisná kontrola (EK)",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-02-21T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena motorového oleje",
+      "type": "month",
+      "interval": 18,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-05-25T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Prevodovke",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2023-01-12T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Diferenciali",
+      "type": "year",
+      "interval": 2,
+      "reminder": 15,
+      "lastService": {
+        "date": "2023-01-16T13:30:14.000Z"
+      }
+    },
+    {
+      "name": "Výmena rozvodov remeňa a kladiek",
+      "type": "km",
+      "interval": 120000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2022-02-20T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena chladiacej zmesi",
+      "type": "month",
+      "interval": 28,
+      "reminder": 30,
+      "lastService": {
+        "date": "2022-02-20T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Servis kontrola chlad.zmesi",
+      "type": "year",
+      "interval": 1,
+      "reminder": 15,
+      "lastService": {
+        "date": "2023-01-16T13:28:07.000Z"
+      }
+    },
+    {
+      "name": "Kontrola bŕzd",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-05-25T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Poistenie výmena zelenej karty",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-08-15T22:00:00.000Z"
+      }
+    }
+  ],
+  "ZC 603YD": [
+    {
+      "name": "Poistenie výmena zelenej karty",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-08-15T22:00:00.000Z"
+      }
+    }
+  ],
+  "ZC 645 YB": [
+    {
+      "name": "Kontrola technická  STK",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-05-25T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ročná prehliadka návese",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-01-09T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola bŕzd",
+      "type": "month",
+      "interval": 11,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-01-09T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Poistenie výmena zelenej karty",
+      "type": "year",
+      "interval": 1,
+      "reminder": 15,
+      "lastService": {
+        "date": "2025-08-15T22:00:00.000Z"
+      }
+    }
+  ],
+  "ZC 675 BT": [
+    {
+      "name": "Kontrola technická  STK",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-05-22T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ročná prehliadka návese",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-02-27T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola bŕzd",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-02-27T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Poistenie výmena zelenej karty",
+      "type": "year",
+      "interval": 1,
+      "reminder": 15,
+      "lastService": {
+        "date": "2025-08-15T22:00:00.000Z"
+      }
+    }
+  ],
+  "ZC 685 BP": [
+    {
+      "name": "Kontrola technická  STK",
+      "type": "year",
+      "interval": 3,
+      "reminder": 30,
+      "lastService": {
+        "date": "2023-07-09T22:00:00.000Z"
+      }
+    }
+  ],
+  "ZC 750 BO": [
+    {
+      "name": "Kontrola technická  STK",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-07-10T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Emisná kontrola (EK)",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-07-10T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ciachovanie tachografu",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-07-15T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Stiahnutie tachografu",
+      "type": "day",
+      "interval": 90,
+      "reminder": 21,
+      "lastService": {
+        "date": "2025-06-26T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena motorového oleje",
+      "type": "km",
+      "interval": 100000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2025-02-16T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Prevodovke",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2024-03-26T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Diferenciali",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2024-03-26T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena chladiacej zmesi",
+      "type": "km",
+      "interval": 400000,
+      "reminder": 25000,
+      "lastService": {
+        "date": "2024-06-09T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena spojky",
+      "type": "km",
+      "interval": 600000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2022-08-02T07:21:40.000Z"
+      }
+    },
+    {
+      "name": "Servis DPF filtra",
+      "type": "km",
+      "interval": 240000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2024-03-26T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ročná prehliadka ťahača",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-05-16T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola bŕzd",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-04-10T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Servis kontrola nastavenie geometrie",
+      "type": "year",
+      "interval": 3,
+      "reminder": 30,
+      "lastService": {
+        "date": "2022-08-02T07:23:21.000Z"
+      }
+    },
+    {
+      "name": "Kontrola hasiaci prístroj",
+      "type": "year",
+      "interval": 1,
+      "reminder": 15,
+      "lastService": {
+        "date": "2024-10-30T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Nastavenie ventilov",
+      "type": "km",
+      "interval": 360000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2025-09-03T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "L-Certifikát",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-07-25T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Poistenie výmena zelenej karty",
+      "type": "year",
+      "interval": 1,
+      "reminder": 14,
+      "lastService": {
+        "date": "2025-02-08T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena trisiek",
+      "type": "km",
+      "interval": 600000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2025-09-03T22:00:00.000Z"
+      }
+    }
+  ],
+  "ZC 773 BS": [
+    {
+      "name": "Kontrola technická  STK",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-09-30T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Emisná kontrola (EK)",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-09-30T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena motorového oleje",
+      "type": "month",
+      "interval": 14,
+      "reminder": 15,
+      "lastService": {
+        "date": "2025-05-25T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Prevodovke",
+      "type": "month",
+      "interval": 72,
+      "reminder": 30,
+      "lastService": {
+        "date": "2022-03-29T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Mýto  diaľničná známka ročná SK",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-01-30T23:00:00.000Z"
+      }
+    }
+  ],
+  "ZC 859 BR": [
+    {
+      "name": "Kontrola technická  STK",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-08-06T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Emisná kontrola (EK)",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-08-06T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Stiahnutie tachografu",
+      "type": "day",
+      "interval": 90,
+      "reminder": 21,
+      "lastService": {
+        "date": "2025-06-26T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena motorového oleje",
+      "type": "km",
+      "interval": 100000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2025-05-25T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Prevodovke",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2024-04-15T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Diferenciali",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2024-01-29T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena rozvodov remeňa a kladiek",
+      "type": "km",
+      "interval": 240000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2025-08-04T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena chladiacej zmesi s retardérom",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 25000,
+      "lastService": {
+        "date": "2024-04-15T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena spojky",
+      "type": "km",
+      "interval": 445839,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2024-04-15T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Servis DPF filtra",
+      "type": "km",
+      "interval": 240000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2024-09-03T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ročná prehliadka ťahača",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-08-04T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Servis kontrola chlad.zmesi (retardér)",
+      "type": "km",
+      "interval": 100000,
+      "reminder": 10000,
+      "lastService": {
+        "date": "2025-08-04T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola bŕzd",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-11-25T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Servis kontrola nastavenie geometrie",
+      "type": "year",
+      "interval": 3,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-10-01T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola hasiaci prístroj",
+      "type": "year",
+      "interval": 1,
+      "reminder": 15,
+      "lastService": {
+        "date": "2024-10-30T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Nastavenie ventilov",
+      "type": "km",
+      "interval": 360000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2023-05-08T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "L-Certifikát",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-08-29T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Poistenie výmena zelenej karty",
+      "type": "year",
+      "interval": 1,
+      "reminder": 14,
+      "lastService": {
+        "date": "2025-08-15T22:00:00.000Z"
+      }
+    }
+  ],
+  "ZC 889 BS": [
+    {
+      "name": "Kontrola technická  STK",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-10-27T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Emisná kontrola (EK)",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-10-27T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ciachovanie tachografu",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-07-14T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Stiahnutie tachografu",
+      "type": "day",
+      "interval": 90,
+      "reminder": 21,
+      "lastService": {
+        "date": "2025-07-14T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena motorového oleje",
+      "type": "km",
+      "interval": 100000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2025-02-16T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Prevodovke",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2024-12-23T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Diferenciali",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2024-12-23T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena chladiacej zmesi s retardérom",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 25000,
+      "lastService": {
+        "date": "2024-12-22T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena spojky",
+      "type": "km",
+      "interval": 600000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2021-11-18T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Servis DPF filtra",
+      "type": "km",
+      "interval": 240000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2024-09-17T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ročná prehliadka ťahača",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-07-13T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Servis kontrola chlad.zmesi (retardér)",
+      "type": "km",
+      "interval": 100000,
+      "reminder": 10000,
+      "lastService": {
+        "date": "2025-02-16T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola bŕzd",
+      "type": "month",
+      "interval": 11,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-12-29T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Servis kontrola nastavenie geometrie",
+      "type": "year",
+      "interval": 3,
+      "reminder": 30,
+      "lastService": {
+        "date": "2022-08-16T07:50:39.000Z"
+      }
+    },
+    {
+      "name": "Kontrola hasiaci prístroj",
+      "type": "year",
+      "interval": 1,
+      "reminder": 15,
+      "lastService": {
+        "date": "2024-10-30T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Nastavenie ventilov",
+      "type": "km",
+      "interval": 360000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2025-07-15T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "L-Certifikát",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2023-10-11T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Poistenie výmena zelenej karty",
+      "type": "year",
+      "interval": 1,
+      "reminder": 14,
+      "lastService": {
+        "date": "2025-08-15T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena trisiek",
+      "type": "km",
+      "interval": 600000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2025-07-11T05:25:20.000Z"
+      }
+    }
+  ],
+  "ZC 954 BA": [
+    {
+      "name": "Kontrola technická  STK",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-06-09T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Emisná kontrola (EK)",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-06-09T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena motorového oleje",
+      "type": "km",
+      "interval": 15000,
+      "reminder": 3000,
+      "lastService": {
+        "date": "2023-11-09T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Prevodovke",
+      "type": "km",
+      "interval": 25000,
+      "reminder": 10000,
+      "lastService": {
+        "date": "2024-06-06T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena chladiacej zmesi",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2023-11-08T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Poistenie výmena zelenej karty",
+      "type": "year",
+      "interval": 1,
+      "reminder": 14,
+      "lastService": {
+        "date": "2025-08-15T22:00:00.000Z"
+      }
+    }
+  ],
+  "ZC 970 BP": [
+    {
+      "name": "Kontrola technická  STK",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-12-01T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Emisná kontrola (EK)",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-12-01T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ciachovanie tachografu",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-06-30T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Stiahnutie tachografu",
+      "type": "day",
+      "interval": 90,
+      "reminder": 21,
+      "lastService": {
+        "date": "2025-08-22T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena motorového oleje",
+      "type": "km",
+      "interval": 100000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2024-11-03T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Prevodovke",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2025-03-25T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Diferenciali",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2023-10-23T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena chladiacej zmesi s retardérom",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 25000,
+      "lastService": {
+        "date": "2025-03-24T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena spojky",
+      "type": "km",
+      "interval": 600000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2021-12-15T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Servis DPF filtra",
+      "type": "km",
+      "interval": 240000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2025-03-02T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ročná prehliadka ťahača",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-09-12T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Servis kontrola chlad.zmesi (retardér)",
+      "type": "km",
+      "interval": 100000,
+      "reminder": 10000,
+      "lastService": {
+        "date": "2024-12-22T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola bŕzd",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-12-22T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Servis kontrola nastavenie geometrie",
+      "type": "year",
+      "interval": 3,
+      "reminder": 30,
+      "lastService": {
+        "date": "2022-08-16T07:52:44.000Z"
+      }
+    },
+    {
+      "name": "Kontrola hasiaci prístroj",
+      "type": "year",
+      "interval": 1,
+      "reminder": 15,
+      "lastService": {
+        "date": "2024-10-30T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Nastavenie ventilov",
+      "type": "km",
+      "interval": 360000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2022-09-13T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "L-Certifikát",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-02-23T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Poistenie výmena zelenej karty",
+      "type": "year",
+      "interval": 1,
+      "reminder": 14,
+      "lastService": {
+        "date": "2025-08-15T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena trisiek",
+      "type": "km",
+      "interval": 600000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2025-07-11T05:25:29.000Z"
+      }
+    }
+  ],
+  "ZC 974 BP": [
+    {
+      "name": "Kontrola technická  STK",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-07-16T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Emisná kontrola (EK)",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-07-16T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena motorového oleje",
+      "type": "year",
+      "interval": 2,
+      "reminder": 10,
+      "lastService": {
+        "date": "2023-07-13T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena spojky",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2019-08-20T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola bŕzd",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-05-29T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Mýto  diaľničná známka ročná SK",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-03-10T23:00:00.000Z"
+      }
+    }
+  ],
+  "ZC Z086": [
+    {
+      "name": "Kontrola technická  STK",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-10-14T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Emisná kontrola (EK)",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-10-14T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ciachovanie tachografu",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-01-08T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Stiahnutie tachografu",
+      "type": "day",
+      "interval": 90,
+      "reminder": 21,
+      "lastService": {
+        "date": "2025-08-22T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena motorového oleje",
+      "type": "km",
+      "interval": 100000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2025-05-11T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Prevodovke",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2025-05-11T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Diferenciali",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2024-07-02T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena chladiacej zmesi s retardérom",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 25000,
+      "lastService": {
+        "date": "2025-05-11T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena spojky",
+      "type": "km",
+      "interval": 600000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2023-10-11T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Servis DPF filtra",
+      "type": "km",
+      "interval": 240000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2025-03-19T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ročná prehliadka ťahača",
+      "type": "month",
+      "interval": 12,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-10-14T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Servis kontrola chlad.zmesi (retardér)",
+      "type": "km",
+      "interval": 100000,
+      "reminder": 10000,
+      "lastService": {
+        "date": "2025-01-09T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola bŕzd",
+      "type": "month",
+      "interval": 11,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-12-30T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Servis kontrola nastavenie geometrie",
+      "type": "year",
+      "interval": 3,
+      "reminder": 30,
+      "lastService": {
+        "date": "2022-08-15T09:02:29.000Z"
+      }
+    },
+    {
+      "name": "Kontrola hasiaci prístroj",
+      "type": "year",
+      "interval": 1,
+      "reminder": 15,
+      "lastService": {
+        "date": "2024-10-30T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Nastavenie ventilov",
+      "type": "km",
+      "interval": 360000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2025-07-10T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "L-Certifikát",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-01-08T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Poistenie výmena zelenej karty",
+      "type": "year",
+      "interval": 1,
+      "reminder": 14,
+      "lastService": {
+        "date": "2025-08-15T22:00:00.000Z"
+      }
+    }
+  ],
+  "ZC241BP": [
+    {
+      "name": "Kontrola technická  STK",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-03-03T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Emisná kontrola (EK)",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-03-03T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ciachovanie tachografu",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-01-08T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Stiahnutie tachografu",
+      "type": "day",
+      "interval": 90,
+      "reminder": 21,
+      "lastService": {
+        "date": "2025-08-22T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena motorového oleje",
+      "type": "km",
+      "interval": 100000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2025-03-25T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Prevodovke",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2025-03-25T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena oleja v Diferenciali",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2024-09-05T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena chladiacej zmesi s retardérom",
+      "type": "km",
+      "interval": 200000,
+      "reminder": 25000,
+      "lastService": {
+        "date": "2025-03-25T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Výmena spojky",
+      "type": "km",
+      "interval": 600000,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2023-04-27T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Servis DPF filtra",
+      "type": "km",
+      "interval": 178125,
+      "reminder": 15000,
+      "lastService": {
+        "date": "2024-04-22T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Ročná prehliadka ťahača",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2024-10-01T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Servis kontrola chlad.zmesi (retardér)",
+      "type": "km",
+      "interval": 100000,
+      "reminder": 10000,
+      "lastService": {
+        "date": "2025-03-25T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Kontrola bŕzd",
+      "type": "month",
+      "interval": 10,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-01-02T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Servis kontrola nastavenie geometrie",
+      "type": "year",
+      "interval": 3,
+      "reminder": 30,
+      "lastService": {
+        "date": "2022-07-12T08:34:17.000Z"
+      }
+    },
+    {
+      "name": "Kontrola hasiaci prístroj",
+      "type": "year",
+      "interval": 1,
+      "reminder": 15,
+      "lastService": {
+        "date": "2024-10-30T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Nastavenie ventilov",
+      "type": "km",
+      "interval": 360000,
+      "reminder": 20000,
+      "lastService": {
+        "date": "2024-04-22T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "L-Certifikát",
+      "type": "year",
+      "interval": 2,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-01-08T23:00:00.000Z"
+      }
+    },
+    {
+      "name": "Poistenie výmena zelenej karty",
+      "type": "year",
+      "interval": 1,
+      "reminder": 14,
+      "lastService": {
+        "date": "2025-08-15T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Mýto Poľske  ETOLL odhlásiť/prihlásiť",
+      "type": "month",
+      "interval": 5,
+      "reminder": 15,
+      "lastService": {
+        "date": "2022-07-12T08:34:18.000Z"
+      }
+    }
+  ],
+  "ZH 667 CP": [
+    {
+      "name": "Poistenie výmena zelenej karty",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-08-15T22:00:00.000Z"
+      }
+    },
+    {
+      "name": "Mýto  diaľničná známka ročná SK",
+      "type": "year",
+      "interval": 1,
+      "reminder": 30,
+      "lastService": {
+        "date": "2025-03-23T23:00:00.000Z"
+      }
+    }
+  ]
+}

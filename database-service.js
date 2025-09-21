@@ -8,7 +8,7 @@ window.DatabaseService = {
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   },
   onTiresUpdate(callback) {
-    window.db.collection('tires').onSnapshot(snapshot => {
+    return window.db.collection('tires').onSnapshot(snapshot => {
       const tires = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       callback(tires);
     });
@@ -23,7 +23,7 @@ window.DatabaseService = {
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   },
   onTrucksUpdate(callback) {
-    window.db.collection('trucks').onSnapshot(snapshot => {
+    return window.db.collection('trucks').onSnapshot(snapshot => {
       const trucks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       callback(trucks);
     });
@@ -35,7 +35,7 @@ window.DatabaseService = {
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   },
   onTrailersUpdate(callback) {
-    window.db.collection('trailers').onSnapshot(snapshot => {
+    return window.db.collection('trailers').onSnapshot(snapshot => {
       const trailers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       callback(trailers);
     });
@@ -50,7 +50,7 @@ window.DatabaseService = {
   return kms;
   },
   onAllVehicleKmsUpdate(callback) {
-    window.db.collection('vehicles_km').onSnapshot(snapshot => {
+    return window.db.collection('vehicles_km').onSnapshot(snapshot => {
       const kms = {};
       snapshot.docs.forEach(doc => { kms[doc.id] = doc.data().kilometers; });
       callback(kms);
@@ -61,7 +61,7 @@ window.DatabaseService = {
   return doc.exists ? doc.data().kilometers : null;
   },
   onVehicleKmUpdate(vehicleId, callback) {
-    window.db.collection('vehicles_km').doc(vehicleId).onSnapshot(doc => {
+    return window.db.collection('vehicles_km').doc(vehicleId).onSnapshot(doc => {
       const data = doc.data();
       callback(data ? data.kilometers : null);
     });
@@ -80,7 +80,7 @@ window.DatabaseService = {
     return doc.exists ? doc.data().slots : null;
   },
   onTireSlotsUpdate(type, id, callback) {
-    window.db.collection(type + '_slots').doc(id).onSnapshot(doc => {
+    return window.db.collection(type + '_slots').doc(id).onSnapshot(doc => {
       const data = doc.data();
       callback(data ? data.slots : []);
     });
@@ -445,3 +445,14 @@ window.AuthService = {
     return window.auth.currentUser;
   }
 };
+
+// Global cleanup function to close all Firebase listeners
+window.cleanupFirebaseListeners = function() {
+  // Clean up Firebase app instance
+  if (window.firebase && window.firebase.apps.length > 0) {
+    window.firebase.app().delete();
+  }
+};
+
+// Add cleanup on page unload
+window.addEventListener('beforeunload', window.cleanupFirebaseListeners);

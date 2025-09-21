@@ -3,10 +3,13 @@ class ServiceManager {
   constructor() {
     this.services = {};
     this.vehicles = [];
+    this.vehicleKms = {};
+    this.predefinedServices = [];
     this.init();
   }
 
   async init() {
+    await this.loadVehicleKms();
     await this.loadVehicles();
     await this.loadServices();
     this.setupEventListeners();
@@ -16,14 +19,26 @@ class ServiceManager {
   async loadVehicles() {
     try {
       // Load vehicles from your existing database
-      if (window.DatabaseService) {
-        const trucks = await window.DatabaseService.getTrucks();
-        const trailers = await window.DatabaseService.getTrailers();
-        
-        this.vehicles = [
-          ...trucks.map(truck => ({ id: truck.id, name: truck.licensePlate || truck.id, type: 'truck' })),
-          ...trailers.map(trailer => ({ id: trailer.id, name: trailer.licensePlate || trailer.id, type: 'trailer' }))
-        ];
+      if (window.DatabaseService && window.db) {
+        try {
+          const vehiclesMap = await window.DatabaseService.getAllVehicles();
+          const licensePlates = Object.keys(vehiclesMap);
+          if (licensePlates.length > 0) {
+            this.vehicles = licensePlates.map(lp => ({ id: lp, name: lp, type: vehiclesMap[lp].type || 'vehicle' }));
+          }
+        } catch (e) {
+          // Derive from vehicles_km as a fallback
+          if (this.vehicleKms && Object.keys(this.vehicleKms).length > 0) {
+            this.vehicles = Object.keys(this.vehicleKms).map(id => ({ id, name: id, type: 'vehicle' }));
+          } else {
+            const trucks = await window.DatabaseService.getTrucks();
+            const trailers = await window.DatabaseService.getTrailers();
+            this.vehicles = [
+              ...trucks.map(truck => ({ id: truck.id, name: truck.licensePlate || truck.id, type: 'truck' })),
+              ...trailers.map(trailer => ({ id: trailer.id, name: trailer.licensePlate || trailer.id, type: 'trailer' }))
+            ];
+          }
+        }
       } else {
         // Fallback to sample data if database service not available
         this.vehicles = [
@@ -58,28 +73,112 @@ class ServiceManager {
     }
   }
 
-  async loadServices() {
+  async loadVehicleKms() {
     try {
       if (window.DatabaseService && window.db) {
-        // Load services from Firebase
-        const snapshot = await window.db.collection('maintenance_services').get();
-        const services = {};
-        
-        snapshot.docs.forEach(doc => {
-          const data = doc.data();
-          const category = data.category;
-          
-          if (!services[category]) {
-            services[category] = [];
+        this.vehicleKms = await window.DatabaseService.getAllVehicleKms();
+      } else {
+        this.vehicleKms = {};
+      }
+
+      // If vehicles list is empty, derive from kms keys
+      if ((!this.vehicles || this.vehicles.length === 0) && this.vehicleKms && Object.keys(this.vehicleKms).length > 0) {
+        this.vehicles = Object.keys(this.vehicleKms).map(id => ({ id, name: id, type: 'vehicle' }));
+      }
+    } catch (error) {
+      console.error('Error loading vehicle KMs:', error);
+      this.vehicleKms = {};
+    }
+  }
+
+  async loadServices() {
+    try {
+      if (window.db && window.DatabaseService) {
+        // Prepare category buckets
+        const buckets = {
+          stk: [],
+          tachograph: [],
+          dpf: [],
+          calibration: [],
+          'l-certificate': [],
+          'engine-oil': [],
+          'differential-oil': [],
+          'transmission-oil': [],
+          'annual-tractor': [],
+          'annual-trailer': [],
+          'brake-check': [],
+          other: [],
+          personal: []
+        };
+
+        const defaultKmReminder = 15000;
+        const defaultDaysReminder = 30;
+
+        const vehicles = this.vehicles || [];
+        // Fetch per-vehicle services and compute due items
+        for (const vehicle of vehicles) {
+          const licensePlate = vehicle.name || vehicle.id;
+          let info = null;
+          try {
+            info = await window.DatabaseService.getVehicleInfo(licensePlate);
+          } catch (e) {
+            info = null;
           }
-          
-          services[category].push({
-            id: doc.id,
-            ...data
-          });
-        });
-        
-        this.services = services;
+          if (!info || !info.services || info.services.length === 0) continue;
+
+          const currentKm = this.getCurrentKm(licensePlate) ?? info.kilometers ?? 0;
+
+          for (const svc of info.services) {
+            const type = svc.type || 'km';
+            const interval = svc.interval || 0;
+            const lastService = svc.lastService || null;
+            const reminderKm = svc.reminderKm != null ? svc.reminderKm : defaultKmReminder;
+            const reminderDays = svc.reminderDays != null ? svc.reminderDays : defaultDaysReminder;
+
+            if (!interval || !lastService) continue; // cannot compute
+
+            const calc = window.DatabaseService.calculateNextService(lastService, interval, currentKm, type);
+            if (!calc) continue;
+
+            // Decide visibility based on reminder thresholds
+            let shouldShow = false;
+            let entry = { id: `${licensePlate}_${svc.name}`, vehicle: licensePlate };
+
+            if (type === 'km') {
+              const remainingKm = calc.remainingKm;
+              const nextKm = calc.nextKm;
+              if (typeof remainingKm === 'number') {
+                shouldShow = remainingKm <= reminderKm;
+                entry.km = nextKm;
+                entry.note = `Zostáva ${remainingKm.toLocaleString()} km`;
+                entry.priority = remainingKm <= 0 ? 'high' : (remainingKm <= Math.max(1, Math.floor(reminderKm / 2)) ? 'medium' : 'low');
+              }
+            } else if (type === 'date') {
+              const daysRemaining = calc.daysRemaining;
+              const nextDate = calc.nextDate;
+              if (typeof daysRemaining === 'number') {
+                shouldShow = daysRemaining <= reminderDays;
+                entry.date = nextDate instanceof Date ? nextDate.toISOString().slice(0, 10) : (nextDate || '');
+                entry.priority = daysRemaining <= 0 ? 'high' : (daysRemaining <= Math.max(1, Math.floor(reminderDays / 2)) ? 'medium' : 'low');
+              }
+            }
+
+            if (!shouldShow) continue;
+
+            // Determine UI category and description
+            const category = svc.category || this.mapServiceToCategory(svc.name || '');
+            if (!buckets[category]) buckets[category] = [];
+
+            if (category === 'other' || category === 'personal') {
+              entry.description = svc.name || '-';
+              if (entry.km) entry.dateKm = entry.km;
+            }
+
+            buckets[category].push(entry);
+          }
+        }
+
+        this.services = buckets;
       } else {
         // Fallback to sample data if database not available
         this.services = {
@@ -176,6 +275,7 @@ class ServiceManager {
     Object.keys(this.services).forEach(category => {
       this.renderTable(category);
     });
+    this.updateHeaderCounts();
   }
 
 
@@ -252,12 +352,12 @@ class ServiceManager {
           const indicator = this.getDateIndicator(daysLeft);
           kmDateCell = `<td class="date-cell">${this.formatDate(service.date)} ${indicator}</td>`;
         } else if (service.km) {
-          const kmLeft = this.calculateKmLeft(service.km);
+          const kmLeft = this.calculateKmLeft(service.km, service.vehicle);
           const indicator = this.getKmIndicator(kmLeft);
           kmDateCell = `<td class="km-cell">${service.km.toLocaleString()} km ${indicator}</td>`;
         } else if (service.dateKm) {
           // For Ostatné table, calculate km left and add indicator
-          const kmLeft = this.calculateKmLeft(service.dateKm);
+          const kmLeft = this.calculateKmLeft(parseInt(service.dateKm, 10), service.vehicle);
           const indicator = this.getKmIndicator(kmLeft);
           kmDateCell = `<td class="km-cell">${parseInt(service.dateKm).toLocaleString()} km ${indicator}</td>`;
         } else {
@@ -279,7 +379,7 @@ class ServiceManager {
           const indicator = this.getDateIndicator(daysLeft);
           content = `${this.formatDate(service.date)} ${indicator}`;
         } else if (service.km) {
-          const kmLeft = this.calculateKmLeft(service.km);
+          const kmLeft = this.calculateKmLeft(service.km, service.vehicle);
           const indicator = this.getKmIndicator(kmLeft);
           content = `${service.km.toLocaleString()} km ${indicator}`;
         } else if (service.dateKm) {
@@ -296,6 +396,23 @@ class ServiceManager {
         `;
       }
     }).join('');
+  }
+
+  // Normalize license plate/IDs to match vehicles_km keys
+  normalizeVehicleId(id) {
+    if (!id) return id;
+    return String(id).replace(/\s+/g, '').toUpperCase();
+  }
+
+  // Get current KM for a given vehicle, trying both exact and normalized IDs
+  getCurrentKm(vehicleId) {
+    if (!vehicleId) return undefined;
+    const exact = this.vehicleKms[vehicleId];
+    if (typeof exact === 'number') return exact;
+    const norm = this.normalizeVehicleId(vehicleId);
+    const byNorm = this.vehicleKms[norm];
+    if (typeof byNorm === 'number') return byNorm;
+    return undefined;
   }
 
   openModal(category = null) {
@@ -395,12 +512,10 @@ class ServiceManager {
   }
 
   // Calculate kilometers left until service (positive = km left, negative = km overdue)
-  calculateKmLeft(serviceKm) {
-    // This would need to be connected to actual vehicle current km
-    // For now, using a placeholder calculation
-    const currentKm = 400000; // Placeholder - should get from vehicle data
-    const diffKm = serviceKm - currentKm;
-    return diffKm;
+  calculateKmLeft(serviceKm, vehicleId) {
+    const currentKm = this.getCurrentKm(vehicleId);
+    if (typeof currentKm !== 'number') return NaN;
+    return serviceKm - currentKm;
   }
 
   // Get date indicator with color coding
@@ -420,6 +535,9 @@ class ServiceManager {
 
   // Get kilometer indicator with color coding
   getKmIndicator(kmLeft) {
+    if (!isFinite(kmLeft)) {
+      return '';
+    }
     if (kmLeft > 10000) {
       return `<span class="indicator good">+${kmLeft.toLocaleString()} km</span>`;
     } else if (kmLeft > 5000) {
@@ -450,6 +568,9 @@ class ServiceManager {
 
   // Get status text for Excel export (km-based)
   getKmStatusText(kmLeft) {
+    if (!isFinite(kmLeft)) {
+      return '';
+    }
     if (kmLeft > 10000) {
       return 'OK';
     } else if (kmLeft > 5000) {
@@ -655,11 +776,11 @@ class ServiceManager {
         dateKmValue = `${this.formatDate(service.date)} (${daysLeft > 0 ? '+' : ''}${daysLeft} dní)`;
         isOverdue = daysLeft < 0;
       } else if (service.km) {
-        const kmLeft = this.calculateKmLeft(service.km);
+        const kmLeft = this.calculateKmLeft(service.km, service.vehicle);
         dateKmValue = `${service.km.toLocaleString()} km (${kmLeft > 0 ? '+' : ''}${kmLeft} km)`;
         isOverdue = kmLeft < 0;
       } else if (service.dateKm) {
-        const kmLeft = this.calculateKmLeft(service.dateKm);
+        const kmLeft = this.calculateKmLeft(parseInt(service.dateKm, 10), service.vehicle);
         dateKmValue = `${service.dateKm} (${kmLeft > 0 ? '+' : ''}${kmLeft} km)`;
         isOverdue = kmLeft < 0;
       }
@@ -719,6 +840,35 @@ class ServiceManager {
     };
     return colors[sectionName] || '6B7280';
   }
+  updateHeaderCounts() {
+    // Show counts in headers, e.g., "Ostatné (5)"
+    const categories = Object.keys(this.services);
+    categories.forEach(category => {
+      const table = document.querySelector(`.maintenance-table[data-category="${category}"]`);
+      if (!table) return;
+      const header = table.querySelector('.table-header h3');
+      if (!header) return;
+      const baseName = this.getCategoryDisplayName(category);
+      const count = (this.services[category] || []).length;
+      header.textContent = count > 0 ? `${baseName} (${count})` : baseName;
+    });
+  }
+ 
+  mapServiceToCategory(name) {
+    const n = String(name || '').toLowerCase();
+    if (n.includes('stk') || n.includes('ek')) return 'stk';
+    if (n.includes('tach')) return 'tachograph';
+    if (n.includes('ciach')) return 'calibration';
+    if (n.includes('l-cert')) return 'l-certificate';
+    if (n.includes('motor') && n.includes('olej')) return 'engine-oil';
+    if (n.includes('difer')) return 'differential-oil';
+    if (n.includes('prevod')) return 'transmission-oil';
+    if (n.includes('roč') && (n.includes('taha') || n.includes('ťaha'))) return 'annual-tractor';
+    if (n.includes('roč') && (n.includes('náv') || n.includes('naves'))) return 'annual-trailer';
+    if (n.includes('brzd')) return 'brake-check';
+    return 'other';
+  }
+ 
 }
 
 // Initialize the service manager when DOM is loaded

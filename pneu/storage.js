@@ -6,7 +6,7 @@ const DatabaseService = {
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   },
   onTiresUpdate(callback) {
-    db.collection('tires').onSnapshot(snapshot => {
+    return db.collection('tires').onSnapshot(snapshot => {
       const tires = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       callback(tires);
     });
