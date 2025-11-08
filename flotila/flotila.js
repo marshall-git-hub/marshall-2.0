@@ -189,10 +189,6 @@ class FlotilaManager {
       this.showSettings();
     });
     
-    document.getElementById('populate-real-data-btn')?.addEventListener('click', () => {
-      this.populateRealData();
-    });
-    
     // Search functionality
     document.getElementById('flotilaSearch')?.addEventListener('input', (e) => {
       this.renderPairs(e.target.value);
@@ -675,10 +671,8 @@ class FlotilaManager {
           <!-- Servis Tab -->
           <div class="tab-pane" id="servis-tab">
             <!-- Services Section -->
-            <div class="services-section">
-              <div class="services-grid" id="services-grid">
-                ${this.renderServiceTypes(vehicle.services || [])}
-              </div>
+            <div class="services-section" id="services-section">
+              ${this.renderServiceTypes(vehicle.services || [])}
             </div>
             
             <!-- Add Service Type Button at Bottom -->
@@ -735,13 +729,96 @@ class FlotilaManager {
     this.bindTabEvents();
   }
 
-  // Render service types
+  // Calculate equivalent kilometers until due for sorting
+  calculateEquivalentKmUntilDue(service) {
+    if (service.type === 'km') {
+      // For km-based services, use remaining km directly
+      const currentKm = this.selectedVehicle?.currentKm || this.selectedVehicle?.kilometers || 0;
+      const hasLastKm = service.lastService && typeof service.lastService.km === 'number';
+      const lastServiceKm = hasLastKm ? service.lastService.km : currentKm;
+      const targetKm = lastServiceKm + parseInt(service.interval);
+      const remainingKm = targetKm - currentKm;
+      return remainingKm; // Negative for overdue
+    } else {
+      // For date-based services, calculate remaining days and convert to km
+      // 1 day = 2500/7 km ≈ 357 km/day
+      const kmPerDay = 2500 / 7;
+      
+      if (service.type === 'specificDate' || service.specificDate) {
+        const specific = this.parseDateFlexible(service.specificDate || service.interval);
+        if (!specific) return Infinity; // No date set, put at end
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const diffTime = specific - today;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays * kmPerDay; // Negative for overdue
+      }
+      
+      if (!service.lastService?.date) return Infinity; // No last service, put at end
+      
+      const lastPerformed = this.parseDateFlexible(service.lastService.date);
+      if (!lastPerformed) return Infinity;
+      
+      const interval = parseInt(service.interval) || 0;
+      const timeUnit = service.timeUnit || 'days';
+      
+      let nextDueDate = new Date(lastPerformed);
+      if (timeUnit === 'months') {
+        nextDueDate.setMonth(nextDueDate.getMonth() + interval);
+      } else if (timeUnit === 'years') {
+        nextDueDate.setFullYear(nextDueDate.getFullYear() + interval);
+      } else {
+        nextDueDate.setDate(nextDueDate.getDate() + interval);
+      }
+      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const diffTime = nextDueDate - today;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return diffDays * kmPerDay; // Negative for overdue
+    }
+  }
+
+  // Render service types with sections
   renderServiceTypes(services) {
     if (!services || services.length === 0) {
       return '';
     }
 
-    return services.map((service, index) => {
+    // Categorize services
+    const servisServices = [];
+    const ostatneServices = [];
+
+    services.forEach((service, originalIndex) => {
+      const serviceName = (service.name || '').toLowerCase();
+      const isServis = 
+        service.type === 'km' || 
+        serviceName.includes('kontrola brzd') || 
+        serviceName.includes('ročná prehliadka') ||
+        serviceName.includes('rocna prehliadka');
+
+      if (isServis) {
+        servisServices.push({ service, originalIndex });
+      } else {
+        ostatneServices.push({ service, originalIndex });
+      }
+    });
+
+    // Sort services by proximity to due date (ascending - closest first)
+    servisServices.sort((a, b) => {
+      const aValue = this.calculateEquivalentKmUntilDue(a.service);
+      const bValue = this.calculateEquivalentKmUntilDue(b.service);
+      return aValue - bValue;
+    });
+
+    ostatneServices.sort((a, b) => {
+      const aValue = this.calculateEquivalentKmUntilDue(a.service);
+      const bValue = this.calculateEquivalentKmUntilDue(b.service);
+      return aValue - bValue;
+    });
+
+    // Helper function to render a single service card
+    const renderServiceCard = (service, index) => {
       const statusClass = this.getServiceStatusClass(service);
       return `
         <div class="service-type-card ${statusClass}">
@@ -749,15 +826,15 @@ class FlotilaManager {
             <div class="service-type-info">
               <h4 class="service-type-name">${service.name}</h4>
               <div class="service-type-interval">
-                ${this.getServiceIntervalText(service.type, service.interval)}
+                ${this.getServiceIntervalText(service.type, service.interval, service.specificDate, service.timeUnit)}
               </div>
             </div>
             <div class="service-timing-info">
               <div class="service-due-date">
-                ${service.type === 'km' ? this.calculateTargetKm(service) : this.calculateDueDate(service.lastService?.date, service.interval, service.type)}
+                ${service.type === 'km' ? this.calculateTargetKm(service) : this.calculateDueDate(service.lastService?.date, service.interval, service.type, service.specificDate, service.timeUnit)}
               </div>
               <div class="service-remaining">
-                ${service.type === 'km' ? this.calculateRemainingKm(service) : this.calculateRemainingDays(service.lastService?.date, service.interval, service.type)}
+                ${service.type === 'km' ? this.calculateRemainingKm(service) : this.calculateRemainingDays(service.lastService?.date, service.interval, service.type, service.specificDate, service.timeUnit)}
               </div>
             </div>
             <div class="service-type-actions">
@@ -783,41 +860,73 @@ class FlotilaManager {
           </div>
         </div>
       `;
-    }).join('');
-  }
+    };
 
-  // Render service list
-  renderServiceList(services) {
-    if (!services || services.length === 0) {
-      return `
-        <div class="no-services">
-          <p>Žiadne servisné úlohy</p>
+    // Render sections
+    let html = '';
+
+    // Servis section
+    if (servisServices.length > 0) {
+      html += `
+        <div class="services-section-item">
+          <div class="services-section-header collapsible" onclick="window.flotilaManager.toggleServiceSection('servis-section')">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+            </svg>
+            <h3>Servis</h3>
+            <span class="service-section-count">${servisServices.length}</span>
+            <svg class="dropdown-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transform: rotate(180deg);">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
+          <div class="services-section-content collapsible-content" id="servis-section">
+            <div class="services-grid">
+              ${servisServices.map(({ service, originalIndex }) => renderServiceCard(service, originalIndex)).join('')}
+            </div>
+          </div>
         </div>
       `;
     }
 
-    return services.map(service => {
-      const statusClass = service.status || 'pending';
-      const statusText = service.status === 'overdue' ? 'Po termíne' : 
-                        service.status === 'urgent' ? 'Naliehavé' : 'Čaká';
-      
-      return `
-        <div class="service-item ${statusClass}">
-          <div class="service-info">
-            <div class="service-name">${service.name}</div>
-            <div class="service-polozky">
-              <span class="service-interval">${service.type === 'km' ? 'Do: ' + this.calculateTargetKm(service) + ' km' : 'Do: ' + this.calculateDueDate(service.lastService?.date, service.interval, service.type)}</span>
+    // Ostatné section
+    if (ostatneServices.length > 0) {
+      html += `
+        <div class="services-section-item">
+          <div class="services-section-header collapsible" onclick="window.flotilaManager.toggleServiceSection('ostatne-section')">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <h3>Ostatné</h3>
+            <span class="service-section-count">${ostatneServices.length}</span>
+            <svg class="dropdown-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
+          <div class="services-section-content collapsible-content" id="ostatne-section" style="display: none;">
+            <div class="services-grid">
+              ${ostatneServices.map(({ service, originalIndex }) => renderServiceCard(service, originalIndex)).join('')}
             </div>
           </div>
-          <div class="service-value ${service.type} ${statusClass}">
-            ${service.type === 'km' ? 'Do: ' + this.calculateTargetKm(service) + ' km' : 'Do: ' + this.calculateDueDate(service.lastService?.date, service.interval, service.type)}
-          </div>
-          <button class="add-to-worklist-btn" onclick="window.flotilaManager.addToWorkList('${service.name}', '${service.type}', '${service.value}')">
-            Pridať do práce
-          </button>
         </div>
       `;
-    }).join('');
+    }
+
+    return html;
+  }
+
+  // Toggle service section visibility
+  toggleServiceSection(sectionId) {
+    const content = document.getElementById(sectionId);
+    const header = content?.previousElementSibling;
+    const arrow = header?.querySelector('.dropdown-arrow');
+    
+    if (content && arrow) {
+      const isHidden = content.style.display === 'none';
+      content.style.display = isHidden ? 'block' : 'none';
+      arrow.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
+    }
   }
 
   // Render active work session
@@ -1550,8 +1659,14 @@ class FlotilaManager {
             <div class="service-info">
               <div class="service-name">${service.name}</div>
               <div class="service-polozky">
-                <span class="service-interval">${service.interval} ${service.type === 'date' ? 'dní' : 'km'}</span>
-                <span class="service-type">${service.type === 'date' ? 'Čas' : 'Km'}</span>
+                <span class="service-interval">
+                  ${service.type === 'specificDate'
+                    ? this.formatDateSk(service.specificDate || service.interval)
+                    : (service.type === 'km'
+                        ? `${this.formatNumberWithSpaces(service.interval)} km`
+                        : `${service.interval} ${this.getUnitForm(service.interval, service.timeUnit || 'days')}`)}
+                </span>
+                <span class="service-type">${service.type === 'specificDate' ? 'Dátum' : (service.type === 'km' ? 'Km' : 'Čas')}</span>
                 ${polozkyCount > 0 ? `<span class="service-polozky-count">${polozkyCount} polož${polozkyCount !== 1 ? 'iek' : 'ka'}</span>` : ''}
               </div>
             </div>
@@ -2354,8 +2469,14 @@ class FlotilaManager {
         return `
           <div class="service-row">
             <div style="flex:2;">${s.name}</div>
-            <div style="flex:1;">${s.interval} ${s.type === 'date' ? 'dní' : 'km'}</div>
-            <div style="flex:1;">${s.type === 'date' ? 'Čas' : 'Km'}</div>
+            <div style="flex:1;">
+              ${s.type === 'specificDate'
+                ? this.formatDateSk(s.specificDate || s.interval)
+                : (s.type === 'km'
+                    ? `${this.formatNumberWithSpaces(s.interval)} km`
+                    : `${s.interval} ${this.getUnitForm(s.interval, s.timeUnit || 'days')}`)}
+            </div>
+            <div style="flex:1;">${s.type === 'specificDate' ? 'Dátum' : (s.type === 'km' ? 'Km' : 'Čas')}</div>
             <div style="flex:1;">${polozkyCount} polož${polozkyCount !== 1 ? 'iek' : 'ka'}</div>
             <div style="width:120px; display:flex; gap:6px;">
               <button onclick="window.flotilaManager.showPredefinedServiceModal('${s.id}')" style="padding:4px 8px; background:#3b82f6; color:white; border:none; border-radius:4px; cursor:pointer; font-size:0.75rem;">Upraviť</button>
@@ -2600,79 +2721,6 @@ class FlotilaManager {
     }
   }
 
-  // Toggle oil type dropdown
-  toggleOilTypeDropdown() {
-    const dropdown = document.getElementById('oil-type-dropdown');
-    if (dropdown) {
-      dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
-    }
-  }
-
-  // Select oil type from dropdown
-  selectOilType(type) {
-    const input = document.getElementById('service-oil-type');
-    if (input) {
-      input.value = type;
-      this.toggleOilTypeDropdown();
-    }
-  }
-
-  // Toggle filter type dropdown
-  toggleFilterTypeDropdown() {
-    const dropdown = document.getElementById('filter-type-dropdown');
-    if (dropdown) {
-      dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
-    }
-  }
-
-  // Select filter type from dropdown
-  selectFilterType(type) {
-    const input = document.getElementById('service-filter-type');
-    if (input) {
-      input.value = type;
-      this.toggleFilterTypeDropdown();
-    }
-  }
-
-  // Toggle work item oil dropdown
-  toggleWorkItemOilDropdown(itemId) {
-    const dropdown = document.getElementById(`work-oil-dropdown-${itemId}`);
-    if (dropdown) {
-      dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
-    }
-  }
-
-  // Select work item oil type
-  async selectWorkItemOilType(itemId, type) {
-    const input = document.getElementById(`oil-type-${itemId}`);
-    if (input) {
-      input.value = type;
-      this.toggleWorkItemOilDropdown(itemId);
-      await this.updateWorkItemServiceDetail(itemId, 'oilType', type);
-    }
-  }
-
-  // Toggle work item filter dropdown
-  toggleWorkItemFilterDropdown(itemId) {
-    const dropdown = document.getElementById(`work-filter-dropdown-${itemId}`);
-    if (dropdown) {
-      dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
-    }
-  }
-
-  // Select work item filter type
-  async selectWorkItemFilterType(itemId, type) {
-    const input = document.getElementById(`filter-type-${itemId}`);
-    if (input) {
-      input.value = type;
-      this.toggleWorkItemFilterDropdown(itemId);
-      await this.updateWorkItemServiceDetail(itemId, 'filterType', type);
-    }
-  }
-
-
-
-
 
   // Update work item name
   async updateWorkItemName(itemId, name) {
@@ -2685,16 +2733,6 @@ class FlotilaManager {
   }
 
 
-
-  // Remove work item detail
-  async removeWorkItemDetail(itemId, key) {
-    const workItem = this.selectedVehicle.activeWorkSession.items.find(item => item.id === itemId);
-    if (workItem && workItem.servicePolozky) {
-      delete workItem.servicePolozky[key];
-      await this.saveWorkSession();
-      this.updateWorkSessionUI();
-    }
-  }
 
   // Render service polozky list for service creation/editing
   renderServiceDetailsList(servicePolozky) {
@@ -3056,108 +3094,6 @@ class FlotilaManager {
       console.error('Error saving vehicle data:', error);
       this.showNotification('Chyba pri ukladaní dát vozidla', 'error');
     }
-  }
-
-  // Show schedule modal
-  showScheduleModal(serviceName, serviceType, serviceValue, isCustom = false, serviceId = null) {
-    const isEditing = serviceId !== null;
-    const modal = document.createElement('div');
-    modal.className = 'schedule-modal-overlay';
-    modal.innerHTML = `
-      <div class="schedule-modal">
-        <div class="modal-header">
-          <h3>${isEditing ? 'Upraviť úlohu' : (isCustom ? 'Pridať vlastnú úlohu' : 'Naplanovať úlohu')}</h3>
-          <button class="close-btn" onclick="this.closest('.schedule-modal-overlay').remove()">×</button>
-        </div>
-        <div class="modal-body">
-          <div class="form-group">
-            <label>Názov úlohy:</label>
-            <input type="text" id="service-name" value="${serviceName}" placeholder="Zadajte názov úlohy">
-          </div>
-          <div class="form-group">
-            <label>Typ:</label>
-            <select id="service-type">
-              <option value="km" ${serviceType === 'km' ? 'selected' : ''}>Kilometre</option>
-              <option value="date" ${serviceType === 'date' ? 'selected' : ''}>Dátum</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Hodnota:</label>
-            <input type="text" id="service-value" value="${serviceValue}" placeholder="Zadajte hodnotu">
-          </div>
-          <div class="form-group">
-            <label>Poznámka:</label>
-            <textarea id="service-note" placeholder="Zadajte poznámku (voliteľné)"></textarea>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn-secondary" onclick="this.closest('.schedule-modal-overlay').remove()">Zrušiť</button>
-          <button class="btn-primary" onclick="window.flotilaManager.confirmSchedule(${serviceId ? serviceId : 'null'})">${isEditing ? 'Uložiť' : 'Naplanovať'}</button>
-        </div>
-      </div>
-    `;
-    
-    document.body.appendChild(modal);
-    
-    // Focus on first input
-    setTimeout(() => {
-      const firstInput = modal.querySelector('#service-name');
-      if (firstInput) firstInput.focus();
-    }, 100);
-  }
-
-  // Confirm schedule
-  confirmSchedule(serviceId = null) {
-    const modal = document.querySelector('.schedule-modal-overlay');
-    const serviceName = document.getElementById('service-name').value.trim();
-    const serviceType = document.getElementById('service-type').value;
-    const serviceValue = document.getElementById('service-value').value.trim();
-    const serviceNote = document.getElementById('service-note').value.trim();
-    
-    if (!serviceName || !serviceValue) {
-      alert('Prosím vyplňte názov úlohy a hodnotu.');
-      return;
-    }
-    
-    if (serviceId) {
-      // Editing existing service
-      const service = this.selectedVehicle.scheduledServices.find(s => s.id === serviceId);
-      if (service) {
-        service.name = serviceName;
-        service.type = serviceType;
-        service.value = serviceValue;
-        service.note = serviceNote;
-        service.updatedAt = new Date().toISOString();
-        
-        this.showNotification('Úloha bola úspešne upravená!', 'success');
-      }
-    } else {
-      // Adding new service
-      if (!this.selectedVehicle.scheduledServices) {
-        this.selectedVehicle.scheduledServices = [];
-      }
-      
-      const scheduledService = {
-        id: Date.now(),
-        name: serviceName,
-        type: serviceType,
-        value: serviceValue,
-        note: serviceNote,
-        status: 'working',
-        scheduledAt: new Date().toISOString(),
-        vehicleId: this.selectedVehicle.licensePlate
-      };
-      
-      this.selectedVehicle.scheduledServices.push(scheduledService);
-      
-      this.showNotification('Úloha bola úspešne naplanovaná!', 'success');
-    }
-    
-    // Close modal
-    modal.remove();
-    
-    // Refresh the detail view
-    this.showPolozka(this.selectedVehicle.type === 'truck' ? 'truck' : 'trailer', this.selectedVehicle.licensePlate);
   }
 
   // Show notification
@@ -3674,30 +3610,6 @@ class FlotilaManager {
     }
   }
 
-  // Format service detail label
-  formatServiceDetailLabel(key) {
-    const labels = {
-      oilType: 'Typ oleja',
-      oilQuantity: 'Množstvo oleja',
-      filterType: 'Typ filtru',
-      filterQuantity: 'Počet filtrov',
-      brakeType: 'Typ brzdových doštičiek',
-      brakePosition: 'Pozícia brzd',
-      tireSize: 'Rozmer pneumatík',
-      tireQuantity: 'Počet pneumatík',
-      tireBrand: 'Značka pneumatík',
-      tirePosition: 'Pozícia pneumatík',
-      customDetail: 'Dodatočné informácie'
-    };
-    
-    // If key is numeric, don't show it as a label
-    if (!isNaN(key) && !isNaN(parseFloat(key))) {
-      return 'Položka';
-    }
-    
-    return labels[key] || key;
-  }
-
   // Show modal to add new service detail to work item
   showAddWorkItemDetailModal(itemId) {
     const modal = document.createElement('div');
@@ -3840,10 +3752,10 @@ class FlotilaManager {
   updateServicesUI() {
     const servisTab = document.getElementById('servis-tab');
     if (servisTab) {
-      const servicesGrid = servisTab.querySelector('#services-grid');
-      if (servicesGrid) {
+      const servicesSection = servisTab.querySelector('#services-section');
+      if (servicesSection) {
         const servicesContent = this.renderServiceTypes(this.selectedVehicle.services || []);
-        servicesGrid.innerHTML = servicesContent;
+        servicesSection.innerHTML = servicesContent;
       }
     }
   }
@@ -4051,65 +3963,6 @@ class FlotilaManager {
 
     // Initialize predefined services list
     this.refreshPredefinedServicesList();
-  }
-
-  // Populate database with real data from ccc.xls
-  async populateRealData() {
-    try {
-      // Show confirmation dialog
-      const confirmed = confirm(
-        'Táto akcia naplní databázu skutočnými dátami z ccc.xls súboru.\n\n' +
-        'Toto môže prepísať existujúce dáta. Chcete pokračovať?'
-      );
-      
-      if (!confirmed) {
-        return;
-      }
-
-      // Disable button during processing
-      const button = document.getElementById('populate-real-data-btn');
-      const originalText = button.innerHTML;
-      button.disabled = true;
-      button.innerHTML = '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg> Spracovávam...';
-
-      // Check if the populate function is available; if not, try to load it dynamically
-      if (typeof window.populateRealFlotilaData !== 'function') {
-        try {
-          await new Promise((resolve, reject) => {
-            const script = document.createElement('script');
-            script.defer = true;
-            script.src = '../populate-flotila-data.js?v=3';
-            script.onload = resolve;
-            script.onerror = () => reject(new Error('Nepodarilo sa načítať skript populate-flotila-data.js'));
-            document.head.appendChild(script);
-          });
-        } catch (e) {
-          throw e;
-        }
-      }
-
-      if (typeof window.populateRealFlotilaData === 'function') {
-        await window.populateRealFlotilaData();
-        // Invalidate cache after populating new data
-        this.cache.lastUpdated = null;
-        await this.loadDataAndRender();
-        alert('Databáza bola úspešne naplnená skutočnými dátami!');
-      } else {
-        throw new Error('Populate function not available. Skúste obnoviť stránku (Ctrl+F5).');
-      }
-      
-    } catch (error) {
-      console.error('Error populating real data:', error);
-      alert('Chyba pri naplňovaní databázy: ' + error.message);
-    } finally {
-      // Re-enable button
-      const button = document.getElementById('populate-real-data-btn');
-      if (button) {
-        button.disabled = false;
-        // originalText is defined earlier in this function scope
-        button.innerHTML = originalText;
-      }
-    }
   }
 
   // Render trucks for drag and drop
@@ -4572,61 +4425,85 @@ class FlotilaManager {
     this.loadDataAndRender();
   }
 
-  // Get service interval text in Czech
-  getServiceIntervalText(type, interval) {
+  // Get service interval text in Czech/Slovak
+  getServiceIntervalText(type, interval, specificDate = null, timeUnit = null) {
+    if (type === 'specificDate' || specificDate) {
+      const dateValue = specificDate || interval;
+      return `Dátum: ${this.formatDateSk(dateValue)}`;
+    }
     switch (type) {
       case 'km':
-        return `Každých ${interval} km`;
-      case 'year':
-        return interval === 1 ? 'Každý rok' : `Každých ${interval} rokov`;
-      case 'day':
-        return interval === 1 ? 'Každý deň' : `Každých ${interval} dní`;
-      case 'month':
-        return interval === 1 ? 'Každý mesiac' : `Každých ${interval} mesiacov`;
+        return `Každých ${this.formatNumberWithSpaces(interval)} km`;
+      case 'date': {
+        const prefix = this.getEveryPrefix(interval);
+        const unitForm = this.getUnitForm(interval, timeUnit);
+        return `${prefix} ${interval} ${unitForm}`;
+      }
+      default: {
+        // Fallback to days
+        const prefix = this.getEveryPrefix(interval);
+        const unitForm = this.getUnitForm(interval, 'days');
+        return `${prefix} ${interval} ${unitForm}`;
+      }
+    }
+  }
+
+  // Return correct Slovak prefix: Každý (1), Každé (2-4), Každých (5+)
+  getEveryPrefix(count) {
+    const n = parseInt(count, 10);
+    if (n === 1) return 'Každý';
+    if (n >= 2 && n <= 4) return 'Každé';
+    return 'Každých';
+  }
+
+  // Return correct Slovak unit form for given count and timeUnit
+  // timeUnit: 'days' | 'months' | 'years'
+  getUnitForm(count, timeUnit) {
+    const n = parseInt(count, 10);
+    const many = (n >= 5);
+    const few = (n >= 2 && n <= 4);
+    switch (timeUnit) {
+      case 'years':
+        if (n === 1) return 'rok';
+        if (few) return 'roky';
+        return 'rokov';
+      case 'months':
+        if (n === 1) return 'mesiac';
+        if (few) return 'mesiace';
+        return 'mesiacov';
+      case 'days':
       default:
-        return `Každých ${interval} dní`;
+        if (n === 1) return 'deň';
+        if (few) return 'dni';
+        return 'dní';
     }
   }
 
   // Calculate due date based on last performed date, interval and type
-  calculateDueDate(lastPerformed, interval, type = 'day') {
+  calculateDueDate(lastPerformed, interval, type = 'date', specificDate = null, timeUnit = null) {
+    if (type === 'specificDate' || specificDate) {
+      const specific = this.parseDateFlexible(specificDate || interval);
+      return !specific ? 'Nastaviť dátum' : specific.toLocaleDateString('sk-SK');
+    }
     if (!lastPerformed) {
       return 'Nastaviť dátum';
     }
     
-    let lastDate;
-    if (lastPerformed.toDate) {
-      // Firebase Timestamp
-      lastDate = lastPerformed.toDate();
-    } else if (typeof lastPerformed === 'string') {
-      // String date
-      lastDate = new Date(lastPerformed);
-    } else if (lastPerformed.seconds) {
-      // Firebase Timestamp object
-      lastDate = new Date(lastPerformed.seconds * 1000);
-    } else {
-      // Try as regular date
-      lastDate = new Date(lastPerformed);
-    }
+    const lastDate = this.parseDateFlexible(lastPerformed);
     
-    if (isNaN(lastDate.getTime())) {
+    if (!lastDate) {
       return 'Nastaviť dátum';
     }
     
     const dueDate = new Date(lastDate);
     const intervalNum = parseInt(interval);
-    
-    switch (type) {
-      case 'year':
-        dueDate.setFullYear(dueDate.getFullYear() + intervalNum);
-        break;
-      case 'month':
-        dueDate.setMonth(dueDate.getMonth() + intervalNum);
-        break;
-      case 'day':
-      default:
-        dueDate.setDate(dueDate.getDate() + intervalNum);
-        break;
+    // type is 'date' here, so use timeUnit
+    if (timeUnit === 'years') {
+      dueDate.setFullYear(dueDate.getFullYear() + intervalNum);
+    } else if (timeUnit === 'months') {
+      dueDate.setMonth(dueDate.getMonth() + intervalNum);
+    } else {
+      dueDate.setDate(dueDate.getDate() + intervalNum);
     }
     
     return dueDate.toLocaleDateString('sk-SK');
@@ -4637,45 +4514,31 @@ class FlotilaManager {
     return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
   }
 
-  // Filter services based on type and search term
-  filterServices() {
-    if (!this.selectedVehicle || !this.selectedVehicle.services) return;
-    
-    const typeFilter = document.getElementById('service-type-filter')?.value || 'all';
-    const searchTerm = document.getElementById('service-search')?.value?.toLowerCase() || '';
-    
-    let filteredServices = this.selectedVehicle.services;
-    
-    // Filter by type
-    if (typeFilter !== 'all') {
-      filteredServices = filteredServices.filter(service => service.type === typeFilter);
+  // Parse various date input shapes (string YYYY-MM-DD, number ms, Firebase Timestamp, {_seconds})
+  parseDateFlexible(value) {
+    if (!value) return null;
+    if (typeof value.toDate === 'function') {
+      try { return value.toDate(); } catch (_) { /* noop */ }
     }
-    
-    // Filter by search term
-    if (searchTerm) {
-      filteredServices = filteredServices.filter(service => 
-        service.name.toLowerCase().includes(searchTerm)
-      );
+    if (typeof value === 'object') {
+      if (typeof value.seconds === 'number') return new Date(value.seconds * 1000);
+      if (typeof value._seconds === 'number') return new Date(value._seconds * 1000);
     }
-    
-    // Update the services grid
-    const servicesGrid = document.getElementById('services-grid');
-    if (servicesGrid) {
-      const servicesContent = this.renderServiceTypes(filteredServices);
-      servicesGrid.innerHTML = servicesContent;
+    if (typeof value === 'number') {
+      const d = new Date(value);
+      return isNaN(d.getTime()) ? null : d;
     }
+    if (typeof value === 'string') {
+      const d = new Date(value);
+      return isNaN(d.getTime()) ? null : d;
+    }
+    return null;
   }
 
-  // Clear all filters
-  clearFilters() {
-    const typeFilter = document.getElementById('service-type-filter');
-    const searchInput = document.getElementById('service-search');
-    
-    if (typeFilter) typeFilter.value = 'all';
-    if (searchInput) searchInput.value = '';
-    
-    // Reset to show all services
-    this.filterServices();
+  // Format date value to sk-SK using flexible parsing, fallback to '—'
+  formatDateSk(value) {
+    const d = this.parseDateFlexible(value);
+    return d ? d.toLocaleDateString('sk-SK') : '—';
   }
 
   // Filter history by search term
@@ -4713,44 +4576,35 @@ class FlotilaManager {
   }
 
   // Calculate remaining days until due date
-  calculateRemainingDays(lastPerformed, interval, type = 'day') {
+  calculateRemainingDays(lastPerformed, interval, type = 'date', specificDate = null, timeUnit = null) {
+    if (type === 'specificDate' || specificDate) {
+      const specific = this.parseDateFlexible(specificDate || interval);
+      if (!specific) return 'Nastaviť dátum';
+      const today = new Date();
+      const diffTime = specific - today;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      if (diffDays < 0) return `Prešlo ${Math.abs(diffDays)} dní`;
+      if (diffDays === 0) return 'Dnes';
+      return `Zostáva ${diffDays} dní`;
+    }
     if (!lastPerformed) {
       return 'Nastaviť dátum';
     }
     
-    let lastDate;
-    if (lastPerformed.toDate) {
-      // Firebase Timestamp
-      lastDate = lastPerformed.toDate();
-    } else if (typeof lastPerformed === 'string') {
-      // String date
-      lastDate = new Date(lastPerformed);
-    } else if (lastPerformed.seconds) {
-      // Firebase Timestamp object
-      lastDate = new Date(lastPerformed.seconds * 1000);
-    } else {
-      // Try as regular date
-      lastDate = new Date(lastPerformed);
-    }
+    const lastDate = this.parseDateFlexible(lastPerformed);
     
-    if (isNaN(lastDate.getTime())) {
+    if (!lastDate) {
       return 'Nastaviť dátum';
     }
     
     const dueDate = new Date(lastDate);
     const intervalNum = parseInt(interval);
-    
-    switch (type) {
-      case 'year':
-        dueDate.setFullYear(dueDate.getFullYear() + intervalNum);
-        break;
-      case 'month':
-        dueDate.setMonth(dueDate.getMonth() + intervalNum);
-        break;
-      case 'day':
-      default:
-        dueDate.setDate(dueDate.getDate() + intervalNum);
-        break;
+    if (timeUnit === 'years') {
+      dueDate.setFullYear(dueDate.getFullYear() + intervalNum);
+    } else if (timeUnit === 'months') {
+      dueDate.setMonth(dueDate.getMonth() + intervalNum);
+    } else {
+      dueDate.setDate(dueDate.getDate() + intervalNum);
     }
     
     const today = new Date();
@@ -4779,8 +4633,9 @@ class FlotilaManager {
   getKmServiceStatus(service) {
     const currentKm = this.selectedVehicle?.currentKm || this.selectedVehicle?.kilometers || 0;
     
-    // If no lastService.km, use current km as baseline
-    const lastServiceKm = service.lastService?.km || currentKm;
+    // Use lastService.km when provided (including 0), otherwise fall back to current km
+    const hasLastKm = service.lastService && typeof service.lastService.km === 'number';
+    const lastServiceKm = hasLastKm ? service.lastService.km : currentKm;
     const targetKm = lastServiceKm + parseInt(service.interval);
     const reminderKm = targetKm - (service.reminderKm || 15000);
     
@@ -4797,8 +4652,9 @@ class FlotilaManager {
   calculateRemainingKm(service) {
     const currentKm = this.selectedVehicle?.currentKm || this.selectedVehicle?.kilometers || 0;
     
-    // If no lastService.km, use current km as baseline
-    const lastServiceKm = service.lastService?.km || currentKm;
+    // Use lastService.km when provided (including 0), otherwise fall back to current km
+    const hasLastKm = service.lastService && typeof service.lastService.km === 'number';
+    const lastServiceKm = hasLastKm ? service.lastService.km : currentKm;
     const targetKm = lastServiceKm + parseInt(service.interval);
     const remainingKm = targetKm - currentKm;
     
@@ -4818,14 +4674,26 @@ class FlotilaManager {
   calculateTargetKm(service) {
     const currentKm = this.selectedVehicle?.currentKm || this.selectedVehicle?.kilometers || 0;
     
-    // If no lastService.km, use current km as baseline
-    const lastServiceKm = service.lastService?.km || currentKm;
+    // Use lastService.km when provided (including 0), otherwise fall back to current km
+    const hasLastKm = service.lastService && typeof service.lastService.km === 'number';
+    const lastServiceKm = hasLastKm ? service.lastService.km : currentKm;
     const targetKm = lastServiceKm + parseInt(service.interval);
     return `Pri ${this.formatNumberWithSpaces(targetKm)} km`;
   }
 
   // Get status for date-based services
   getDateServiceStatus(service) {
+    // If a specific absolute date is set, use it directly
+    if (service.type === 'specificDate' || service.specificDate) {
+      const dueDate = this.parseDateFlexible(service.specificDate || service.interval);
+      if (!dueDate) return 'normal';
+      const today = new Date();
+      const diffDays = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
+      let reminderDays = service.reminderDays || 30;
+      if (diffDays < 0) return 'overdue';
+      if (diffDays <= reminderDays) return 'reminder';
+      return 'normal';
+    }
     if (!service.lastService?.date) return 'normal';
     
     let lastDate;
@@ -4843,19 +4711,13 @@ class FlotilaManager {
     
     const dueDate = new Date(lastDate);
     const intervalNum = parseInt(service.interval);
-    
-    // Calculate due date based on service type
-    switch (service.type) {
-      case 'year':
-        dueDate.setFullYear(dueDate.getFullYear() + intervalNum);
-        break;
-      case 'month':
-        dueDate.setMonth(dueDate.getMonth() + intervalNum);
-        break;
-      case 'day':
-      default:
-        dueDate.setDate(dueDate.getDate() + intervalNum);
-        break;
+    // type is 'date' here; use timeUnit
+    if (service.timeUnit === 'years') {
+      dueDate.setFullYear(dueDate.getFullYear() + intervalNum);
+    } else if (service.timeUnit === 'months') {
+      dueDate.setMonth(dueDate.getMonth() + intervalNum);
+    } else {
+      dueDate.setDate(dueDate.getDate() + intervalNum);
     }
     
     const today = new Date();
@@ -4864,9 +4726,9 @@ class FlotilaManager {
     
     // Adjust reminder period based on service type
     let reminderDays = service.reminderDays || 30;
-    if (service.type === 'year') {
+    if (service.timeUnit === 'years') {
       reminderDays = service.reminderDays || 90; // 3 months for yearly services
-    } else if (service.type === 'month') {
+    } else if (service.timeUnit === 'months') {
       reminderDays = service.reminderDays || 14; // 2 weeks for monthly services
     }
     

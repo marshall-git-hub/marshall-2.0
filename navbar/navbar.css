@@ -5,53 +5,56 @@
   left: 0;
   height: 100vh;
   width: 200px;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.08);
+  background: #2b0d0e; /* deep maroon */
+  backdrop-filter: blur(12px);
+  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.06);
   display: flex;
   flex-direction: column;
   align-items: center;
   padding-top: 32px;
   z-index: 100;
-  border-right: 1px solid rgba(226, 232, 240, 0.6);
+  border-right: 1px solid rgba(0, 0, 0, 0.25);
 }
 
 .sidebar-nav .nav-btn {
   width: 160px;
-  margin: 8px 0;
-  padding: 14px 16px;
+  margin: 6px 0;
+  padding: 12px 12px;
   border: none;
-  border-radius: 12px;
-  background: #ffffff;
-  color: #374151;
+  border-radius: 10px;
+  background: transparent;
+  color: #fde68a;
   font-size: 0.95rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: color 0.15s ease, background 0.15s ease;
   display: flex;
   align-items: center;
   justify-content: flex-start;
   gap: 12px;
   text-decoration: none;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-  border: 1px solid #f3f4f6;
   position: relative;
 }
 
+/* Footer area with divider for logout */
+.sidebar-footer {
+  margin-top: auto;
+  width: 100%;
+  padding: 16px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .sidebar-nav .nav-btn:hover {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: #ffffff;
-  transform: translateY(-1px);
-  box-shadow: 0 8px 25px -5px rgba(16, 185, 129, 0.3);
-  border-color: transparent;
+  background: rgba(255, 255, 255, 0.06);
+  color: #fb923c;
 }
 
 .sidebar-nav .nav-btn.active {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  color: #ffffff;
-  box-shadow: 0 8px 25px -5px rgba(59, 130, 246, 0.3);
-  border-color: transparent;
-  transform: translateX(8px);
+  background: rgba(251, 146, 60, 0.18);
+  color: #fb923c;
 }
 
 /* Active state indicator - left border */
@@ -63,9 +66,9 @@
   transform: translateY(-50%);
   width: 4px;
   height: 24px;
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  background: #fb923c;
   border-radius: 0 4px 4px 0;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+  box-shadow: 0 2px 8px rgba(251, 146, 60, 0.35);
 }
 
 /* Active state glow effect */
@@ -77,7 +80,7 @@
   right: 0;
   bottom: 0;
   border-radius: 12px;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(37, 99, 235, 0.1) 100%);
+  background: rgba(251, 146, 60, 0.08);
   pointer-events: none;
 }
 
@@ -94,25 +97,23 @@
 }
 
 .sidebar-nav .logout-btn {
-  background: #fef2f2;
-  color: #dc2626;
-  border-color: #fecaca;
-  margin-top: auto;
-  margin-bottom: 24px;
+  background: transparent;
+  color: #fca5a5;
+  border: 1px solid rgba(252, 165, 165, 0.35);
+  margin: 0;
   width: 140px;
   justify-content: center;
   font-size: 0.9rem;
-  padding: 12px 16px;
+  padding: 10px 14px;
   white-space: nowrap;
   text-align: center;
   line-height: 1.2;
 }
 
 .sidebar-nav .logout-btn:hover {
-  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  background: #991b1b;
   color: #ffffff;
   border-color: transparent;
-  box-shadow: 0 8px 25px -5px rgba(220, 38, 38, 0.3);
 }
 
 .sidebar-nav .logout-btn::before {
@@ -140,10 +141,17 @@
     justify-content: flex-start;
     padding: 0 16px;
     z-index: 200;
-    box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.08);
-    background: rgba(255, 255, 255, 0.98);
+    box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.25);
+    background: #2b0d0e;
     border-right: none;
-    border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  
+  .sidebar-footer {
+    border-top: none;
+    padding: 0;
+    width: auto;
+    margin-left: auto;
   }
   
   .sidebar-nav .nav-btn {
@@ -155,7 +163,7 @@
     margin: 0 6px;
     gap: 8px;
     justify-content: center;
-    box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1);
+    box-shadow: none;
   }
   
   .sidebar-nav .nav-btn.active {
@@ -177,10 +185,10 @@
   }
   
   .sidebar-nav .logout-btn {
-    margin: 0 6px 0 auto;
+    margin: 0 6px 0 0;
     min-width: 90px;
-    background: #fef2f2;
-    color: #dc2626;
+    background: transparent;
+    color: #fca5a5;
     font-size: 0.8rem;
     padding: 10px 12px;
     white-space: nowrap;
