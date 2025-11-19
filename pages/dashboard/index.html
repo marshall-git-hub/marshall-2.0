@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Marshall | Hlavné menu</title>
+  <link rel="stylesheet" href="../../shared/ui/main-styles.css">
+  <meta name="theme-color" content="#2563eb">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    .app-container {
+      margin-left: 0 !important;
+      width: 100% !important;
+      padding: clamp(1rem, 4vw, 3rem);
+    }
+    .page-container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .page-container .page-header {
+      margin-bottom: 1.25rem;
+    }
+    .dashboard-header-card .header-background {
+      background: linear-gradient(135deg, #2563eb, #10b981, #facc15);
+    }
+    .dashboard-header-card h1 {
+      background: linear-gradient(135deg, #2563eb, #10b981);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .dashboard-user {
+      color: #475569;
+      font-size: 0.95rem;
+    }
+    .logout-btn {
+      border: none;
+      background: linear-gradient(135deg, #ef4444, #b91c1c);
+      color: #fff;
+      padding: 0.75rem 1.5rem;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 12px 30px -10px rgba(239, 68, 68, 0.8);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .logout-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 18px 40px -10px rgba(239, 68, 68, 0.8);
+    }
+    .sections-grid {
+      display: grid;
+      gap: 2rem;
+    }
+    .section-card {
+      background: rgba(255,255,255,0.8);
+      border-radius: 1.5rem;
+      border: 1px solid rgba(255,255,255,0.4);
+      box-shadow: 0 18px 40px -18px rgba(15,23,42,0.4);
+      padding: 1.5rem;
+    }
+    .section-card h2 {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 1.25rem;
+      margin-bottom: 0.75rem;
+    }
+    .section-card h2 span {
+      font-size: 0.9rem;
+      color: #64748b;
+      font-weight: 500;
+    }
+    .module-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1rem;
+    }
+    .module-card {
+      text-decoration: none;
+      color: inherit;
+      border-radius: 1.25rem;
+      border: 1px solid rgba(226,232,240,0.8);
+      background: rgba(255,255,255,0.9);
+      backdrop-filter: blur(10px);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      box-shadow: 0 15px 30px -18px rgba(15,23,42,0.4);
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    .module-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(59,130,246,0.6);
+    }
+    .module-icon {
+      width: 3rem;
+      height: 3rem;
+      border-radius: 0.9rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #eff6ff;
+      color: #1d4ed8;
+      font-size: 1.4rem;
+      flex-shrink: 0;
+    }
+    .module-card h3 {
+      margin: 0;
+      font-size: 1.1rem;
+    }
+    .logout-btn-text {
+      display: inline;
+    }
+    @media (max-width: 900px) {
+      .logout-btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+    @media (max-width: 640px) {
+      .module-card {
+        flex-direction: row;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+      }
+      .module-icon {
+        width: 2.5rem;
+        height: 2.5rem;
+        font-size: 1.2rem;
+      }
+      .module-card h3 {
+        font-size: 1rem;
+        flex: 1;
+      }
+      .logout-btn {
+        width: auto;
+        padding: 0.75rem;
+        min-width: 48px;
+      }
+      .logout-btn-text {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container" style="margin-left:0;width:100%;">
+    <main class="main-content">
+      <div class="page-container">
+        <div class="page-header dashboard-header-card">
+          <div class="header-background"></div>
+          <div class="header-content">
+            <div class="header-info">
+              <div class="header-icon-section">
+                <div class="header-icon trailer-icon">
+                  <span class="material-symbols-outlined">home</span>
+                </div>
+                <div class="header-text">
+                  <h1>Marshall centrum</h1>
+                  <p class="dashboard-user">Prihlásený používateľ: <span id="dashboardUser">Marshall</span></p>
+                </div>
+              </div>
+              <button class="logout-btn" id="logoutBtn">
+                <span class="material-symbols-outlined">logout</span>
+                <span class="logout-btn-text">Odhlásiť sa</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="sections-grid">
+          <section class="section-card">
+            <h2>Sklad <span>Oleje · Pneu · Diely</span></h2>
+            <div class="module-grid">
+              <a class="module-card" href="/modules/oleje/ui/oil.html">
+                <div class="module-icon">
+                  <span class="material-symbols-outlined">water_drop</span>
+                </div>
+                <h3>Oleje</h3>
+              </a>
+
+              <a class="module-card" href="/modules/pnue/ui/truck.html">
+                <div class="module-icon">
+                  <span class="material-symbols-outlined">local_shipping</span>
+                </div>
+                <h3>Pneu</h3>
+              </a>
+
+              <a class="module-card" href="/modules/diely/ui/index.html">
+                <div class="module-icon">
+                  <span class="material-symbols-outlined">category</span>
+                </div>
+                <h3>Diely</h3>
+              </a>
+            </div>
+          </section>
+
+          <section class="section-card">
+            <h2>Vozidlá <span>Flotila · Servis</span></h2>
+            <div class="module-grid">
+              <a class="module-card" href="/modules/flotila/ui/index.html">
+                <div class="module-icon">
+                  <span class="material-symbols-outlined">dashboard</span>
+                </div>
+                <h3>Flotila</h3>
+              </a>
+
+              <a class="module-card" href="/modules/servis/ui/index.html">
+                <div class="module-icon">
+                  <span class="material-symbols-outlined">build</span>
+                </div>
+                <h3>Servis</h3>
+              </a>
+            </div>
+          </section>
+
+          <section class="section-card">
+            <h2>Preprava <span>Cestáky</span></h2>
+            <div class="module-grid">
+              <a class="module-card" href="/modules/cestaky/ui/index.html">
+                <div class="module-icon">
+                  <span class="material-symbols-outlined">receipt_long</span>
+                </div>
+                <h3>Cestáky</h3>
+              </a>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
+  <script src="../../main/config/firebase-config.js"></script>
+  <script>
+    (function initDashboard(){
+      const userEl = document.getElementById('dashboardUser');
+      const logoutBtn = document.getElementById('logoutBtn');
+
+      function goToLogin() {
+        window.location.href = '../index/index.html';
+      }
+
+      if (!window.AuthService) {
+        goToLogin();
+        return;
+      }
+
+      window.AuthService.onAuthStateChanged((user) => {
+        if (!user) {
+          goToLogin();
+          return;
+        }
+        if (userEl) {
+          userEl.textContent = user.email || user.phoneNumber || 'Prihlásený používateľ';
+        }
+      });
+
+      logoutBtn?.addEventListener('click', async () => {
+        try {
+          sessionStorage.removeItem('marshallCompanySession');
+        } catch (err) {
+          console.warn('Unable to clear company session', err);
+        }
+        try {
+          await window.AuthService.logout();
+        } catch (err) {
+          console.warn('Unable to logout cleanly', err);
+        } finally {
+          goToLogin();
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
+
+

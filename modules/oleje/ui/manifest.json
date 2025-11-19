@@ -1,0 +1,10 @@
+{
+  "name": "Marshall - Sklad Olejov",
+  "short_name": "Olej",
+  "start_url": "./oil.html",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#2563eb",
+  "icons": []
+}
+

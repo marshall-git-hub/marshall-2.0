@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sklad Olejov - Správca Zásob</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232563eb'%3E%3Ccircle cx='12' cy='12' r='10' fill='%2310b981'/%3E%3Cpath d='M12 5C9.5 8.5 8 10.5 8 13a4 4 0 0 0 8 0c0-2.5-1.5-4.5-4-8z' fill='%23fff'/%3E%3C/svg%3E">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+    <link rel="stylesheet" href="../../../shared/ui/main-styles.css">
+    <link rel="stylesheet" href="oil.css">
+</head>
+<body class="oil-page">
+    <div class="app-container oil-app">
+        <main class="main-content">
+            <div class="page-container">
+                <div class="module-top-nav">
+                    <a class="module-back-link" href="/pages/dashboard/index.html">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M15 18l-6-6 6-6"/>
+                            <path d="M9 12h12"/>
+                        </svg>
+                        <span>Späť na hlavné menu</span>
+                    </a>
+                </div>
+                <div class="page-header storage-header oil-header">
+                    <div class="header-background"></div>
+                    <div class="header-content">
+                        <div class="header-info">
+                            <div class="header-icon-section">
+                                <div class="header-icon storage-icon">
+                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 2c2 3 4 5 4 8a4 4 0 0 1-8 0c0-3 2-5 4-8z"/>
+                                        <path d="M5 22h14"/>
+                                    </svg>
+                                </div>
+                                <div class="header-text">
+                                    <h1>Sklad Olejov</h1>
+                                    <p>Online evidencia olejov a kvapalín</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <section id="oil-sections" class="sections-container">
+                    <!-- Sections rendered by JS -->
+                </section>
+
+                <section class="oil-toolbar bottom-toolbar">
+                    <button id="open-create-modal" class="primary-btn add-oil-btn">
+                        <span class="material-symbols-outlined">add</span>
+                        Pridať olej
+                    </button>
+                </section>
+            </div>
+        </main>
+
+    </div>
+
+    <div id="adjust-modal" class="modal" aria-hidden="true">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Upraviť zásobu</h3>
+                <button class="close-btn" id="close-modal-btn" aria-label="Zavrieť">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <form id="adjust-form">
+                <div class="form-group">
+                    <label for="adjust-amount">Množstvo (litre)</label>
+                    <input type="number" id="adjust-amount" min="0" step="0.1" required placeholder="Napr. 30">
+                </div>
+                <div class="form-group inline">
+                    <label>Operácia</label>
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="adjust-type" value="remove" checked>
+                            <span>Odobrať</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="adjust-type" value="add">
+                            <span>Pridať</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="quick-actions">
+                    <span>Rýchla akcia</span>
+                    <div class="chip-row">
+                        <button type="button" data-amount="5">-5 L</button>
+                        <button type="button" data-amount="10">-10 L</button>
+                        <button type="button" data-amount="20">-20 L</button>
+                        <button type="button" data-amount="30">-30 L</button>
+                    </div>
+                </div>
+                <button type="submit" class="primary-btn">
+                    Potvrdiť zmenu
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div id="create-modal" class="modal" aria-hidden="true">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Nový olej</h3>
+                <button class="close-btn" id="close-create-modal" aria-label="Zavrieť">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <form id="create-oil-form" class="create-oil-form">
+                <div class="form-grid">
+                    <label class="form-field">
+                        <span>Názov oleja</span>
+                        <input type="text" id="oil-name" name="name" required placeholder="napr. 5W-30 228.51">
+                    </label>
+                    <label class="form-field">
+                        <span>Kategória</span>
+                        <select id="oil-category" name="category" required>
+                            <option value="motorove">Motorové oleje</option>
+                            <option value="prevodove">Prevodové oleje</option>
+                            <option value="diferencial">Diferenciálne oleje</option>
+                            <option value="chladiaca">Chladiaca kvapalina</option>
+                        </select>
+                    </label>
+                    <label class="form-field">
+                        <span>Množstvo (L)</span>
+                        <input type="number" id="oil-quantity" name="quantity" min="0" step="0.1" required placeholder="napr. 30">
+                    </label>
+                </div>
+                <div class="form-footer">
+                    <p id="create-oil-message" class="form-feedback" hidden></p>
+                    <button id="create-oil-submit" type="submit" class="primary-btn">
+                        <span>Pridať do skladu</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
+    <script src="../../../main/config/firebase-config.js"></script>
+    <script src="../logic/oil-database.js"></script>
+    <script>
+        auth.onAuthStateChanged(user => {
+            if (!user) {
+                window.location.href = '../../../pages/index/index.html';
+            } else {
+                document.body.style.display = 'block';
+            }
+        });
+    </script>
+    <script src="../logic/oil.js"></script>
+    <script src="../../../shared/services/session-guard.js"></script>
+</body>
+</html>
+
+
+
+
+

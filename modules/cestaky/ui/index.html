@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#2563EB">
+    <title>Cestaky - Jazdná kniha</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚗</text></svg>">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+</head>
+<body>
+    <!-- Login Gate -->
+    <div id="loginOverlay" class="login-overlay hidden">
+        <div class="login-card">
+            <h2>Prihlásenie</h2>
+            <p class="login-sub">Zadajte firemný kód vodiča</p>
+            <div class="form-group">
+                <label for="companyCode">Firemný kód</label>
+                <input type="text" id="companyCode" placeholder="napr. ABC123" autocomplete="one-time-code">
+            </div>
+            <button id="loginBtn" class="btn-save">Pokračovať</button>
+            <div id="loginError" class="error-text hidden">Neplatný alebo neaktívny kód</div>
+        </div>
+    </div>
+
+    <!-- Sticky Header -->
+    <header class="app-header">
+        <div class="header-content">
+            <button id="backBtn" class="header-back-btn hidden" onclick="navigateToHistory()" title="Späť na históriu">
+                <span class="material-symbols-outlined">arrow_back</span>
+            </button>
+            <div>
+                <h1 id="headerDriverName">ID</h1>
+            </div>
+            <div id="syncChip" class="sync-chip" title="Stav synchronizácie">Saved</div>
+            <button id="headerLogoutBtn" class="header-logout-btn hidden" onclick="logout()" title="Odhlásiť sa">
+                <span class="material-symbols-outlined">logout</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Finish Ride Button (only on current ride page) -->
+    <div id="finishRideContainer" class="finish-ride-container hidden">
+        <button id="finishRideBtn" class="btn-finish" onclick="finishCurrentRide()">
+            <span class="material-symbols-outlined">check_circle</span>
+            Dokončiť jazdu
+        </button>
+    </div>
+
+    <!-- Tab Navigation -->
+    <nav class="tab-navigation hidden" id="tabNavigation">
+        <button class="tab-btn active" data-section="header">
+            <span class="tab-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M14 2H6C4.9 2 4 2.9 4 4V20C4 21.1 4.89 22 5.99 22H18C19.1 22 20 21.1 20 20V8L14 2ZM16 18H8V16H16V18ZM16 14H8V12H16V14ZM13 9V3.5L18.5 9H13Z" fill="currentColor"/>
+                </svg>
+            </span>
+            <span class="tab-label">Hlavička</span>
+        </button>
+        <button class="tab-btn" data-section="refueling">
+            <span class="tab-icon">
+                <span class="material-symbols-outlined">local_gas_station</span>
+            </span>
+            <span class="tab-label">Tankovanie</span>
+        </button>
+        <button class="tab-btn" data-section="borders">
+            <span class="tab-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22S19 14.25 19 9C19 5.13 15.87 2 12 2ZM12 11.5C10.62 11.5 9.5 10.38 9.5 9S10.62 6.5 12 6.5 14.5 7.62 14.5 9 13.38 11.5 12 11.5Z" fill="currentColor"/>
+                </svg>
+            </span>
+            <span class="tab-label">Hranice</span>
+        </button>
+        <button class="tab-btn" data-section="stops">
+            <span class="tab-icon">
+                <span class="material-symbols-outlined">flyover</span>
+            </span>
+            <span class="tab-label">Zastávky</span>
+        </button>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <form id="tripForm" class="trip-form">
+            <!-- HLAVIČKA JAZDY -->
+            <section id="section-header" class="content-section active">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <span class="card-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M14 2H6C4.9 2 4 2.9 4 4V20C4 21.1 4.89 22 5.99 22H18C19.1 22 20 21.1 20 20V8L14 2ZM16 18H8V16H16V18ZM16 14H8V12H16V14ZM13 9V3.5L18.5 9H13Z" fill="currentColor"/>
+                                </svg>
+                            </span>
+                            Hlavička jazdy
+                        </h2>
+                    </div>
+                    <div class="card-content">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="vehiclePlate">Tahač (SPZ)</label>
+                                <input type="text" id="vehiclePlate" name="vehiclePlate" placeholder="AA-123-BB">
+                            </div>
+                            <div class="form-group">
+                                <label for="trailerPlate">Príves (SPZ)</label>
+                                <input type="text" id="trailerPlate" name="trailerPlate" placeholder="Trailer SPZ">
+                            </div>
+                        </div>
+                        <div class="form-divider">
+                            <div class="form-divider-line"></div>
+                            <div class="form-divider-text">Nasledujúce údaje sa vyplnia automaticky</div>
+                            <div class="form-divider-line"></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="startDate">Dátum začiatku</label>
+                                <div class="input-overlay-wrapper" data-placeholder-input>
+                                    <span class="input-overlay-text">dd.mm.rrrr</span>
+                                    <input type="date" id="startDate" name="startDate" readonly>
+                                    <span class="input-overlay-icon material-symbols-outlined">calendar_month</span>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="startTime">Čas začiatku</label>
+                                <div class="input-overlay-wrapper" data-placeholder-input>
+                                    <span class="input-overlay-text">hh:mm</span>
+                                    <input type="time" id="startTime" name="startTime" readonly>
+                                    <span class="input-overlay-icon material-symbols-outlined">schedule</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="endDate">Dátum konca</label>
+                                <div class="input-overlay-wrapper" data-placeholder-input>
+                                    <span class="input-overlay-text">dd.mm.rrrr</span>
+                                    <input type="date" id="endDate" name="endDate" readonly>
+                                    <span class="input-overlay-icon material-symbols-outlined">calendar_month</span>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="endTime">Čas konca</label>
+                                <div class="input-overlay-wrapper" data-placeholder-input>
+                                    <span class="input-overlay-text">hh:mm</span>
+                                    <input type="time" id="endTime" name="endTime" readonly>
+                                    <span class="input-overlay-icon material-symbols-outlined">schedule</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="startOdometer">Začiatočný stav (km)</label>
+                                <input type="number" id="startOdometer" name="startOdometer" step="0.1" placeholder="0" inputmode="decimal" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label for="endOdometer">Konečný stav (km)</label>
+                                <input type="number" id="endOdometer" name="endOdometer" step="0.1" placeholder="0" inputmode="decimal" readonly>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="totalKm">Celkom najazdených (km)</label>
+                            <input type="text" id="totalKm" name="totalKm" readonly class="total-km-field">
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TANKOVANIA -->
+            <section id="section-refueling" class="content-section">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-header-content">
+                            <h2 class="card-title">
+                                <span class="card-icon">
+                                    <span class="material-symbols-outlined">local_gas_station</span>
+                                </span>
+                                Tankovania
+                            </h2>
+                            <button type="button" class="btn-add" onclick="addRefueling()">
+                                <span class="btn-add-icon">+</span>
+                                Pridať
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <div id="refuelingContainer" class="dynamic-container">
+                            <p class="empty-state">Zatiaľ žiadne tankovania</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PRECHODY HRANÍC -->
+            <section id="section-borders" class="content-section">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-header-content">
+                            <h2 class="card-title">
+                                <span class="card-icon">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22S19 14.25 19 9C19 5.13 15.87 2 12 2ZM12 11.5C10.62 11.5 9.5 10.38 9.5 9S10.62 6.5 12 6.5 14.5 7.62 14.5 9 13.38 11.5 12 11.5Z" fill="currentColor"/>
+                                    </svg>
+                                </span>
+                                Prechody hraníc
+                            </h2>
+                            <button type="button" class="btn-add" onclick="addBorderCrossing()">
+                                <span class="btn-add-icon">+</span>
+                                Pridať
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <div id="borderCrossingContainer" class="dynamic-container">
+                            <p class="empty-state">Zatiaľ žiadne prechody hraníc</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ZASTÁVKY -->
+            <section id="section-stops" class="content-section">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-header-content">
+                            <h2 class="card-title">
+                                <span class="card-icon">
+                                    <span class="material-symbols-outlined">flyover</span>
+                                </span>
+                                Zastávky
+                            </h2>
+                            <button type="button" class="btn-add" onclick="addStop()">
+                                <span class="btn-add-icon">+</span>
+                                Pridať
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <div id="stopContainer" class="dynamic-container">
+                            <p class="empty-state">Zatiaľ žiadne zastávky</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </form>
+
+        <!-- HISTORY PAGE -->
+        <section id="section-history" class="content-section">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-header-content">
+                        <h2 class="card-title">História jázd</h2>
+                        <button id="newRideBtn" class="btn-add" onclick="createNewRide()" title="Nová jazda">
+                            <span class="material-symbols-outlined">add</span>
+                            Nová jazda
+                        </button>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <div id="historyContainer" class="history-container">
+                        <p class="empty-state">Načítavam históriu...</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- READ-ONLY RIDE VIEW -->
+        <section id="section-view-ride" class="content-section">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-header-content">
+                        <h2 class="card-title">Zobrazenie jazdy</h2>
+                        <button class="btn-add" onclick="navigateToHistory()">
+                            <span class="material-symbols-outlined">arrow_back</span>
+                            Späť na históriu
+                        </button>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <div id="viewRideContainer" class="view-ride-container">
+                        <p class="empty-state">Načítavam údaje...</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Fixed Save Button removed (autosave is enabled) -->
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js"></script>
+    <script src="../../../main/config/firebase-config.js"></script>
+    <script>
+        (function presetCompanySession(){
+            try {
+                const raw = sessionStorage.getItem('marshallCompanySession');
+                if (!raw) return;
+                const session = JSON.parse(raw);
+                if (session && session.module === 'cestaky') {
+                    window.__MARSHALL_COMPANY_SESSION__ = session;
+                }
+            } catch (err) {
+                console.warn('Unable to preset company session', err);
+            }
+        })();
+    </script>
+    <script src="../logic/script.js"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('service-worker.js');
+        });
+      }
+    </script>
+    <script src="../../../shared/services/session-guard.js"></script>
+</body>
+</html>
+
+
+

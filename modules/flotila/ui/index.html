@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flotila</title>
+  <link rel="stylesheet" href="../../../shared/ui/main-styles.css">
+  <link rel="stylesheet" href="../../../shared/ui/navbar/navbar.css">
+  <link rel="stylesheet" href="flotila.css">
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
+  
+  <script defer src="../../../shared/ui/navbar/navbar.js"></script>
+  <script defer src="../../../main/config/firebase-config.js"></script>
+  <script defer src="../../../shared/services/database-service.js"></script>
+  <!-- SheetJS for reading XLS in browser -->
+  <script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- Cache-bust to ensure latest script loads -->
+  <script defer src="../populate-flotila-data.js?v=4"></script>
+  <script defer src="../logic/flotila.js"></script>
+</head>
+<body>
+  <div id="navbar"></div>
+  
+  <div class="app-container" style="margin-left:210px;">
+    <main class="main-content">
+      <div class="page-container">
+        <!-- Header -->
+        <div class="page-header storage-header">
+          <div class="header-background"></div>
+          <div class="header-content">
+            <div class="header-info">
+              <div class="header-icon-section">
+                <div class="header-icon storage-icon">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/>
+                    <path d="M15 18H9"/>
+                    <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/>
+                    <circle cx="17" cy="18" r="2"/>
+                    <circle cx="7" cy="18" r="2"/>
+                  </svg>
+                </div>
+                <div class="header-text">
+                  <h1>Flotila áut</h1>
+                  <p>Správa vozidiel</p>
+                </div>
+              </div>
+              <div class="header-actions" style="margin-left:auto; display:flex; align-items:center; gap:12px;">
+                <button id="settings-btn" class="settings-icon-btn" title="Nastavenia">
+                  <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Authentication Section -->
+        <div id="auth-section" class="auth-section" style="display: none;">
+          <div class="auth-container">
+            <div class="auth-card">
+              <h2>Prihlásenie</h2>
+              <p>Pre prístup k flotile sa musíte prihlásiť</p>
+              <div class="auth-form">
+                <input type="email" id="auth-email" placeholder="Email" class="auth-input">
+                <input type="password" id="auth-password" placeholder="Heslo" class="auth-input">
+                <button id="auth-login-btn" class="auth-button">Prihlásiť sa</button>
+                <button id="auth-logout-btn" class="auth-button secondary" style="display: none;">Odhlásiť sa</button>
+              </div>
+              <div id="auth-status" class="auth-status"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main Content -->
+        <div id="flotila-main-content" class="flotila-main-content" style="display: none;">
+          <div class="flotila-layout">
+            <div class="flotila-left-panel">
+              <div class="search-container">
+                <div class="form-group">
+                  <input type="text" id="flotilaSearch" placeholder="Hľadať podľa SPZ">
+                </div>
+                <button id="populate-real-data-btn" class="populate-data-btn" title="Naplniť databázu skutočnými dátami z ccc.xls">
+                  <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14,2 14,8 20,8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                    <polyline points="10,9 9,9 8,9"/>
+                  </svg>
+                  Naplniť databázu
+                </button>
+              </div>
+              <div id="pair-list" class="pair-list"></div>
+              <div id="unassigned-trailers" class="unassigned-trailers"></div>
+            </div>
+            <div id="polozka-panel" class="polozka-panel">
+              <div class="polozka-placeholder">
+                <svg width="64" height="64" fill="none" stroke="#9ca3af" stroke-width="1.5">
+                  <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <p>Vyberte vozidlo pre polozka</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+<script src="../../../shared/services/session-guard.js"></script>`n</body>
+</html>
+
+
+
