@@ -3,6 +3,8 @@ class FlotilaManager {
   constructor() {
     this.trucks = {};
     this.trailers = {};
+    this.cars = {};
+    this.other = {};
     this.selectedVehicle = null;
     this.currentUser = null;
     this.unsubscribeFunctions = [];
@@ -10,6 +12,8 @@ class FlotilaManager {
     this.cache = {
       trucks: {},
       trailers: {},
+      cars: {},
+      other: {},
       vehicleKms: {},
       lastUpdated: null,
       ttl: 5 * 60 * 1000 // 5 minutes cache TTL
@@ -30,6 +34,11 @@ class FlotilaManager {
     setTimeout(() => {
       this.checkAuthState();
     }, 500);
+  }
+
+  // Helper method to get predefined services collection reference
+  _predefinedServicesCollection() {
+    return window.db.collection('FLOTILA').doc('predefined_services').collection('items');
   }
 
   setupAuth() {
@@ -82,91 +91,253 @@ class FlotilaManager {
     this.clearPolozkaPanel();
   }
 
+  // Helper to get oil category title
+  // Helper: Check if a category is a valid oil category
+  isOilCategory(categoryId) {
+    const validOilCategories = ['motorove', 'prevodove', 'diferencial', 'chladiaca'];
+    return validOilCategories.includes(categoryId);
+  }
+
+  // Helper: Check if a category is a valid parts category
+  isPartsCategory(categoryId) {
+    const validPartsCategories = [
+      'olejove', 'naftove', 'kabinove', 'vzduchove', 'adblue', 
+      'vysusac-vzduchu', 'ostnane', 
+      'brzd-platnicky', 'brzd-kotuce', 'brzd-valce'
+    ];
+    return validPartsCategories.includes(categoryId);
+  }
+
+  getOilCategoryTitle(categoryId) {
+    const categoryMap = {
+      'motorove': 'Motorové oleje',
+      'prevodove': 'Prevodové oleje',
+      'diferencial': 'Diferenciálne oleje',
+      'chladiaca': 'Chladiaca kvapalina'
+    };
+    return categoryMap[categoryId] || categoryId;
+  }
+
+  // Helper methods for FLOTILA collection
+  _flotilaCarsCollection() {
+    return window.db.collection('FLOTILA').doc('cars').collection('items');
+  }
+
+  _flotilaTrucksCollection() {
+    return window.db.collection('FLOTILA').doc('trucks').collection('items');
+  }
+
+  _flotilaTrailersCollection() {
+    return window.db.collection('FLOTILA').doc('trailers').collection('items');
+  }
+
+  _flotilaOtherCollection() {
+    return window.db.collection('FLOTILA').doc('other').collection('items');
+  }
+
+  async _getFlotilaVehicles() {
+    const [carsSnapshot, trucksSnapshot, trailersSnapshot, otherSnapshot] = await Promise.all([
+      this._flotilaCarsCollection().get(),
+      this._flotilaTrucksCollection().get(),
+      this._flotilaTrailersCollection().get(),
+      this._flotilaOtherCollection().get()
+    ]);
+
+    // Keep vehicles separate by type
+    const carsData = carsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const trucksData = trucksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const trailersData = trailersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const otherData = otherSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    return { carsData, trucksData, trailersData, otherData };
+  }
+
+  // Helper to get the correct FLOTILA collection reference for a vehicle
+  _getFlotilaCollectionForVehicle(vehicleOrPlate) {
+    // First, try to determine by checking which cache the vehicle is in (most reliable)
+    if (typeof vehicleOrPlate === 'string') {
+      // It's a license plate string - check caches directly
+      const plate = vehicleOrPlate;
+      if (this.trailers[plate]) {
+        return this._flotilaTrailersCollection();
+      } else if (this.cars[plate]) {
+        return this._flotilaCarsCollection();
+      } else if (this.other[plate]) {
+        return this._flotilaOtherCollection();
+      } else if (this.trucks[plate]) {
+        return this._flotilaTrucksCollection();
+      }
+    } else {
+      // It's a vehicle object - check which cache it's in by license plate
+      const plate = vehicleOrPlate?.licensePlate;
+      if (plate) {
+        if (this.trailers[plate]) {
+          return this._flotilaTrailersCollection();
+        } else if (this.cars[plate]) {
+          return this._flotilaCarsCollection();
+        } else if (this.other[plate]) {
+          return this._flotilaOtherCollection();
+        } else if (this.trucks[plate]) {
+          return this._flotilaTrucksCollection();
+        }
+      }
+    }
+    
+    // Fallback to category/type check if not found in cache
+    let category = 'truck';
+    if (typeof vehicleOrPlate === 'string') {
+      // It's a plate, find the vehicle
+      const vehicle = this.trucks[vehicleOrPlate] || this.trailers[vehicleOrPlate] || this.cars[vehicleOrPlate] || this.other[vehicleOrPlate];
+      if (vehicle) {
+        if (vehicle.vehicleType === 'trailer') category = 'trailer';
+        else if (vehicle.vehicleType === 'car') category = 'car';
+        else if (vehicle.vehicleType === 'other') category = 'other';
+        else category = vehicle?.category || 'truck';
+      }
+    } else {
+      // It's a vehicle object
+      if (vehicleOrPlate?.vehicleType === 'trailer') {
+        category = 'trailer';
+      } else if (vehicleOrPlate?.vehicleType === 'car') {
+        category = 'car';
+      } else if (vehicleOrPlate?.vehicleType === 'other') {
+        category = 'other';
+      } else {
+        category = vehicleOrPlate?.category || vehicleOrPlate?.type || 'truck';
+      }
+    }
+    
+    if (category === 'trailer') {
+      return this._flotilaTrailersCollection();
+    } else if (category === 'car') {
+      return this._flotilaCarsCollection();
+    } else if (category === 'other') {
+      return this._flotilaOtherCollection();
+    } else {
+      return this._flotilaTrucksCollection();
+    }
+  }
+
   // Load data from Firebase with optimized batch queries
   async loadData() {
     try {
       if (!this.currentUser) {
         this.trucks = {};
         this.trailers = {};
+        this.cars = {};
+        this.other = {};
         return;
       }
       
       // Show loading indicator
       this.showLoadingIndicator();
       
-      // Get all vehicles from vehicles collection
-      const snapshot = await window.db.collection('vehicles').get();
+      // Load from FLOTILA collection
+      let carsData = [];
+      let trucksData = [];
+      let trailersData = [];
+      let otherData = [];
+      let vehicleKms = {};
       
-      this.trucks = {};
-      this.trailers = {};
-      
-      if (snapshot.docs.length === 0) {
+      try {
+        // Load all vehicles from FLOTILA collection
+        const vehiclesResult = await this._getFlotilaVehicles();
+        carsData = vehiclesResult.carsData;
+        trucksData = vehiclesResult.trucksData;
+        trailersData = vehiclesResult.trailersData;
+        otherData = vehiclesResult.otherData;
+
+        // Load vehicle kilometers from SHARED collection
+        try {
+          if (window.DatabaseService) {
+            vehicleKms = await window.DatabaseService.getAllVehicleKms();
+          } else {
+            // Fallback to old structure
+            const kmSnapshot = await window.db.collection('vehicles_km').get();
+            kmSnapshot.docs.forEach(doc => {
+              vehicleKms[doc.id] = doc.data().kilometers || 0;
+            });
+          }
+        } catch (kmError) {
+          console.warn('Error loading vehicle kilometers:', kmError);
+        }
+      } catch (error) {
+        console.error('Error loading vehicles:', error);
         this.hideLoadingIndicator();
         return;
       }
       
-      // Load kilometer data from vehicles_km collection
-      let vehicleKms = {};
-      try {
-        if (window.DatabaseService && window.DatabaseService.getAllVehicleKms) {
-          vehicleKms = await window.DatabaseService.getAllVehicleKms();
-        } else {
-          // Fallback: load directly from Firebase
-          const kmSnapshot = await window.db.collection('vehicles_km').get();
-          kmSnapshot.docs.forEach(doc => {
-            vehicleKms[doc.id] = doc.data().kilometers || 0;
-          });
-        }
-      } catch (kmError) {
-        console.warn('Error loading vehicle kilometers:', kmError);
-        vehicleKms = {};
-      }
+      this.trucks = {};
+      this.trailers = {};
+      this.cars = {};
+      this.other = {};
       
-      // Use batch queries to get all vehicle info documents at once
-      const batch = window.db.batch();
-      const vehicleInfoRefs = [];
-      
-      // Prepare all the document references
-      for (const doc of snapshot.docs) {
-        const licensePlate = doc.id;
-        const infoRef = window.db.collection('vehicles')
-          .doc(licensePlate)
-          .collection('info')
-          .doc('basic');
-        vehicleInfoRefs.push({ licensePlate, ref: infoRef });
-      }
-      
-      // Execute batch read
-      const vehicleInfoSnapshots = await Promise.all(
-        vehicleInfoRefs.map(({ ref }) => ref.get())
-      );
-      
-      // Process the results
-      for (let i = 0; i < vehicleInfoSnapshots.length; i++) {
-        const infoSnapshot = vehicleInfoSnapshots[i];
-        const { licensePlate } = vehicleInfoRefs[i];
+      // Process cars
+      for (const car of carsData) {
+        const licensePlate = car.licensePlate || car.id;
+        const normalizedPlate = this.normalizeLicensePlate(licensePlate);
+        const kmFromDb = vehicleKms[normalizedPlate] || vehicleKms[licensePlate] || car.kilometers || 0;
         
-        if (infoSnapshot.exists) {
-          const vehicleData = infoSnapshot.data();
-          
-          // Add kilometer data from vehicles_km collection using normalized license plate
-          const normalizedPlate = this.normalizeLicensePlate(licensePlate);
-          const kmFromDb = vehicleKms[normalizedPlate];
-          vehicleData.currentKm = kmFromDb || vehicleData.kilometers || 0;
-          
-          
-          if (vehicleData.vehicleType === 'truck') {
-            this.trucks[licensePlate] = {
-              licensePlate,
-              ...vehicleData
-            };
-          } else if (vehicleData.vehicleType === 'trailer') {
-            this.trailers[licensePlate] = {
-              licensePlate,
-              ...vehicleData
-            };
-          }
-        }
+        this.cars[licensePlate] = {
+          licensePlate,
+          vehicleType: 'car',
+          currentKm: kmFromDb,
+          services: car.services || [],
+          activeWorkSession: car.activeWorkSession || null,
+          history: car.history || [],
+          ...car
+        };
+      }
+      
+      // Process trucks
+      for (const truck of trucksData) {
+        const licensePlate = truck.licensePlate || truck.id;
+        const normalizedPlate = this.normalizeLicensePlate(licensePlate);
+        const kmFromDb = vehicleKms[normalizedPlate] || vehicleKms[licensePlate] || truck.kilometers || 0;
+        
+        this.trucks[licensePlate] = {
+          licensePlate,
+          vehicleType: 'truck',
+          currentKm: kmFromDb,
+          services: truck.services || [],
+          activeWorkSession: truck.activeWorkSession || null,
+          history: truck.history || [],
+          ...truck
+        };
+      }
+      
+      // Process trailers
+      for (const trailer of trailersData) {
+        const licensePlate = trailer.licensePlate || trailer.id;
+        const normalizedPlate = this.normalizeLicensePlate(licensePlate);
+        const kmFromDb = vehicleKms[normalizedPlate] || vehicleKms[licensePlate] || trailer.kilometers || 0;
+        
+        this.trailers[licensePlate] = {
+          licensePlate,
+          vehicleType: 'trailer',
+          currentKm: kmFromDb,
+          services: trailer.services || [],
+          activeWorkSession: trailer.activeWorkSession || null,
+          history: trailer.history || [],
+          ...trailer
+        };
+      }
+      
+      // Process other vehicles
+      for (const other of otherData) {
+        const licensePlate = other.licensePlate || other.id;
+        const normalizedPlate = this.normalizeLicensePlate(licensePlate);
+        const kmFromDb = vehicleKms[normalizedPlate] || vehicleKms[licensePlate] || other.kilometers || 0;
+        
+        this.other[licensePlate] = {
+          licensePlate,
+          vehicleType: 'other',
+          currentKm: kmFromDb,
+          services: other.services || [],
+          activeWorkSession: other.activeWorkSession || null,
+          history: other.history || [],
+          ...other
+        };
       }
       
       // Cache the data for faster subsequent loads
@@ -179,6 +350,8 @@ class FlotilaManager {
       // Fallback to empty data
       this.trucks = {};
       this.trailers = {};
+      this.cars = {};
+      this.other = {};
       this.hideLoadingIndicator();
     }
   }
@@ -210,7 +383,7 @@ class FlotilaManager {
       }
     });
 
-    // Detail panel click to deselect vehicle
+    // Detail panel click to deselect vehicle (desktop only)
     document.getElementById('polozka-panel')?.addEventListener('click', (e) => {
       // Only deselect if clicking on the placeholder or outside vehicle content
       if (e.target.closest('.polozka-placeholder') || 
@@ -219,11 +392,46 @@ class FlotilaManager {
       }
     });
 
+    // Mobile modal close button
+    document.getElementById('mobile-vehicle-modal-close')?.addEventListener('click', () => {
+      this.closeMobileModal();
+    });
+
+    // Close mobile modal when clicking overlay
+    document.getElementById('mobile-vehicle-modal')?.addEventListener('click', (e) => {
+      if (e.target.classList.contains('mobile-vehicle-modal-overlay')) {
+        this.closeMobileModal();
+      }
+    });
+
     // Keyboard shortcut to deselect vehicle (Escape key)
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && this.selectedVehicle) {
-        this.deselectVehicle();
+        if (this.isMobile()) {
+          this.closeMobileModal();
+        } else {
+          this.deselectVehicle();
+        }
       }
+    });
+
+    // Handle window resize - close modal if switching from mobile to desktop
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        if (!this.isMobile() && document.getElementById('mobile-vehicle-modal')?.classList.contains('active')) {
+          // Switched to desktop, close modal and show in panel instead
+          const modal = document.getElementById('mobile-vehicle-modal');
+          if (modal && this.selectedVehicle) {
+            const vehicle = this.selectedVehicle;
+            const type = vehicle.type;
+            this.closeMobileModal();
+            // Re-render in desktop panel
+            this.renderPolozkaPanel(vehicle, type, false);
+          }
+        }
+      }, 250);
     });
   }
 
@@ -291,6 +499,8 @@ class FlotilaManager {
   cacheData() {
     this.cache.trucks = { ...this.trucks };
     this.cache.trailers = { ...this.trailers };
+    this.cache.cars = { ...this.cars };
+    this.cache.other = { ...this.other };
     
     // Cache kilometer data using normalized license plates
     this.cache.vehicleKms = {};
@@ -301,6 +511,14 @@ class FlotilaManager {
     Object.values(this.trailers).forEach(trailer => {
       const normalizedPlate = this.normalizeLicensePlate(trailer.licensePlate);
       this.cache.vehicleKms[normalizedPlate] = trailer.currentKm || 0;
+    });
+    Object.values(this.cars).forEach(car => {
+      const normalizedPlate = this.normalizeLicensePlate(car.licensePlate);
+      this.cache.vehicleKms[normalizedPlate] = car.currentKm || 0;
+    });
+    Object.values(this.other).forEach(other => {
+      const normalizedPlate = this.normalizeLicensePlate(other.licensePlate);
+      this.cache.vehicleKms[normalizedPlate] = other.currentKm || 0;
     });
     
     this.cache.lastUpdated = Date.now();
@@ -323,6 +541,8 @@ class FlotilaManager {
     if (this.isCacheValid()) {
       this.trucks = { ...this.cache.trucks };
       this.trailers = { ...this.cache.trailers };
+      this.cars = { ...(this.cache.cars || {}) };
+      this.other = { ...(this.cache.other || {}) };
       
       // Restore kilometer data from cache
       Object.values(this.trucks).forEach(truck => {
@@ -332,6 +552,14 @@ class FlotilaManager {
       Object.values(this.trailers).forEach(trailer => {
         const normalizedPlate = this.normalizeLicensePlate(trailer.licensePlate);
         trailer.currentKm = this.cache.vehicleKms[normalizedPlate] || trailer.currentKm || 0;
+      });
+      Object.values(this.cars).forEach(car => {
+        const normalizedPlate = this.normalizeLicensePlate(car.licensePlate);
+        car.currentKm = this.cache.vehicleKms[normalizedPlate] || car.currentKm || 0;
+      });
+      Object.values(this.other).forEach(other => {
+        const normalizedPlate = this.normalizeLicensePlate(other.licensePlate);
+        other.currentKm = this.cache.vehicleKms[normalizedPlate] || other.currentKm || 0;
       });
       
       return true;
@@ -355,6 +583,14 @@ class FlotilaManager {
     // Filter and sort trucks
     let filteredTrucks = Object.values(this.trucks)
       .sort((a, b) => a.licensePlate.localeCompare(b.licensePlate));
+    
+    // Filter and sort cars
+    let filteredCars = Object.values(this.cars)
+      .sort((a, b) => a.licensePlate.localeCompare(b.licensePlate));
+    
+    // Filter and sort other vehicles
+    let filteredOther = Object.values(this.other)
+      .sort((a, b) => a.licensePlate.localeCompare(b.licensePlate));
 
     if (query) {
       const searchTerm = query.toLowerCase();
@@ -362,11 +598,10 @@ class FlotilaManager {
         // Search in truck properties
         const truckMatch = 
           truck.licensePlate.toLowerCase().includes(searchTerm) ||
-          truck.vin.toLowerCase().includes(searchTerm) ||
-          truck.kilometers.toString().includes(searchTerm) ||
-          (truck.brand && truck.brand.toLowerCase().includes(searchTerm)) ||
+          (truck.vin && truck.vin.toLowerCase().includes(searchTerm)) ||
+          truck.currentKm.toString().includes(searchTerm) ||
           (truck.model && truck.model.toLowerCase().includes(searchTerm)) ||
-          (truck.type && truck.type.toLowerCase().includes(searchTerm));
+          (truck.vehicleType && truck.vehicleType.toLowerCase().includes(searchTerm));
         
         // Search in attached trailer properties
         if (truck.trailer) {
@@ -374,16 +609,28 @@ class FlotilaManager {
           if (trailer) {
             const trailerMatch = 
               trailer.licensePlate.toLowerCase().includes(searchTerm) ||
-              trailer.vin.toLowerCase().includes(searchTerm) ||
-              (trailer.brand && trailer.brand.toLowerCase().includes(searchTerm)) ||
-              (trailer.model && trailer.model.toLowerCase().includes(searchTerm)) ||
-              (trailer.type && trailer.type.toLowerCase().includes(searchTerm));
+              (trailer.vin && trailer.vin.toLowerCase().includes(searchTerm)) ||
+              (trailer.model && trailer.model.toLowerCase().includes(searchTerm));
             
             return truckMatch || trailerMatch;
           }
         }
         
         return truckMatch;
+      });
+      
+      filteredCars = filteredCars.filter(car => {
+        return car.licensePlate.toLowerCase().includes(searchTerm) ||
+          (car.vin && car.vin.toLowerCase().includes(searchTerm)) ||
+          car.currentKm.toString().includes(searchTerm) ||
+          (car.model && car.model.toLowerCase().includes(searchTerm));
+      });
+      
+      filteredOther = filteredOther.filter(other => {
+        return other.licensePlate.toLowerCase().includes(searchTerm) ||
+          (other.vin && other.vin.toLowerCase().includes(searchTerm)) ||
+          other.currentKm.toString().includes(searchTerm) ||
+          (other.model && other.model.toLowerCase().includes(searchTerm));
       });
       
       // Reset pagination when searching
@@ -411,7 +658,72 @@ class FlotilaManager {
       paginationHtml = this.createPaginationControls(totalPages);
     }
 
-    pairList.innerHTML = pairsHtml + paginationHtml;
+    // Build all sections HTML
+    let allSectionsHtml = '';
+
+    // 1. Tahače section
+    if (filteredTrucks.length > 0) {
+      allSectionsHtml += `
+        <div class="trucks-pairs-section">
+          <h3 class="trucks-pairs-title">
+            Tahače (${filteredTrucks.length})
+          </h3>
+          <div class="trucks-pairs-content">
+            ${pairsHtml}
+            ${paginationHtml}
+          </div>
+        </div>
+      `;
+    }
+
+    // 2. Nepriradené prívesy section (rendered separately below)
+    // This is handled by renderUnassignedTrailers
+
+    // 3. Osobné autá section
+    if (filteredCars.length > 0) {
+      const carsHtml = filteredCars.map(car => `
+        <div class="vehicle-card car-card" onclick="flotilaManager.showPolozka('car', '${car.licensePlate}')">
+          <div class="vehicle-info">
+            <div class="vehicle-license">${car.licensePlate}</div>
+          </div>
+        </div>
+      `).join('');
+
+      allSectionsHtml += `
+        <div class="cars-section">
+          <h3 class="cars-section-title">
+            Osobné autá (${filteredCars.length})
+          </h3>
+          <div class="cars-section-content">
+            ${carsHtml}
+          </div>
+        </div>
+      `;
+    }
+
+    // 4. Ostatné section
+    if (filteredOther.length > 0) {
+      const otherHtml = filteredOther.map(other => `
+        <div class="vehicle-card other-card" onclick="flotilaManager.showPolozka('other', '${other.licensePlate}')">
+          <div class="vehicle-info">
+            <div class="vehicle-license">${other.licensePlate}</div>
+          </div>
+        </div>
+      `).join('');
+
+      allSectionsHtml += `
+        <div class="other-section">
+          <h3 class="other-section-title">
+            Ostatné (${filteredOther.length})
+          </h3>
+          <div class="other-section-content">
+            ${otherHtml}
+          </div>
+        </div>
+      `;
+    }
+
+    pairList.innerHTML = allSectionsHtml;
 
     // Render unassigned trailers with search filter
     this.renderUnassignedTrailers(query);
@@ -543,58 +855,76 @@ class FlotilaManager {
   }
 
   // Show vehicle položka
+  // Check if device is mobile
+  isMobile() {
+    return window.innerWidth <= 768;
+  }
+
+  // Open mobile modal
+  openMobileModal() {
+    const modal = document.getElementById('mobile-vehicle-modal');
+    if (modal) {
+      modal.classList.add('active');
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden';
+    }
+  }
+
+  // Close mobile modal
+  closeMobileModal() {
+    const modal = document.getElementById('mobile-vehicle-modal');
+    const modalBody = document.getElementById('mobile-vehicle-modal-body');
+    if (modal) {
+      modal.classList.remove('active');
+      // Restore body scroll
+      document.body.style.overflow = '';
+    }
+    // Clear modal content
+    if (modalBody) {
+      modalBody.innerHTML = '';
+    }
+    this.selectedVehicle = null;
+  }
+
   async showPolozka(type, plate) {
     if (!plate) return;
 
-    const vehicle = type === 'truck' ? 
-      Object.values(this.trucks).find(t => t.licensePlate === plate) :
-      Object.values(this.trailers).find(t => t.licensePlate === plate);
+    let vehicle = null;
+    if (type === 'truck') {
+      vehicle = Object.values(this.trucks).find(t => t.licensePlate === plate);
+    } else if (type === 'trailer') {
+      vehicle = Object.values(this.trailers).find(t => t.licensePlate === plate);
+    } else if (type === 'car') {
+      vehicle = Object.values(this.cars).find(t => t.licensePlate === plate);
+    } else if (type === 'other') {
+      vehicle = Object.values(this.other).find(t => t.licensePlate === plate);
+    }
 
     if (!vehicle) return;
 
-    this.selectedVehicle = { ...vehicle, type };
+    // Ensure category is set correctly - use type if category doesn't exist
+    const category = vehicle.category || vehicle.vehicleType || type;
+    this.selectedVehicle = { ...vehicle, type, category };
     
-    
-    // Get services with calculations from Firebase
-    try {
-      const servicesWithCalculations = await window.DatabaseService.getServicesWithCalculations(plate);
-      vehicle.services = servicesWithCalculations;
-    } catch (error) {
-      console.error('Error getting services with calculations:', error);
+    // Services should already be loaded with the vehicle data from TIRES collection
+    // If not present, initialize empty arrays
+    if (!vehicle.services) {
       vehicle.services = [];
     }
-    
-    // Load services and work session from database
-    try {
-      const vehicleInfo = await window.db.collection('vehicles')
-        .doc(plate)
-        .collection('info')
-        .doc('basic')
-        .get();
-      
-      if (vehicleInfo.exists) {
-        const data = vehicleInfo.data();
-        vehicle.services = data.services || [];
-        vehicle.activeWorkSession = data.activeWorkSession || null;
-        vehicle.history = data.history || [];
-        // Preserve currentKm from vehicles_km collection, don't override it
-        // vehicle.currentKm is already set correctly from the main data loading
-      } else {
-        vehicle.services = [];
-        vehicle.activeWorkSession = null;
-        vehicle.history = [];
-        // Keep the currentKm that was loaded from vehicles_km collection
-      }
-    } catch (error) {
-      console.error('Error loading services and work session:', error);
-      vehicle.services = [];
+    if (!vehicle.activeWorkSession) {
       vehicle.activeWorkSession = null;
+    }
+    if (!vehicle.history) {
       vehicle.history = [];
-      // Keep the currentKm that was loaded from vehicles_km collection
     }
     
-    
-    this.renderPolozkaPanel(vehicle, type);
+    // On mobile, show modal; on desktop, show inline panel
+    if (this.isMobile()) {
+      this.renderPolozkaPanel(vehicle, type, true); // true = mobile mode
+      this.openMobileModal();
+    } else {
+      this.renderPolozkaPanel(vehicle, type, false); // false = desktop mode
+    }
   }
 
   // Clear položka panel and show placeholder
@@ -621,29 +951,41 @@ class FlotilaManager {
   deselectVehicle() {
     this.selectedVehicle = null;
     this.clearPolozkaPanel();
+    // Close mobile modal if open
+    if (this.isMobile()) {
+      this.closeMobileModal();
+    }
   }
 
   // Render položka panel
-  renderPolozkaPanel(vehicle, type) {
-    const detailPanel = document.getElementById('polozka-panel');
-    if (!detailPanel) return;
+  renderPolozkaPanel(vehicle, type, isMobile = false) {
+    const targetPanel = isMobile 
+      ? document.getElementById('mobile-vehicle-modal-body')
+      : document.getElementById('polozka-panel');
+    
+    if (!targetPanel) return;
 
     // Reset scroll position to top
-    detailPanel.scrollTop = 0;
+    targetPanel.scrollTop = 0;
     
-    // Add has-vehicle class to extend panel to bottom
-    detailPanel.classList.add('has-vehicle');
+    // For desktop, add has-vehicle class to extend panel to bottom
+    if (!isMobile) {
+      const detailPanel = document.getElementById('polozka-panel');
+      if (detailPanel) {
+        detailPanel.classList.add('has-vehicle');
+      }
+    }
 
     const typeText = type === 'truck' ? 'Nákladné auto' : 'Príves';
     const typeColor = type === 'truck' ? '#eab308' : '#2563eb';
 
-    detailPanel.innerHTML = `
+    targetPanel.innerHTML = `
       <div class="vehicle-polozka">
         <!-- Vehicle Header Info -->
   <div class="vehicle-header" style="display: flex; justify-content: space-between; align-items: center; padding: 0 0 10px 0; border-radius: 0; background: none; box-shadow: none;">
           <div class="vehicle-header-left" style="display: flex; flex-direction: column; gap: 4px;">
             <div class="vehicle-license-large" style="color: #374151; font-size: 1.2rem; font-weight: bold;">${vehicle.licensePlate}</div>
-            <div class="vehicle-type" style="color: #6b7280; font-size: 0.95rem; letter-spacing: 1px;">${vehicle.type || 'Neznámy typ'}</div>
+            <div class="vehicle-type" style="color: #6b7280; font-size: 0.95rem; letter-spacing: 1px;">${vehicle.model || 'Neznámy model'}</div>
           </div>
           <div class="vehicle-header-right" style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
             <div class="vehicle-km-large" style="color: #374151; font-size: 1rem; font-weight: 600;">${vehicle.currentKm.toLocaleString()} km</div>
@@ -731,12 +1073,18 @@ class FlotilaManager {
 
   // Calculate equivalent kilometers until due for sorting
   calculateEquivalentKmUntilDue(service) {
-    if (service.type === 'km') {
+    const serviceType = service.type || service.unit || 'km';
+    const serviceInterval = service.interval || service.norm;
+    
+    if (serviceType === 'km') {
       // For km-based services, use remaining km directly
-      const currentKm = this.selectedVehicle?.currentKm || this.selectedVehicle?.kilometers || 0;
-      const hasLastKm = service.lastService && typeof service.lastService.km === 'number';
-      const lastServiceKm = hasLastKm ? service.lastService.km : currentKm;
-      const targetKm = lastServiceKm + parseInt(service.interval);
+      // Always get currentKm from SHARED/vehicles_km (via cache)
+      const normalizedPlate = this.selectedVehicle?.licensePlate ? this.normalizeLicensePlate(this.selectedVehicle.licensePlate) : null;
+      const currentKmFromShared = normalizedPlate ? (this.cache.vehicleKms[normalizedPlate] || 0) : 0;
+      const currentKm = currentKmFromShared || this.selectedVehicle?.currentKm || this.selectedVehicle?.kilometers || 0;
+      const hasLastKm = (service.lastKm && typeof service.lastKm === 'number') || (service.lastService && typeof service.lastService.km === 'number');
+      const lastServiceKm = hasLastKm ? (service.lastKm || service.lastService.km) : currentKm;
+      const targetKm = lastServiceKm + parseInt(serviceInterval || 0);
       const remainingKm = targetKm - currentKm;
       return remainingKm; // Negative for overdue
     } else {
@@ -744,8 +1092,9 @@ class FlotilaManager {
       // 1 day = 2500/7 km ≈ 357 km/day
       const kmPerDay = 2500 / 7;
       
-      if (service.type === 'specificDate' || service.specificDate) {
-        const specific = this.parseDateFlexible(service.specificDate || service.interval);
+      if (serviceType === 'specificDate' || service.unit === 'specificDate' || service.specificDate) {
+        const dateValue = service.specificDate || (service.unit === 'specificDate' ? service.norm : null) || serviceInterval;
+        const specific = this.parseDateFlexible(dateValue);
         if (!specific) return Infinity; // No date set, put at end
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -754,13 +1103,14 @@ class FlotilaManager {
         return diffDays * kmPerDay; // Negative for overdue
       }
       
-      if (!service.lastService?.date) return Infinity; // No last service, put at end
+      const lastDate = service.lastDate || service.lastService?.date;
+      if (!lastDate) return Infinity; // No last service, put at end
       
-      const lastPerformed = this.parseDateFlexible(service.lastService.date);
+      const lastPerformed = this.parseDateFlexible(lastDate);
       if (!lastPerformed) return Infinity;
       
-      const interval = parseInt(service.interval) || 0;
-      const timeUnit = service.timeUnit || 'days';
+      const interval = parseInt(serviceInterval) || 0;
+      const timeUnit = service.timeUnit || (serviceType === 'year' ? 'years' : serviceType === 'month' ? 'months' : serviceType === 'day' ? 'days' : 'days');
       
       let nextDueDate = new Date(lastPerformed);
       if (timeUnit === 'months') {
@@ -786,18 +1136,43 @@ class FlotilaManager {
     }
 
     // Categorize services
+    const dokumentyServices = [];
     const servisServices = [];
     const ostatneServices = [];
 
     services.forEach((service, originalIndex) => {
       const serviceName = (service.name || '').toLowerCase();
+      const serviceUnit = (service.unit || service.type || '').toLowerCase();
+      
+      // Check if it's a km-based service first (these should go to Servis, not Dokumenty)
+      const isKmBased = serviceUnit === 'km' || service.type === 'km';
+      
+      // Check if it's a dokumenty service (STK, EK, Ciachovanie, Stiahnutie)
+      // But exclude km-based services from dokumenty
+      const isDokumenty = !isKmBased && (
+        serviceName.includes('technická kontrola') ||
+        serviceName.includes('technicka kontrola') ||
+        serviceName.includes('stk') ||
+        serviceName.includes('emisná kontrola') ||
+        serviceName.includes('emisna kontrola') ||
+        serviceName.includes('ek') ||
+        serviceName.includes('ciachovanie tachografu') ||
+        serviceName.includes('stiahnutie tachografu')
+      );
+      
+      // Check if it's a servis service (km unit, Ročná, Kontrola brzd)
       const isServis = 
-        service.type === 'km' || 
-        serviceName.includes('kontrola brzd') || 
+        isKmBased ||
+        serviceName.includes('ročná kontrola') ||
+        serviceName.includes('rocna kontrola') ||
         serviceName.includes('ročná prehliadka') ||
-        serviceName.includes('rocna prehliadka');
+        serviceName.includes('rocna prehliadka') ||
+        serviceName.includes('kontrola brzd') ||
+        serviceName.includes('kontrola brźd');
 
-      if (isServis) {
+      if (isDokumenty) {
+        dokumentyServices.push({ service, originalIndex });
+      } else if (isServis) {
         servisServices.push({ service, originalIndex });
       } else {
         ostatneServices.push({ service, originalIndex });
@@ -805,6 +1180,12 @@ class FlotilaManager {
     });
 
     // Sort services by proximity to due date (ascending - closest first)
+    dokumentyServices.sort((a, b) => {
+      const aValue = this.calculateEquivalentKmUntilDue(a.service);
+      const bValue = this.calculateEquivalentKmUntilDue(b.service);
+      return aValue - bValue;
+    });
+
     servisServices.sort((a, b) => {
       const aValue = this.calculateEquivalentKmUntilDue(a.service);
       const bValue = this.calculateEquivalentKmUntilDue(b.service);
@@ -819,6 +1200,13 @@ class FlotilaManager {
 
     // Helper function to render a single service card
     const renderServiceCard = (service, index) => {
+      // Normalize service: use unit as type if type doesn't exist
+      const serviceType = service.type || service.unit || 'km';
+      const serviceInterval = service.interval || service.norm;
+      // For specificDate services, use norm if specificDate is not set
+      const serviceSpecificDate = service.specificDate || (service.unit === 'specificDate' || serviceType === 'specificDate' ? (service.norm || serviceInterval) : null);
+      const serviceTimeUnit = service.timeUnit || (serviceType === 'year' ? 'years' : serviceType === 'day' ? 'days' : serviceType === 'month' ? 'months' : 'days');
+      
       const statusClass = this.getServiceStatusClass(service);
       return `
         <div class="service-type-card ${statusClass}">
@@ -826,15 +1214,15 @@ class FlotilaManager {
             <div class="service-type-info">
               <h4 class="service-type-name">${service.name}</h4>
               <div class="service-type-interval">
-                ${this.getServiceIntervalText(service.type, service.interval, service.specificDate, service.timeUnit)}
+                ${this.getServiceIntervalText(serviceType, serviceInterval, serviceSpecificDate, serviceTimeUnit)}
               </div>
             </div>
             <div class="service-timing-info">
               <div class="service-due-date">
-                ${service.type === 'km' ? this.calculateTargetKm(service) : this.calculateDueDate(service.lastService?.date, service.interval, service.type, service.specificDate, service.timeUnit)}
+                ${serviceType === 'km' ? this.calculateTargetKm(service) : this.calculateDueDate(service.lastDate || service.lastService?.date, serviceInterval, serviceType, serviceSpecificDate || (service.unit === 'specificDate' ? service.norm : null), serviceTimeUnit)}
               </div>
               <div class="service-remaining">
-                ${service.type === 'km' ? this.calculateRemainingKm(service) : this.calculateRemainingDays(service.lastService?.date, service.interval, service.type, service.specificDate, service.timeUnit)}
+                ${serviceType === 'km' ? this.calculateRemainingKm(service) : this.calculateRemainingDays(service.lastDate || service.lastService?.date, serviceInterval, serviceType, serviceSpecificDate || (service.unit === 'specificDate' ? service.norm : null), serviceTimeUnit)}
               </div>
             </div>
             <div class="service-type-actions">
@@ -864,6 +1252,33 @@ class FlotilaManager {
 
     // Render sections
     let html = '';
+
+    // Dokumenty section (first section)
+    if (dokumentyServices.length > 0) {
+      html += `
+        <div class="services-section-item">
+          <div class="services-section-header collapsible" onclick="window.flotilaManager.toggleServiceSection('dokumenty-section')">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14,2 14,8 20,8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10,9 9,9 8,9"></polyline>
+            </svg>
+            <h3>Dokumenty</h3>
+            <span class="service-section-count">${dokumentyServices.length}</span>
+            <svg class="dropdown-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transform: rotate(180deg);">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
+          <div class="services-section-content collapsible-content" id="dokumenty-section">
+            <div class="services-grid">
+              ${dokumentyServices.map(({ service, originalIndex }) => renderServiceCard(service, originalIndex)).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+    }
 
     // Servis section
     if (servisServices.length > 0) {
@@ -995,8 +1410,10 @@ class FlotilaManager {
       `;
     }).join('');
 
-    // Get current vehicle kilometers
-    const currentKm = this.selectedVehicle?.currentKm || 0;
+    // Get km value for work session - use workKm if set, otherwise use actual vehicle km from SHARED
+    const normalizedPlate = this.selectedVehicle?.licensePlate ? this.normalizeLicensePlate(this.selectedVehicle.licensePlate) : null;
+    const actualVehicleKm = normalizedPlate ? (this.cache.vehicleKms[normalizedPlate] || 0) : 0;
+    const workKm = activeWorkSession.workKm !== undefined && activeWorkSession.workKm !== null ? activeWorkSession.workKm : actualVehicleKm;
     const startDate = new Date(activeWorkSession.startedAt);
     const formattedDate = startDate.toISOString().split('T')[0]; // YYYY-MM-DD format for input
 
@@ -1012,10 +1429,10 @@ class FlotilaManager {
                      onchange="window.flotilaManager.updateWorkStartDate(this.value)">
             </div>
             <div class="work-session-km-input">
-              <label for="work-current-km">Aktuálne km:</label>
+              <label for="work-current-km">Km pre službu:</label>
               <input type="number" 
                      id="work-current-km" 
-                     value="${currentKm}" 
+                     value="${workKm}" 
                      onchange="window.flotilaManager.updateWorkCurrentKm(this.value)"
                      placeholder="Zadajte km">
             </div>
@@ -1133,9 +1550,43 @@ class FlotilaManager {
                       ` : ''}
                       ${hasDetails ? `
                         <div class="completed-item-polozky">
-                          ${Object.entries(item.servicePolozky).map(([key, value]) => {
+                          ${(() => {
+                            // Handle both array and object formats
+                            let polozkyArray = [];
+                            if (Array.isArray(item.servicePolozky)) {
+                              polozkyArray = item.servicePolozky.map((polozka, i) => {
+                                if (typeof polozka === 'string') {
+                                  return { type: 'text', name: polozka, key: `polozka_${i}` };
+                                } else if (typeof polozka === 'object') {
+                                  return { ...polozka, key: polozka.key || `polozka_${i}` };
+                                }
+                                return { type: 'text', name: String(polozka), key: `polozka_${i}` };
+                              });
+                            } else if (typeof item.servicePolozky === 'object') {
+                              Object.entries(item.servicePolozky).forEach(([key, value]) => {
+                                if (typeof value === 'string') {
+                                  polozkyArray.push({ type: 'text', name: value, key: key });
+                                } else if (typeof value === 'object' && value !== null) {
+                                  polozkyArray.push({ ...value, key: key });
+                                }
+                              });
+                            }
+                            
+                            return polozkyArray.map((polozka) => {
+                              const key = polozka.key;
                             const isCompleted = item.polozkyStatus && item.polozkyStatus[key] === true;
                             const safeKey = JSON.stringify(key);
+                              
+                              // Format display name
+                              let displayName = polozka.name || '';
+                              if (polozka.type === 'oil' && polozka.quantity) {
+                                displayName = `${polozka.name} - ${polozka.quantity}L`;
+                              }
+                              
+                              const typeBadge = polozka.type === 'oil' ? '<span style="display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-right: 8px; background: #3b82f6; color: white;">Olej</span>' :
+                                              polozka.type === 'part' ? '<span style="display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-right: 8px; background: #10b981; color: white;">Diel</span>' :
+                                              '<span style="display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-right: 8px; background: #6b7280; color: white;">Text</span>';
+                              
                             return `
                               <div class="polozka-item ${isCompleted ? 'completed' : ''}">
                                 <span class="polozka-checkbox">
@@ -1147,15 +1598,17 @@ class FlotilaManager {
                                   <label></label>
                                 </span>
                                 <span class="polozka-content">
+                                    ${typeBadge}
                                   ${isEditing ? `
-                                    <input type=\"text\" value=\"${this.escapeHtmlAttr(String(value))}\" onchange=\"window.flotilaManager.updateHistoryItemDetail(${entry.id}, ${idx}, ${safeKey}, this.value)\"> 
+                                      <input type=\"text\" value=\"${this.escapeHtmlAttr(displayName)}\" onchange=\"window.flotilaManager.updateHistoryItemDetail(${entry.id}, ${idx}, ${safeKey}, this.value)\"> 
                                   ` : `
-                                    ${value}
+                                      ${this.escapeHtml(displayName)}
                                   `}
                                 </span>
                               </div>
                             `;
-                          }).join('')}
+                            }).join('');
+                          })()}
                         </div>
                       ` : ''}
                     </div>
@@ -1358,6 +1811,44 @@ class FlotilaManager {
   showServiceTypeEditModal(serviceIndex = null, serviceType = null) {
     const isEditing = serviceIndex !== null;
     
+    // Normalize service data for editing - map unit to type and norm to interval
+    let normalizedService = null;
+    if (serviceType) {
+      normalizedService = { ...serviceType };
+      
+      // Map unit to type
+      if (normalizedService.unit) {
+        if (normalizedService.unit === 'km') {
+          normalizedService.type = 'km';
+        } else if (normalizedService.unit === 'specificDate') {
+          normalizedService.type = 'specificDate';
+        } else if (normalizedService.unit === 'year' || normalizedService.unit === 'day' || normalizedService.unit === 'month') {
+          normalizedService.type = 'date';
+          // Map unit to timeUnit
+          if (normalizedService.unit === 'year') {
+            normalizedService.timeUnit = 'years';
+          } else if (normalizedService.unit === 'month') {
+            normalizedService.timeUnit = 'months';
+          } else {
+            normalizedService.timeUnit = 'days';
+          }
+        }
+      }
+      
+      // Map norm to interval
+      if (normalizedService.norm !== undefined && normalizedService.interval === undefined) {
+        normalizedService.interval = normalizedService.norm;
+      }
+      
+      // Map lastKm to lastService if needed
+      if (normalizedService.lastKm !== undefined && !normalizedService.lastService) {
+        normalizedService.lastService = {
+          km: normalizedService.lastKm,
+          date: normalizedService.lastDate || null
+        };
+      }
+    }
+    
     const modal = document.createElement('div');
     modal.className = 'service-type-modal-overlay';
     modal.innerHTML = `
@@ -1391,7 +1882,7 @@ class FlotilaManager {
               
               <div class="form-group">
                 <div class="input-with-dropdown">
-                  <input type="text" id="service-type-name" value="${serviceType?.name || ''}" required="" placeholder="Zadajte názov servisu alebo vyberte z predvolených">
+                  <input type="text" id="service-type-name" value="${normalizedService?.name || serviceType?.name || ''}" required="" placeholder="Zadajte názov servisu alebo vyberte z predvolených">
                   <button type="button" class="dropdown-btn" onclick="window.flotilaManager.toggleServiceDropdown()">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <polyline points="6,9 12,15 18,9"></polyline>
@@ -1431,7 +1922,7 @@ class FlotilaManager {
                     <p>Podľa najazdených kilometrov</p>
                   </div>
                   <div class="option-radio">
-                    <input type="radio" name="interval-type" value="km" ${serviceType?.type === 'km' ? 'checked' : ''}>
+                    <input type="radio" name="interval-type" value="km" ${(normalizedService?.type || serviceType?.type || serviceType?.unit) === 'km' ? 'checked' : ''}>
                   </div>
                 </div>
                 
@@ -1447,7 +1938,7 @@ class FlotilaManager {
                     <p>Podľa uplynutého času</p>
                   </div>
                   <div class="option-radio">
-                    <input type="radio" name="interval-type" value="time" ${serviceType?.type === 'date' && serviceType?.timeUnit ? 'checked' : ''}>
+                    <input type="radio" name="interval-type" value="time" ${((normalizedService?.type || serviceType?.type) === 'date' && (normalizedService?.timeUnit || serviceType?.timeUnit)) && !(normalizedService?.specificDate || serviceType?.specificDate) ? 'checked' : ''}>
                   </div>
                 </div>
                 
@@ -1465,7 +1956,7 @@ class FlotilaManager {
                     <p>Na konkrétny dátum</p>
                   </div>
                   <div class="option-radio">
-                    <input type="radio" name="interval-type" value="specific-date" ${serviceType?.type === 'date' && serviceType?.specificDate ? 'checked' : ''}>
+                    <input type="radio" name="interval-type" value="specific-date" ${((normalizedService?.type || serviceType?.type) === 'date' || (normalizedService?.unit || serviceType?.unit) === 'specificDate') && (normalizedService?.specificDate || serviceType?.specificDate || serviceType?.norm) ? 'checked' : ''}>
                   </div>
                 </div>
               </div>
@@ -1477,33 +1968,33 @@ class FlotilaManager {
                 <div class="section-line"></div>
               </div>
               
-              <div class="interval-polozky" id="km-polozky" style="display: ${serviceType?.type === 'km' ? 'block' : 'none'};">
+              <div class="interval-polozky" id="km-polozky" style="display: ${(normalizedService?.type || serviceType?.type || serviceType?.unit) === 'km' ? 'block' : 'none'};">
                 <div class="form-group">
                   <label for="service-interval-km">Interval (km):</label>
-                  <input type="number" id="service-interval-km" value="${serviceType?.interval || ''}" placeholder="Napríklad: 50000">
+                  <input type="number" id="service-interval-km" value="${normalizedService?.interval || serviceType?.interval || serviceType?.norm || ''}" placeholder="Napríklad: 50000">
                 </div>
                 <div class="form-group">
                   <label for="service-reminder-km">Upozornenie (km):</label>
-                  <input type="number" id="service-reminder-km" value="${serviceType?.reminderKm || '15000'}" placeholder="Napríklad: 15000">
+                  <input type="number" id="service-reminder-km" value="${normalizedService?.reminderKm || serviceType?.reminderKm || serviceType?.signal || '15000'}" placeholder="Napríklad: 15000">
                 </div>
               </div>
               
-              <div class="interval-polozky" id="time-polozky" style="display: ${serviceType?.type === 'date' && serviceType?.timeUnit ? 'block' : 'none'};">
+              <div class="interval-polozky" id="time-polozky" style="display: ${((normalizedService?.type || serviceType?.type) === 'date' || (normalizedService?.unit || serviceType?.unit) === 'year' || (normalizedService?.unit || serviceType?.unit) === 'day' || (normalizedService?.unit || serviceType?.unit) === 'month') && (normalizedService?.timeUnit || serviceType?.timeUnit) && !(normalizedService?.specificDate || serviceType?.specificDate || serviceType?.norm) ? 'block' : 'none'};">
                 <div class="form-group">
                   <label for="service-interval-time">Interval:</label>
                   <div class="time-input-group">
-                    <input type="number" id="service-interval-time" value="${serviceType?.interval || ''}" placeholder="Napríklad: 6">
+                    <input type="number" id="service-interval-time" value="${normalizedService?.interval || serviceType?.interval || serviceType?.norm || ''}" placeholder="Napríklad: 6">
                     <select id="time-unit">
-                      <option value="days" ${serviceType?.timeUnit === 'days' ? 'selected' : ''}>Dní</option>
-                      <option value="months" ${serviceType?.timeUnit === 'months' ? 'selected' : ''}>Mesiacov</option>
-                      <option value="years" ${serviceType?.timeUnit === 'years' ? 'selected' : ''}>Rokov</option>
+                      <option value="days" ${(normalizedService?.timeUnit || serviceType?.timeUnit || serviceType?.unit) === 'days' || (normalizedService?.timeUnit || serviceType?.timeUnit || serviceType?.unit) === 'day' ? 'selected' : ''}>Dní</option>
+                      <option value="months" ${(normalizedService?.timeUnit || serviceType?.timeUnit || serviceType?.unit) === 'months' || (normalizedService?.timeUnit || serviceType?.timeUnit || serviceType?.unit) === 'month' ? 'selected' : ''}>Mesiacov</option>
+                      <option value="years" ${(normalizedService?.timeUnit || serviceType?.timeUnit || serviceType?.unit) === 'years' || (normalizedService?.timeUnit || serviceType?.timeUnit || serviceType?.unit) === 'year' ? 'selected' : ''}>Rokov</option>
                     </select>
                   </div>
                 </div>
                 <div class="form-group">
                   <label for="service-reminder-time">Upozornenie:</label>
                   <div class="time-input-group">
-                    <input type="number" id="service-reminder-time" value="${serviceType?.reminderDays || '30'}" placeholder="Napríklad: 30">
+                    <input type="number" id="service-reminder-time" value="${normalizedService?.reminderDays || serviceType?.reminderDays || serviceType?.signal || '30'}" placeholder="Napríklad: 30">
                     <select id="reminder-time-unit">
                       <option value="days">Dní</option>
                       <option value="weeks">Týždňov</option>
@@ -1513,14 +2004,14 @@ class FlotilaManager {
                 </div>
               </div>
               
-              <div class="interval-polozky" id="specific-date-polozky" style="display: ${serviceType?.type === 'date' && serviceType?.specificDate ? 'block' : 'none'};">
+              <div class="interval-polozky" id="specific-date-polozky" style="display: ${((normalizedService?.type || serviceType?.type) === 'date' || (normalizedService?.unit || serviceType?.unit) === 'specificDate') && (normalizedService?.specificDate || serviceType?.specificDate || serviceType?.norm) ? 'block' : 'none'};">
                 <div class="form-group">
                   <label for="service-specific-date">Dátum:</label>
-                  <input type="date" id="service-specific-date" value="${serviceType?.specificDate || ''}">
+                  <input type="date" id="service-specific-date" value="${this.getDateInputValue(normalizedService || serviceType)}">
                 </div>
                 <div class="form-group">
                   <label for="service-reminder-days">Upozornenie (dni):</label>
-                  <input type="number" id="service-reminder-days" value="${serviceType?.reminderDays || '30'}" placeholder="Napríklad: 30">
+                  <input type="number" id="service-reminder-days" value="${normalizedService?.reminderDays || serviceType?.reminderDays || serviceType?.signal || '30'}" placeholder="Napríklad: 30">
                 </div>
               </div>
             </div>
@@ -1576,10 +2067,37 @@ class FlotilaManager {
     const intervalOptions = modal.querySelectorAll('.interval-option');
     
     intervalOptions.forEach(option => {
-      option.addEventListener('click', () => {
-        // Update radio button
+      option.addEventListener('click', (e) => {
+        // Prevent event bubbling
+        e.stopPropagation();
+        
+        // Update radio button FIRST
         const radio = option.querySelector('input[type="radio"]');
-        radio.checked = true;
+        if (radio) {
+          // Uncheck all other radios first
+          intervalOptions.forEach(opt => {
+            const optRadio = opt.querySelector('input[type="radio"]');
+            if (optRadio) {
+              optRadio.checked = false;
+            }
+          });
+          
+          // Then check this one
+          radio.checked = true;
+          
+          // Trigger change event to ensure it's registered
+          radio.dispatchEvent(new Event('change', { bubbles: true }));
+          
+          // Double-check it's still checked (in case something unchecks it)
+          setTimeout(() => {
+            if (!radio.checked) {
+              console.warn('[WARNING] Radio was unchecked, re-checking...');
+              radio.checked = true;
+            }
+          }, 10);
+        } else {
+          console.error('[ERROR] Radio button not found in interval-option');
+        }
         
         // Update visual selection
         intervalOptions.forEach(opt => opt.classList.remove('selected'));
@@ -1589,16 +2107,58 @@ class FlotilaManager {
         const type = option.dataset.type;
         this.showIntervalDetails(type);
       });
+      
+      // Also handle radio button click directly
+      const radio = option.querySelector('input[type="radio"]');
+      if (radio) {
+        radio.addEventListener('click', (e) => {
+          e.stopPropagation();
+          // Ensure this radio is checked
+          radio.checked = true;
+          
+          // Update visual selection
+          intervalOptions.forEach(opt => opt.classList.remove('selected'));
+          option.classList.add('selected');
+          
+          // Show/hide interval polozky
+          const type = option.dataset.type;
+          this.showIntervalDetails(type);
+        });
+      }
     });
     
     // Initialize selection
     const selectedOption = modal.querySelector('.interval-option input[type="radio"]:checked');
     if (selectedOption) {
-      selectedOption.closest('.interval-option').classList.add('selected');
+      const optionElement = selectedOption.closest('.interval-option');
+      if (optionElement) {
+        optionElement.classList.add('selected');
+        // Show interval details for initial selection
+        const type = optionElement.dataset.type;
+        if (type) {
+          this.showIntervalDetails(type);
+        }
+      }
+    } else {
+      // If no option is pre-selected, select the first one by default for new services
+      if (!isEditing && intervalOptions.length > 0) {
+        const firstOption = intervalOptions[0];
+        if (firstOption) {
+          const firstRadio = firstOption.querySelector('input[type="radio"]');
+          if (firstRadio) {
+            firstRadio.checked = true;
+            firstOption.classList.add('selected');
+            const type = firstOption.dataset.type;
+            if (type) {
+              this.showIntervalDetails(type);
+            }
+          }
+        }
+      }
     }
     
     // Populate service polozky if editing
-    if (isEditing && serviceType?.servicePolozky) {
+    if (isEditing && (normalizedService?.servicePolozky || serviceType?.servicePolozky)) {
       const polozkyList = modal.querySelector('#service-polozky-list');
       const noDetails = polozkyList.querySelector('.no-polozky');
       
@@ -1606,14 +2166,83 @@ class FlotilaManager {
         noDetails.remove();
       }
       
-      // Add existing service polozky
-      serviceType.servicePolozky.forEach((detail, index) => {
+      // Get service polozky from normalized or original service
+      const servicePolozky = normalizedService?.servicePolozky || serviceType?.servicePolozky;
+      
+      // Handle both object and array formats, and both structured and legacy formats
+      let polozkyArray = [];
+      if (Array.isArray(servicePolozky)) {
+        polozkyArray = servicePolozky;
+      } else if (typeof servicePolozky === 'object' && servicePolozky !== null) {
+        polozkyArray = Object.entries(servicePolozky).map(([key, value]) => {
+          if (typeof value === 'object' && value !== null) {
+            return { ...value, key: key };
+          } else {
+            return { type: 'text', name: String(value), key: key };
+          }
+        });
+      }
+      
+      polozkyArray.forEach((detail, index) => {
         const detailId = 'detail_' + Date.now() + '_' + index;
         const detailElement = document.createElement('div');
         detailElement.className = 'service-polozka-item';
+        
+        // Handle both structured and legacy string formats
+        let polozkaData, displayName, type;
+        if (typeof detail === 'string') {
+          // Legacy format
+          polozkaData = { type: 'text', name: detail };
+          displayName = detail;
+          type = 'text';
+        } else if (typeof detail === 'object' && detail !== null) {
+          // Structured format
+          polozkaData = { ...detail };
+          
+          // Fix: If name looks like JSON, try to extract the actual name
+          let partName = detail.name || '';
+          if (partName && partName.startsWith('{') && partName.includes('"name"')) {
+            console.warn('[WARNING] Found JSON string in part name when rendering, extracting:', partName);
+            const nameMatch = partName.match(/"name"\s*:\s*"([^"]+)"/);
+            if (nameMatch && nameMatch[1]) {
+              partName = nameMatch[1];
+              polozkaData.name = partName;
+            }
+          }
+          
+          if (detail.type === 'oil' && detail.quantity) {
+            displayName = `${partName} - ${detail.quantity}L`;
+          } else if (detail.type === 'part' && detail.quantity) {
+            const subcategoryTitle = detail.category ? this.getSubcategoryTitle(detail.category) : '';
+            displayName = subcategoryTitle ? `${subcategoryTitle} - ${partName} - ${detail.quantity}ks` : `${partName} - ${detail.quantity}ks`;
+          } else {
+            displayName = partName || '';
+          }
+          type = detail.type || 'text';
+        } else {
+          polozkaData = { type: 'text', name: String(detail) };
+          displayName = String(detail);
+          type = 'text';
+        }
+        
+        // Clean displayName to remove any JSON artifacts
+        if (displayName && (displayName.startsWith('{') || displayName.includes('"name"'))) {
+          console.warn('[WARNING] displayName contains JSON when rendering, cleaning:', displayName);
+          const nameMatch = displayName.match(/"name"\s*:\s*"([^"]+)"/);
+          if (nameMatch && nameMatch[1]) {
+            displayName = nameMatch[1];
+          } else {
+            displayName = displayName.replace(/[{}"]/g, '').trim();
+          }
+        }
+        
+        detailElement.dataset.polozkaData = JSON.stringify(polozkaData);
         detailElement.innerHTML = `
           <div class="polozka-header">
-            <span class="polozka-name">${detail}</span>
+            <span class="polozka-type-badge" style="display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-right: 8px; background: ${type === 'oil' ? '#3b82f6' : type === 'part' ? '#10b981' : '#6b7280'}; color: white;">
+              ${type === 'oil' ? 'Olej' : type === 'part' ? 'Diel' : 'Text'}
+            </span>
+            <span class="polozka-name">${this.escapeHtml(displayName)}</span>
             <button type="button" class="remove-polozka-btn" onclick="window.flotilaManager.removeServicePolozka('${detailId}')">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -1640,7 +2269,7 @@ class FlotilaManager {
     if (!servicesList) return;
     
     try {
-      const snapshot = await window.db.collection('predefined_services').orderBy('name').get();
+      const snapshot = await this._predefinedServicesCollection().orderBy('name').get();
       
       if (snapshot.empty) {
         servicesList.innerHTML = '<div class="no-services">Žiadne preddefinované servisy neboli nájdené</div>';
@@ -1707,7 +2336,7 @@ class FlotilaManager {
       
       // Update selected services list
       const selectedList = document.getElementById('selected-services-list');
-      selectedList.innerHTML = selectedServices.map(item => {
+      selectedList.innerHTML = Array.from(selectedServices).map(item => {
         const name = item.querySelector('.service-name').textContent;
         return `<div class="selected-service-item">${name}</div>`;
       }).join('');
@@ -1726,13 +2355,43 @@ class FlotilaManager {
       return;
     }
     
+    if (!this.selectedVehicle) {
+      alert('Prosím vyberte vozidlo pred pridávaním služieb.');
+      return;
+    }
+    
+    // Verify authentication - require email/password login, not anonymous
+    const currentUser = window.auth.currentUser;
+    if (!currentUser) {
+      alert('Musíte byť prihlásený pre pridávanie služieb. Prosím prihláste sa cez email a heslo.');
+      // Show auth section
+      const authSection = document.getElementById('auth-section');
+      const mainContent = document.getElementById('flotila-main-content');
+      if (authSection) authSection.style.display = 'block';
+      if (mainContent) mainContent.style.display = 'none';
+      return;
+    }
+    
+    // Check if user is anonymous - anonymous users don't have write permissions
+    if (currentUser.isAnonymous) {
+      alert('Anonymný používateľ nemá oprávnenia na zápis. Prosím prihláste sa cez email a heslo.');
+      // Show auth section
+      const authSection = document.getElementById('auth-section');
+      const mainContent = document.getElementById('flotila-main-content');
+      if (authSection) authSection.style.display = 'block';
+      if (mainContent) mainContent.style.display = 'none';
+      return;
+    }
+    
     try {
+      console.log('Adding services with user:', currentUser.uid, currentUser.email || '(no email)');
+      
       const serviceIds = Array.from(selectedServices).map(item => item.dataset.serviceId);
       const services = [];
       
       // Load service data for each selected service
       for (const serviceId of serviceIds) {
-        const doc = await window.db.collection('predefined_services').doc(serviceId).get();
+        const doc = await this._predefinedServicesCollection().doc(serviceId).get();
         if (doc.exists) {
           const serviceData = { id: doc.id, ...doc.data() };
           
@@ -1745,7 +2404,7 @@ class FlotilaManager {
             notes: serviceData.notes || '',
             lastService: {
               date: new Date().toISOString().split('T')[0],
-              km: this.selectedVehicle.kilometers || 0
+              km: this.selectedVehicle?.currentKm || this.selectedVehicle?.kilometers || 0
             }
           };
           
@@ -1773,16 +2432,17 @@ class FlotilaManager {
       
       this.selectedVehicle.services.push(...services);
       
+      // Update the selectedVehicle reference to ensure consistency
+      this.selectedVehicle = { ...this.selectedVehicle };
+      
       // Save to database
-      await window.db.collection('vehicles').doc(this.selectedVehicle.licensePlate).collection('info').doc('basic').update({
-        services: this.selectedVehicle.services
-      });
+      await this.saveServices();
       
       // Close modal
       document.querySelector('.service-type-modal-overlay').remove();
       
-      // Refresh vehicle display
-      await this.loadDataAndRender();
+      // Update services UI without reloading from database - keeps vehicle open
+      this.updateServicesUI();
       
       // Show success message
       const serviceNames = services.map(s => s.name).join(', ');
@@ -1795,11 +2455,31 @@ class FlotilaManager {
   }
 
   // Show service detail modal for adding service polozky
-  showServicePolozkaModal() {
+  async showServicePolozkaModal() {
+    // Load oils for dropdown - wait a bit for the service to be available
+    let oils = [];
+    let unsubscribeFn = null;
+    
+    // Try to get oils from OilDatabaseService
+    if (window.DatabaseService && typeof window.DatabaseService.onOilsUpdate === 'function') {
+      try {
+        unsubscribeFn = await window.DatabaseService.onOilsUpdate((oilsList) => {
+          oils = oilsList || [];
+          console.log('Loaded oils:', oils.length);
+        });
+        // Wait a bit for initial load
+        await new Promise(resolve => setTimeout(resolve, 500));
+      } catch (error) {
+        console.warn('Could not load oils:', error);
+      }
+    } else {
+      console.warn('DatabaseService.onOilsUpdate not available');
+    }
+
     const modal = document.createElement('div');
     modal.className = 'polozka-modal-overlay';
     modal.innerHTML = `
-      <div class="polozka-modal">
+      <div class="polozka-modal" style="max-width: 500px;">
         <div class="modal-header">
           <h3>Pridať položku servisu</h3>
           <button class="close-btn" onclick="this.closest('.polozka-modal-overlay').remove()">×</button>
@@ -1807,8 +2487,59 @@ class FlotilaManager {
         <div class="modal-body">
           <form id="service-polozka-form">
             <div class="form-group">
+              <label>Typ položky:</label>
+              <div class="polozka-type-selector">
+                <label class="polozka-type-option" data-type="text">
+                  <input type="radio" name="polozka-type" value="text" checked onchange="window.flotilaManager.updatePolozkaTypeFields('text')">
+                  <span>Len text</span>
+                </label>
+                <label class="polozka-type-option" data-type="oil">
+                  <input type="radio" name="polozka-type" value="oil" onchange="window.flotilaManager.updatePolozkaTypeFields('oil')">
+                  <span>Olej</span>
+                </label>
+                <label class="polozka-type-option" data-type="part">
+                  <input type="radio" name="polozka-type" value="part" onchange="window.flotilaManager.updatePolozkaTypeFields('part')">
+                  <span>Diel</span>
+                </label>
+              </div>
+            </div>
+            
+            <!-- Text type fields -->
+            <div id="polozka-text-fields" class="polozka-type-fields">
+            <div class="form-group">
               <label for="polozka-name">Názov položky:</label>
-              <input type="text" id="polozka-name" required placeholder="Napríklad: Olejový filter">
+                <input type="text" id="polozka-name" placeholder="Napríklad: Olejový filter">
+              </div>
+            </div>
+            
+            <!-- Oil type fields -->
+            <div id="polozka-oil-fields" class="polozka-type-fields" style="display: none;">
+              <div class="form-group">
+                <label for="polozka-oil-search">Vyhľadať olej:</label>
+                <input type="text" id="polozka-oil-search" placeholder="Zadajte názov oleja..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 8px;">
+                <select id="polozka-oil-select" size="5" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; max-height: 200px; overflow-y: auto;">
+                  <option value="">-- Vyberte olej --</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="polozka-oil-quantity">Množstvo (L):</label>
+                <input type="number" id="polozka-oil-quantity" step="0.1" min="0" placeholder="Napríklad: 14" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+              </div>
+            </div>
+            
+            <!-- Part type fields -->
+            <div id="polozka-part-fields" class="polozka-type-fields" style="display: none;">
+              <div class="form-group">
+                <label for="polozka-part-search">Vyhľadať diel:</label>
+                <input type="text" id="polozka-part-search" placeholder="Zadajte názov dielu..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 8px;">
+                <select id="polozka-part-select" size="5" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; max-height: 200px; overflow-y: auto;">
+                  <option value="">-- Vyberte diel (zatiaľ prázdne) --</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="polozka-part-quantity">Množstvo (ks):</label>
+                <input type="number" id="polozka-part-quantity" step="1" min="1" placeholder="Napríklad: 2" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+              </div>
             </div>
           </form>
         </div>
@@ -1821,21 +2552,873 @@ class FlotilaManager {
     
     document.body.appendChild(modal);
     
+    // Populate oil dropdown and setup search
+    const oilSelect = modal.querySelector('#polozka-oil-select');
+    const oilSearch = modal.querySelector('#polozka-oil-search');
+    let allOils = [...oils];
+    
+    const updateOilDropdown = (filteredOils) => {
+      if (!oilSelect) return;
+      
+      // CRITICAL: Validate this is actually the oil select element
+      if (oilSelect.id !== 'polozka-oil-select') {
+        console.error('[ERROR] updateOilDropdown: Wrong select element! Expected polozka-oil-select, got:', oilSelect.id);
+        return;
+      }
+      
+      // CRITICAL: Validate that we're receiving oil data, not parts data
+      const validOilCategories = ['motorove', 'prevodove', 'diferencial', 'chladiaca'];
+      const partCategories = ['olejove', 'naftove', 'kabinove', 'vzduchove', 'adblue', 'vysusac-vzduchu', 'ostnane', 'brzd-platnicky', 'brzd-kotuce', 'brzd-valce'];
+      const invalidData = filteredOils.filter(item => {
+        const category = item.category || '';
+        // Check if this looks like a part category
+        return partCategories.includes(category) && !validOilCategories.includes(category);
+      });
+      
+      if (invalidData.length > 0) {
+        console.error('[ERROR] updateOilDropdown: Received parts data in oil dropdown! Parts categories found:', invalidData.map(d => d.category));
+        console.error('[ERROR] This indicates onOilsUpdate is returning parts data instead of oil data!');
+        // Filter out invalid data
+        filteredOils = filteredOils.filter(item => {
+          const category = item.category || '';
+          return validOilCategories.includes(category);
+        });
+      }
+      
+      oilSelect.innerHTML = '';
+      if (filteredOils.length === 0) {
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = '-- Žiadne oleje načítané --';
+        option.disabled = true;
+        oilSelect.appendChild(option);
+      } else {
+        // Group oils by category - only include valid oil categories
+        const oilsByCategory = {};
+        filteredOils.forEach(oil => {
+          const category = oil.category || 'motorove';
+          // Only include valid oil categories
+          if (!validOilCategories.includes(category)) {
+            console.warn('[WARNING] Skipping invalid oil category:', category, 'for item:', oil.name);
+            return;
+          }
+          if (!oilsByCategory[category]) {
+            oilsByCategory[category] = [];
+          }
+          oilsByCategory[category].push(oil);
+        });
+        
+        // Create optgroups for each category
+        const categoryOrder = ['motorove', 'prevodove', 'diferencial', 'chladiaca'];
+        categoryOrder.forEach(categoryId => {
+          if (oilsByCategory[categoryId] && oilsByCategory[categoryId].length > 0) {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = this.getOilCategoryTitle(categoryId);
+            oilsByCategory[categoryId].forEach(oil => {
+              const option = document.createElement('option');
+              option.value = JSON.stringify({ id: oil.id, name: oil.name, category: oil.category });
+              option.textContent = `${oil.name} (${(oil.quantity || 0).toFixed(1)}L)`;
+              optgroup.appendChild(option);
+            });
+            oilSelect.appendChild(optgroup);
+          }
+        });
+        
+        // Add any oils with unknown categories at the end (but only if they're valid oil categories)
+        Object.keys(oilsByCategory).forEach(categoryId => {
+          if (!categoryOrder.includes(categoryId) && oilsByCategory[categoryId].length > 0 && validOilCategories.includes(categoryId)) {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = this.getOilCategoryTitle(categoryId);
+            oilsByCategory[categoryId].forEach(oil => {
+              const option = document.createElement('option');
+              option.value = JSON.stringify({ id: oil.id, name: oil.name, category: oil.category });
+              option.textContent = `${oil.name} (${(oil.quantity || 0).toFixed(1)}L)`;
+              optgroup.appendChild(option);
+            });
+            oilSelect.appendChild(optgroup);
+          }
+        });
+      }
+    };
+    
+    // Setup real-time oil updates
+    if (window.DatabaseService && typeof window.DatabaseService.onOilsUpdate === 'function') {
+      const realTimeUnsubscribe = await window.DatabaseService.onOilsUpdate((oilsList) => {
+        const receivedData = oilsList || [];
+        // Validate data before using it
+        const validOilCategories = ['motorove', 'prevodove', 'diferencial', 'chladiaca'];
+        const actualOils = receivedData.filter(item => {
+          const category = item.category || '';
+          return validOilCategories.includes(category);
+        });
+        
+        const invalidItems = receivedData.length - actualOils.length;
+        if (invalidItems > 0) {
+          console.error('[ERROR] onOilsUpdate returned', invalidItems, 'items that are NOT oils! Categories:', 
+            [...new Set(receivedData.filter(i => !validOilCategories.includes(i.category || '')).map(i => i.category))]);
+          console.error('[ERROR] This indicates a problem with the oil database service - it may be returning parts data!');
+        }
+        
+        allOils = actualOils;
+        
+        if (allOils.length === 0 && receivedData.length > 0) {
+          console.warn('[WARNING] No valid oils found! All items were filtered out as parts. Check if onOilsUpdate is returning the wrong data.');
+        } else if (allOils.length === 0) {
+          console.warn('[WARNING] No oils loaded. Check if oils exist in Firebase collections: engine_oils, transmission_oils, differencial_oils, coolant');
+        }
+        
+        // Make sure we're still updating the correct select
+        const currentOilSelect = document.getElementById('polozka-oil-select');
+        if (!currentOilSelect || currentOilSelect !== oilSelect) {
+          console.error('[ERROR] Oil select element changed or missing during update!');
+          return;
+        }
+        
+        if (oilSearch && oilSearch.value) {
+          // Re-filter if search is active
+          const searchTerm = oilSearch.value.toLowerCase();
+          const filtered = allOils.filter(oil => 
+            oil.name.toLowerCase().includes(searchTerm)
+          );
+          updateOilDropdown(filtered);
+        } else {
+          updateOilDropdown(allOils);
+        }
+      });
+      
+      // Clean up on modal close
+      const closeBtn = modal.querySelector('.close-btn');
+      if (closeBtn) {
+        const originalClose = closeBtn.onclick;
+        closeBtn.onclick = function() {
+          if (realTimeUnsubscribe) realTimeUnsubscribe();
+          if (originalClose) originalClose.call(this);
+        };
+      }
+    }
+    
+    if (oilSearch && oilSelect) {
+      oilSearch.addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase();
+        const filtered = allOils.filter(oil => 
+          oil.name.toLowerCase().includes(searchTerm)
+        );
+        updateOilDropdown(filtered);
+      });
+    }
+    
+    updateOilDropdown(allOils);
+    
+    // Clean up old unsubscribe
+    if (unsubscribeFn) {
+      setTimeout(() => unsubscribeFn && unsubscribeFn(), 2000);
+    }
+    
+    // Setup part search - will be properly initialized when parts are loaded in updatePolozkaTypeFields
+    // The search event listener is set up in loadPartsIntoSelect after parts are loaded
+    
+    // Set initial selected state for radio buttons
+    const checkedRadio = modal.querySelector('input[name="polozka-type"]:checked');
+    if (checkedRadio) {
+      const checkedType = checkedRadio.value;
+      const selectedOption = modal.querySelector(`.polozka-type-option[data-type="${checkedType}"]`);
+      if (selectedOption) {
+        selectedOption.classList.add('selected');
+      }
+    }
+    
+    // Add change listeners to radio buttons to update visual state
+    modal.querySelectorAll('input[name="polozka-type"]').forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        modal.querySelectorAll('.polozka-type-option').forEach(opt => {
+          opt.classList.remove('selected');
+        });
+        const selectedOption = modal.querySelector(`.polozka-type-option[data-type="${e.target.value}"]`);
+        if (selectedOption) {
+          selectedOption.classList.add('selected');
+        }
+      });
+    });
+    
     // Focus on first input
     setTimeout(() => {
       const firstInput = modal.querySelector('#polozka-name');
       if (firstInput) firstInput.focus();
     }, 100);
   }
+  
+  // Load and populate parts for a select dropdown
+  async loadPartsIntoSelect(searchInputId, selectId) {
+    // Validate that we're working with part select elements
+    if (!selectId || !selectId.includes('part-select')) {
+      console.error('[ERROR] loadPartsIntoSelect: Invalid selectId for parts', selectId);
+      return;
+    }
+    if (!searchInputId || !searchInputId.includes('part-search')) {
+      console.error('[ERROR] loadPartsIntoSelect: Invalid searchInputId for parts', searchInputId);
+      return;
+    }
+    
+    // CRITICAL: Never allow oil select IDs
+    if (selectId.includes('oil-select')) {
+      console.error('[ERROR] loadPartsIntoSelect: Attempted to load parts into oil select!', selectId);
+      return;
+    }
+    
+    const select = document.getElementById(selectId);
+    const searchInput = document.getElementById(searchInputId);
+    
+    if (!select) {
+      console.error('[ERROR] loadPartsIntoSelect: Select element not found', selectId);
+      return;
+    }
+    
+    // Triple-check this is actually a part select, not an oil select
+    if (select.id !== selectId || !select.id.includes('part-select')) {
+      console.error('[ERROR] loadPartsIntoSelect: Select ID mismatch or wrong type', select.id, selectId);
+      return;
+    }
+    
+    // Final safeguard: explicitly reject oil selects
+    if (select.id.includes('oil-select') || select.id === 'polozka-oil-select' || select.id === 'predefined-polozka-oil-select') {
+      console.error('[ERROR] loadPartsIntoSelect: This is an oil select, aborting!', select.id);
+      return;
+    }
+    
+    // Check if user is authenticated first - if not, just show empty and allow manual entry
+    if (!window.auth || !window.auth.currentUser) {
+      select.innerHTML = '<option value="">-- Môžete zadať diel ručne --</option>';
+      return;
+    }
+    
+    // Clear existing options
+    select.innerHTML = '<option value="">-- Načítavam diely... --</option>';
+    
+    let parts = [];
+    let unsubscribeFn = null;
+    
+    // Store reference to all parts for search filtering
+    let allParts = [];
+    
+    // Setup search filtering immediately - it will work once parts are loaded
+    if (searchInput) {
+      // Remove any existing listeners to avoid duplicates
+      const newSearchInput = searchInput.cloneNode(true);
+      searchInput.parentNode.replaceChild(newSearchInput, searchInput);
+      const actualSearchInput = document.getElementById(searchInputId);
+      
+      // Set up real-time search filtering
+      actualSearchInput.addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase();
+        if (allParts.length > 0) {
+          this.filterPartsSelect(select, allParts, searchTerm);
+        } else {
+          // If parts not loaded yet, still try to filter (will be empty)
+          this.filterPartsSelect(select, [], searchTerm);
+        }
+      });
+    }
+    
+    // Load parts from DielyDatabaseService - wrap in try-catch to prevent redirects
+    if (window.DatabaseService && typeof window.DatabaseService.onDielyUpdate === 'function') {
+      try {
+        // Use Promise.race with timeout to prevent hanging
+        const loadPromise = window.DatabaseService.onDielyUpdate((partsList) => {
+          parts = partsList || [];
+          allParts = partsList || []; // Store in allParts for search
+          this.populatePartsSelect(select, parts, searchInput);
+          
+          // If search input has a value, filter immediately
+          if (searchInput && searchInput.value) {
+            const searchTerm = searchInput.value.toLowerCase();
+            this.filterPartsSelect(select, allParts, searchTerm);
+          }
+        });
+        
+        // Race with timeout - if loading takes too long, just show empty
+        await Promise.race([
+          loadPromise.then(fn => {
+            unsubscribeFn = fn;
+            return Promise.resolve();
+          }),
+          new Promise(resolve => setTimeout(resolve, 2000))
+        ]);
+        
+        // If parts weren't loaded after 2 seconds, show empty option
+        if (parts.length === 0 && select.innerHTML.includes('Načítavam')) {
+          console.warn('[WARNING] Parts not loaded after 2 seconds timeout');
+          select.innerHTML = '<option value="">-- Môžete zadať diel ručne --</option>';
+        } else {
+          allParts = parts; // Ensure allParts is set
+        }
+      } catch (error) {
+        // Log error but don't cause redirects
+        console.error('[ERROR] Parts loading error:', error);
+        select.innerHTML = '<option value="">-- Môžete zadať diel ručne --</option>';
+        return; // Exit early
+      }
+    } else {
+      // If service not available, just allow manual entry
+      console.warn('[WARNING] DatabaseService.onDielyUpdate not available');
+      select.innerHTML = '<option value="">-- Môžete zadať diel ručne --</option>';
+      return;
+    }
+    
+    // Store unsubscribe function for cleanup
+    if (unsubscribeFn && select && typeof unsubscribeFn === 'function') {
+      const cleanupKey = 'diely_unsubscribe_' + Date.now();
+      select.dataset.unsubscribeFn = cleanupKey;
+      window[cleanupKey] = unsubscribeFn;
+    }
+  }
+  
+  // Helper function to get subcategory title from category ID
+  getSubcategoryTitle(categoryId) {
+    const SECTION_DEFINITIONS = [
+      {
+        id: 'olejove',
+        title: 'Olejové filtre',
+        subcategories: [
+          { id: 'olejove', title: 'Olejové filtre' }
+        ]
+      },
+      {
+        id: 'vzduchove',
+        title: 'Vzduchové filtre',
+        subcategories: [
+          { id: 'vzduchove', title: 'Vzduchové filtre' }
+        ]
+      },
+      {
+        id: 'naftove',
+        title: 'Naftové filtre',
+        subcategories: [
+          { id: 'naftove', title: 'Naftové filtre' }
+        ]
+      },
+      {
+        id: 'kabinove',
+        title: 'Kabínové filtre',
+        subcategories: [
+          { id: 'kabinove', title: 'Kabínové filtre' }
+        ]
+      },
+      {
+        id: 'adblue',
+        title: 'Adblue filtre',
+        subcategories: [
+          { id: 'adblue', title: 'Adblue filtre' }
+        ]
+      },
+      {
+        id: 'vysusac-vzduchu',
+        title: 'Vysušače vzduchu',
+        subcategories: [
+          { id: 'vysusac-vzduchu', title: 'Vysušače vzduchu' }
+        ]
+      },
+      {
+        id: 'brzd-platnicky',
+        title: 'Brzdové platničky',
+        subcategories: [
+          { id: 'brzd-platnicky', title: 'Brzdové platničky' }
+        ]
+      },
+      {
+        id: 'brzd-kotuce',
+        title: 'Brzdové kotúče',
+        subcategories: [
+          { id: 'brzd-kotuce', title: 'Brzdové kotúče' }
+        ]
+      },
+      {
+        id: 'brzd-valce',
+        title: 'Brzdové valce',
+        subcategories: [
+          { id: 'brzd-valce', title: 'Brzdové valce' }
+        ]
+      },
+      {
+        id: 'ostatne',
+        title: 'Ostatné',
+        subcategories: [
+          { id: 'ostnane', title: 'Ostatné' },
+          { id: 'ostatne', title: 'Ostatné' }
+        ]
+      }
+    ];
+    
+    // Find the section and subcategory title
+    for (const section of SECTION_DEFINITIONS) {
+      const subcategory = section.subcategories.find(sub => sub.id === categoryId);
+      if (subcategory) {
+        return section.title; // Return section title instead of subcategory title
+      }
+    }
+    return categoryId; // Fallback to category ID if not found
+  }
+
+  getSectionForCategory(categoryId) {
+    const SECTION_DEFINITIONS = [
+      {
+        id: 'olejove',
+        title: 'Olejové filtre',
+        subcategories: [
+          { id: 'olejove', title: 'Olejové filtre' }
+        ]
+      },
+      {
+        id: 'vzduchove',
+        title: 'Vzduchové filtre',
+        subcategories: [
+          { id: 'vzduchove', title: 'Vzduchové filtre' }
+        ]
+      },
+      {
+        id: 'naftove',
+        title: 'Naftové filtre',
+        subcategories: [
+          { id: 'naftove', title: 'Naftové filtre' }
+        ]
+      },
+      {
+        id: 'kabinove',
+        title: 'Kabínové filtre',
+        subcategories: [
+          { id: 'kabinove', title: 'Kabínové filtre' }
+        ]
+      },
+      {
+        id: 'adblue',
+        title: 'Adblue filtre',
+        subcategories: [
+          { id: 'adblue', title: 'Adblue filtre' }
+        ]
+      },
+      {
+        id: 'vysusac-vzduchu',
+        title: 'Vysušače vzduchu',
+        subcategories: [
+          { id: 'vysusac-vzduchu', title: 'Vysušače vzduchu' }
+        ]
+      },
+      {
+        id: 'brzd-platnicky',
+        title: 'Brzdové platničky',
+        subcategories: [
+          { id: 'brzd-platnicky', title: 'Brzdové platničky' }
+        ]
+      },
+      {
+        id: 'brzd-kotuce',
+        title: 'Brzdové kotúče',
+        subcategories: [
+          { id: 'brzd-kotuce', title: 'Brzdové kotúče' }
+        ]
+      },
+      {
+        id: 'brzd-valce',
+        title: 'Brzdové valce',
+        subcategories: [
+          { id: 'brzd-valce', title: 'Brzdové valce' }
+        ]
+      },
+      {
+        id: 'ostatne',
+        title: 'Ostatné',
+        subcategories: [
+          { id: 'ostnane', title: 'Ostatné' },
+          { id: 'ostatne', title: 'Ostatné' }
+        ]
+      }
+    ];
+    
+    for (const section of SECTION_DEFINITIONS) {
+      if (section.subcategories.some(sub => sub.id === categoryId)) {
+        return section.id;
+      }
+    }
+    return 'ostatne'; // Default to "ostatne" if not found
+  }
+
+  // Populate parts select dropdown
+  populatePartsSelect(select, parts, searchInput = null) {
+    if (!select) {
+      console.error('[ERROR] populatePartsSelect: select is null');
+      return;
+    }
+    
+    
+    // Make absolutely sure this is a part select, not an oil select
+    if (!select.id || !select.id.includes('part-select')) {
+      console.error('[ERROR] populatePartsSelect: Wrong select element - this is not a part select!', select.id);
+      return; // Don't populate wrong select
+    }
+    
+    // Triple check it's not an oil select - explicit ID checks
+    if (select.id.includes('oil-select') || 
+        select.id === 'polozka-oil-select' || 
+        select.id === 'predefined-polozka-oil-select' ||
+        select.id.startsWith('work-item-oil-select')) {
+      console.error('[ERROR] populatePartsSelect: This is an oil select, not a part select!', select.id);
+      return; // Don't populate oil select with parts
+    }
+    
+    const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+    const filteredParts = searchTerm 
+      ? parts.filter(part => {
+          const sectionTitle = this.getSubcategoryTitle(part.category || 'olejove');
+          return sectionTitle.toLowerCase().includes(searchTerm) || 
+                 part.name.toLowerCase().includes(searchTerm);
+        })
+      : parts;
+    
+    if (filteredParts.length === 0) {
+      select.innerHTML = '<option value="">-- Žiadne diely nenájdené --</option>';
+      return;
+    }
+    
+    // Group parts by section
+    const SECTION_DEFINITIONS = [
+      {
+        id: 'olejove',
+        title: 'Olejové filtre',
+        subcategories: ['olejove']
+      },
+      {
+        id: 'vzduchove',
+        title: 'Vzduchové filtre',
+        subcategories: ['vzduchove']
+      },
+      {
+        id: 'naftove',
+        title: 'Naftové filtre',
+        subcategories: ['naftove']
+      },
+      {
+        id: 'kabinove',
+        title: 'Kabínové filtre',
+        subcategories: ['kabinove']
+      },
+      {
+        id: 'adblue',
+        title: 'Adblue filtre',
+        subcategories: ['adblue']
+      },
+      {
+        id: 'vysusac-vzduchu',
+        title: 'Vysušače vzduchu',
+        subcategories: ['vysusac-vzduchu']
+      },
+      {
+        id: 'brzd-platnicky',
+        title: 'Brzdové platničky',
+        subcategories: ['brzd-platnicky']
+      },
+      {
+        id: 'brzd-kotuce',
+        title: 'Brzdové kotúče',
+        subcategories: ['brzd-kotuce']
+      },
+      {
+        id: 'brzd-valce',
+        title: 'Brzdové valce',
+        subcategories: ['brzd-valce']
+      },
+      {
+        id: 'ostatne',
+        title: 'Ostatné',
+        subcategories: ['ostnane', 'ostatne']
+      }
+    ];
+    
+    // Group parts by section
+    const partsBySection = {};
+    filteredParts.forEach(part => {
+      const categoryId = part.category || 'olejove';
+      const sectionId = this.getSectionForCategory(categoryId);
+      if (!partsBySection[sectionId]) {
+        partsBySection[sectionId] = [];
+      }
+      partsBySection[sectionId].push(part);
+    });
+    
+    // Build HTML with optgroups
+    let html = '';
+    SECTION_DEFINITIONS.forEach(section => {
+      const sectionParts = partsBySection[section.id];
+      if (sectionParts && sectionParts.length > 0) {
+        const optgroup = document.createElement('optgroup');
+        optgroup.label = section.title;
+        
+        sectionParts.forEach(part => {
+          const categoryId = part.category || 'olejove';
+          const partInfo = JSON.stringify({
+            id: part.id,
+            name: part.name,
+            category: categoryId
+          });
+          // CRITICAL: Don't use escapeHtml on JSON - it breaks JSON parsing by escaping quotes and braces
+          // Only escape quotes for HTML attribute safety
+          const escapedPartInfo = partInfo.replace(/"/g, '&quot;');
+          const option = document.createElement('option');
+          option.value = escapedPartInfo;
+          option.textContent = `${part.name} (${part.quantity || 0} ks)`;
+          optgroup.appendChild(option);
+        });
+        
+        html += optgroup.outerHTML;
+      }
+    });
+    
+    select.innerHTML = html || '<option value="">-- Žiadne diely nenájdené --</option>';
+  }
+  
+  // Filter parts select dropdown
+  filterPartsSelect(select, parts, searchTerm) {
+    if (!select || !parts) return;
+    
+    // Make absolutely sure this is a part select, not an oil select
+    if (!select.id || !select.id.includes('part-select')) {
+      console.error('filterPartsSelect: Wrong select element - this is not a part select!', select.id);
+      return; // Don't filter wrong select
+    }
+    
+    // Triple check it's not an oil select - explicit ID checks
+    if (select.id.includes('oil-select') || 
+        select.id === 'polozka-oil-select' || 
+        select.id === 'predefined-polozka-oil-select' ||
+        select.id.startsWith('work-item-oil-select')) {
+      console.error('filterPartsSelect: This is an oil select, not a part select!', select.id);
+      return; // Don't filter oil select
+    }
+    
+    const filteredParts = searchTerm 
+      ? parts.filter(part => {
+          const sectionTitle = this.getSubcategoryTitle(part.category || 'olejove');
+          return sectionTitle.toLowerCase().includes(searchTerm) || 
+                 part.name.toLowerCase().includes(searchTerm);
+        })
+      : parts;
+    
+    // Use the same populatePartsSelect function for consistency (with optgroups)
+    this.populatePartsSelect(select, filteredParts, null);
+  }
+
+  // Update polozka type fields visibility
+  async updatePolozkaTypeFields(type) {
+    const textFields = document.getElementById('polozka-text-fields');
+    const oilFields = document.getElementById('polozka-oil-fields');
+    const partFields = document.getElementById('polozka-part-fields');
+    
+    if (textFields) textFields.style.display = type === 'text' ? 'block' : 'none';
+    if (oilFields) oilFields.style.display = type === 'oil' ? 'block' : 'none';
+    if (partFields) partFields.style.display = type === 'part' ? 'block' : 'none';
+    
+    // Load parts ONLY if part type is selected - ensure we're using the correct select
+    if (type === 'part' && partFields) {
+      const partSelect = document.getElementById('polozka-part-select');
+      const oilSelect = document.getElementById('polozka-oil-select');
+      // Make sure we're not accidentally affecting oil select
+      if (partSelect && partSelect.id === 'polozka-part-select') {
+        await this.loadPartsIntoSelect('polozka-part-search', 'polozka-part-select');
+      }
+    }
+    
+    // Update radio button visual state
+    const modal = document.querySelector('.polozka-modal-overlay');
+    if (modal) {
+      modal.querySelectorAll('.polozka-type-option').forEach(opt => {
+        opt.classList.remove('selected');
+      });
+      const selectedOption = modal.querySelector(`.polozka-type-option[data-type="${type}"]`);
+      if (selectedOption) {
+        selectedOption.classList.add('selected');
+      }
+    }
+  }
+
+  // Update predefined polozka type fields visibility
+  async updatePredefinedPolozkaTypeFields(type) {
+    const textFields = document.getElementById('predefined-polozka-text-fields');
+    const oilFields = document.getElementById('predefined-polozka-oil-fields');
+    const partFields = document.getElementById('predefined-polozka-part-fields');
+    
+    if (textFields) textFields.style.display = type === 'text' ? 'block' : 'none';
+    if (oilFields) oilFields.style.display = type === 'oil' ? 'block' : 'none';
+    if (partFields) partFields.style.display = type === 'part' ? 'block' : 'none';
+    
+    // Load parts if part type is selected
+    if (type === 'part' && partFields) {
+      await this.loadPartsIntoSelect('predefined-polozka-part-search', 'predefined-polozka-part-select');
+    }
+    
+    // Update radio button visual state
+    const modal = document.querySelector('.polozka-modal-overlay');
+    if (modal) {
+      modal.querySelectorAll('.polozka-type-option').forEach(opt => {
+        opt.classList.remove('selected');
+      });
+      const selectedOption = modal.querySelector(`.polozka-type-option[data-type="${type}"]`);
+      if (selectedOption) {
+        selectedOption.classList.add('selected');
+      }
+    }
+  }
 
   // Add service detail to the list
   addServicePolozka() {
     const modal = document.querySelector('.polozka-modal-overlay');
-    const name = document.getElementById('polozka-name').value.trim();
+    const typeRadio = modal.querySelector('input[name="polozka-type"]:checked');
+    const type = typeRadio ? typeRadio.value : 'text';
     
+    
+    let polozkaData = { type: type };
+    let displayName = '';
+    
+    if (type === 'text') {
+      const name = document.getElementById('polozka-name').value.trim();
     if (!name) {
       alert('Prosím vyplňte názov položky.');
       return;
+      }
+      polozkaData.name = name;
+      displayName = name;
+    } else if (type === 'oil') {
+      const oilSelect = document.getElementById('polozka-oil-select');
+      const quantityInput = document.getElementById('polozka-oil-quantity');
+      
+      // DEBUG: Check if oil select has parts in it
+      if (oilSelect && oilSelect.options.length > 0) {
+        const firstOption = oilSelect.options[0];
+        if (firstOption.value && firstOption.value.includes('"category"')) {
+          const parsed = JSON.parse(firstOption.value);
+          // Check if the category is a parts category (not an oil category)
+          // 'olejove' in parts means "oil filters", not actual oils!
+          if (parsed.category && this.isPartsCategory(parsed.category)) {
+            console.error('[ERROR] Oil select contains parts items! Category:', parsed.category, '(olejove means oil filters in parts, not oils!)');
+          } else if (parsed.category && !this.isOilCategory(parsed.category)) {
+            console.warn('[WARNING] Oil select contains unknown category:', parsed.category);
+          }
+        }
+      }
+      
+      if (!oilSelect || !oilSelect.value) {
+        alert('Prosím vyberte olej.');
+        return;
+      }
+      
+      const quantity = parseFloat(quantityInput.value);
+      if (isNaN(quantity) || quantity <= 0) {
+        alert('Prosím zadajte platné množstvo v litroch.');
+        return;
+      }
+      
+      try {
+        const oilInfo = JSON.parse(oilSelect.value);
+        
+        // Validate that this is actually an oil, not a part
+        if (oilInfo.category && this.isPartsCategory(oilInfo.category)) {
+          console.error('[ERROR] Selected item is a part, not an oil! Category:', oilInfo.category);
+          alert('Chyba: Vybratá položka je diel, nie olej. Prosím vyberte olej z kategórie motorových, prevodových, diferenciálnych olejov alebo chladiacej kvapaliny.');
+          return;
+        }
+        
+        if (oilInfo.category && !this.isOilCategory(oilInfo.category)) {
+          console.warn('[WARNING] Unknown oil category:', oilInfo.category);
+        }
+        
+        polozkaData.oilId = oilInfo.id;
+        polozkaData.category = oilInfo.category;
+        polozkaData.name = oilInfo.name;
+        polozkaData.quantity = quantity;
+        displayName = `${oilInfo.name} - ${quantity}L`;
+      } catch (e) {
+        console.error('[ERROR] Failed to parse oil info:', e, 'Value:', oilSelect.value);
+        alert('Chyba pri načítaní informácií o oleji. Skúste to znova.');
+        return;
+      }
+    } else if (type === 'part') {
+      const partSelect = document.getElementById('polozka-part-select');
+      const quantityInput = document.getElementById('polozka-part-quantity');
+      
+      // For now, allow manual entry if no part selected
+      let partName = '';
+      let partCategory = null;
+      if (partSelect && partSelect.value) {
+        const rawValue = partSelect.value;
+        
+        try {
+          // CRITICAL: Unescape HTML entities before parsing JSON
+          // The browser may return &quot; instead of " in attribute values
+          const unescapedValue = rawValue
+            .replace(/&quot;/g, '"')
+            .replace(/&amp;/g, '&')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>');
+          
+          const partInfo = JSON.parse(unescapedValue);
+          partName = partInfo.name || '';
+          polozkaData.partId = partInfo.id;
+          polozkaData.category = partInfo.category || 'olejove';
+          partCategory = partInfo.category || 'olejove';
+          
+          if (!partName || partName.trim() === '') {
+            console.error('[ERROR] Part name is empty after parsing:', partInfo);
+            alert('Chyba: Názov dielu je prázdny. Skúste vybrať diel znova.');
+            return;
+          }
+        } catch (e) {
+          console.error('[ERROR] Failed to parse part JSON:', e, 'Raw value:', rawValue);
+          // If JSON.parse fails, try to extract name from JSON string manually
+          const valueStr = rawValue;
+          // Try to extract name from JSON string like {"id":"...","name":"Part Name","category":"..."}
+          const nameMatch = valueStr.match(/"name"\s*:\s*"([^"]+)"/);
+          if (nameMatch && nameMatch[1]) {
+            partName = nameMatch[1];
+            // Try to extract category too
+            const categoryMatch = valueStr.match(/"category"\s*:\s*"([^"]+)"/);
+            if (categoryMatch && categoryMatch[1]) {
+              partCategory = categoryMatch[1];
+              polozkaData.category = categoryMatch[1];
+            }
+          } else {
+            // If we can't extract, this is a serious error
+            console.error('[ERROR] Could not extract part name from value:', valueStr);
+            alert('Chyba pri načítaní informácií o diele. Skúste vybrať diel znova alebo ho zadajte ručne.');
+            return;
+          }
+        }
+      } else {
+        // Manual entry fallback
+        const manualInput = document.getElementById('polozka-part-search');
+        if (manualInput && manualInput.value.trim()) {
+          partName = manualInput.value.trim();
+        } else {
+          alert('Prosím vyberte alebo zadajte názov dielu.');
+          return;
+        }
+      }
+      
+      // Ensure we have a valid part name
+      if (!partName || partName.trim() === '') {
+        console.error('[ERROR] Part name is empty after all processing');
+        alert('Prosím vyberte alebo zadajte názov dielu.');
+        return;
+      }
+      
+      const quantity = parseInt(quantityInput.value);
+      if (isNaN(quantity) || quantity <= 0) {
+        alert('Prosím zadajte platné množstvo v kusoch.');
+        return;
+      }
+      
+      const finalPartName = partName.trim();
+      
+      polozkaData.name = finalPartName;
+      polozkaData.quantity = quantity;
+      const subcategoryTitle = partCategory ? this.getSubcategoryTitle(partCategory) : '';
+      displayName = partCategory ? `${subcategoryTitle} - ${finalPartName} - ${quantity}ks` : `${finalPartName} - ${quantity}ks`;
     }
     
     // Add to service polozky list
@@ -1846,12 +3429,36 @@ class FlotilaManager {
       noDetails.remove();
     }
     
+    // Final validation before adding
+    if (!displayName || displayName.trim() === '') {
+      console.error('[ERROR] displayName is empty, cannot add polozka');
+      alert('Chyba: Názov položky je prázdny.');
+      return;
+    }
+    
+    if (!polozkaData.name || polozkaData.name.trim() === '') {
+      console.error('[ERROR] polozkaData.name is empty, cannot add polozka');
+      alert('Chyba: Názov položky je prázdny.');
+      return;
+    }
+    
     const detailId = 'detail_' + Date.now();
     const detailElement = document.createElement('div');
     detailElement.className = 'service-polozka-item';
+    detailElement.dataset.polozkaData = JSON.stringify(polozkaData);
+    
+    // Ensure displayName doesn't contain JSON or special characters that would break display
+    const safeDisplayName = displayName.replace(/[{}"]/g, '').trim();
+    if (safeDisplayName !== displayName) {
+      console.warn('[WARNING] displayName contained special chars, cleaned:', displayName, '->', safeDisplayName);
+    }
+    
     detailElement.innerHTML = `
       <div class="polozka-header">
-        <span class="polozka-name">${name}</span>
+        <span class="polozka-type-badge" style="display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-right: 8px; background: ${type === 'oil' ? '#3b82f6' : type === 'part' ? '#10b981' : '#6b7280'}; color: white;">
+          ${type === 'oil' ? 'Olej' : type === 'part' ? 'Diel' : 'Text'}
+        </span>
+        <span class="polozka-name">${this.escapeHtml(safeDisplayName)}</span>
         <button type="button" class="remove-polozka-btn" onclick="window.flotilaManager.removeServicePolozka('${detailId}')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -1885,15 +3492,35 @@ class FlotilaManager {
   // Get current service polozky from the modal
   getCurrentServicePolozky() {
     const polozkyList = document.getElementById('service-polozky-list');
-    const polozky = [];
+    if (!polozkyList) return [];
     
+    const polozky = [];
     const detailItems = polozkyList.querySelectorAll('.service-polozka-item');
-    detailItems.forEach(item => {
-      const nameElement = item.querySelector('.polozka-name');
-      
+    
+    detailItems.forEach((item, index) => {
+      const polozkaDataStr = item.dataset.polozkaData;
+      if (polozkaDataStr) {
+        try {
+          const polozkaData = JSON.parse(polozkaDataStr);
+          polozky.push(polozkaData);
+        } catch (e) {
+          // Fallback: try to get from text content
+          const nameElement = item.querySelector('.polozka-name');
       if (nameElement) {
         const name = nameElement.textContent.trim();
-        polozky.push(name);
+            // Remove type badge text if present
+            const cleanName = name.replace(/^(Olej|Diel|Text)\s*/, '').trim();
+            polozky.push({ type: 'text', name: cleanName });
+          }
+        }
+      } else {
+        // Legacy support: get from text content
+        const nameElement = item.querySelector('.polozka-name');
+        if (nameElement) {
+          const name = nameElement.textContent.trim();
+          const cleanName = name.replace(/^(Olej|Diel|Text)\s*/, '').trim();
+          polozky.push({ type: 'text', name: cleanName });
+        }
       }
     });
     
@@ -1908,7 +3535,7 @@ class FlotilaManager {
     // Load existing service data if editing
     if (isEditing) {
       try {
-        const doc = await window.db.collection('predefined_services').doc(serviceId).get();
+        const doc = await this._predefinedServicesCollection().doc(serviceId).get();
         if (doc.exists) {
           serviceData = { id: doc.id, ...doc.data() };
         }
@@ -2171,13 +3798,45 @@ class FlotilaManager {
       }
       
       // Add existing service polozky
-      serviceData.servicePolozky.forEach((detail, index) => {
+      // Handle both array and legacy string array formats
+      const polozkyArray = Array.isArray(serviceData.servicePolozky) 
+        ? serviceData.servicePolozky 
+        : Object.values(serviceData.servicePolozky || {});
+      
+      polozkyArray.forEach((detail, index) => {
         const detailId = 'predefined_detail_' + Date.now() + '_' + index;
         const detailElement = document.createElement('div');
         detailElement.className = 'service-polozka-item';
+        
+        // Handle both structured and legacy string formats
+        let polozkaData, displayName, type;
+        if (typeof detail === 'string') {
+          // Legacy format
+          polozkaData = { type: 'text', name: detail };
+          displayName = detail;
+          type = 'text';
+        } else if (typeof detail === 'object' && detail !== null) {
+          // Structured format
+          polozkaData = { ...detail };
+          if (detail.type === 'oil' && detail.quantity) {
+            displayName = `${detail.name} - ${detail.quantity}L`;
+          } else {
+            displayName = detail.name || '';
+          }
+          type = detail.type || 'text';
+        } else {
+          polozkaData = { type: 'text', name: String(detail) };
+          displayName = String(detail);
+          type = 'text';
+        }
+        
+        detailElement.dataset.polozkaData = JSON.stringify(polozkaData);
         detailElement.innerHTML = `
           <div class="polozka-header">
-            <span class="polozka-name">${detail}</span>
+            <span class="polozka-type-badge" style="display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-right: 8px; background: ${type === 'oil' ? '#3b82f6' : type === 'part' ? '#10b981' : '#6b7280'}; color: white;">
+              ${type === 'oil' ? 'Olej' : type === 'part' ? 'Diel' : 'Text'}
+            </span>
+            <span class="polozka-name">${this.escapeHtml(displayName)}</span>
             <button type="button" class="remove-polozka-btn" onclick="window.flotilaManager.removePredefinedServicePolozka('${detailId}')">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -2224,11 +3883,31 @@ class FlotilaManager {
   }
 
   // Show predefined service detail modal
-  showPredefinedServicePolozkaModal() {
+  async showPredefinedServicePolozkaModal() {
+    // Load oils for dropdown - wait a bit for the service to be available
+    let oils = [];
+    let unsubscribeFn = null;
+    
+    // Try to get oils from OilDatabaseService
+    if (window.DatabaseService && typeof window.DatabaseService.onOilsUpdate === 'function') {
+      try {
+        unsubscribeFn = await window.DatabaseService.onOilsUpdate((oilsList) => {
+          oils = oilsList || [];
+          console.log('Loaded oils:', oils.length);
+        });
+        // Wait a bit for initial load
+        await new Promise(resolve => setTimeout(resolve, 500));
+      } catch (error) {
+        console.warn('Could not load oils:', error);
+      }
+    } else {
+      console.warn('DatabaseService.onOilsUpdate not available');
+    }
+
     const modal = document.createElement('div');
     modal.className = 'polozka-modal-overlay';
     modal.innerHTML = `
-      <div class="polozka-modal">
+      <div class="polozka-modal" style="max-width: 500px;">
         <div class="modal-header">
           <h3>Pridať položku servisu</h3>
           <button class="close-btn" onclick="this.closest('.polozka-modal-overlay').remove()">×</button>
@@ -2236,8 +3915,59 @@ class FlotilaManager {
         <div class="modal-body">
           <form id="predefined-service-polozka-form">
             <div class="form-group">
+              <label>Typ položky:</label>
+              <div class="polozka-type-selector">
+                <label class="polozka-type-option" data-type="text">
+                  <input type="radio" name="predefined-polozka-type" value="text" checked onchange="window.flotilaManager.updatePredefinedPolozkaTypeFields('text')">
+                  <span>Len text</span>
+                </label>
+                <label class="polozka-type-option" data-type="oil">
+                  <input type="radio" name="predefined-polozka-type" value="oil" onchange="window.flotilaManager.updatePredefinedPolozkaTypeFields('oil')">
+                  <span>Olej</span>
+                </label>
+                <label class="polozka-type-option" data-type="part">
+                  <input type="radio" name="predefined-polozka-type" value="part" onchange="window.flotilaManager.updatePredefinedPolozkaTypeFields('part')">
+                  <span>Diel</span>
+                </label>
+              </div>
+            </div>
+            
+            <!-- Text type fields -->
+            <div id="predefined-polozka-text-fields" class="polozka-type-fields">
+            <div class="form-group">
               <label for="predefined-polozka-name">Názov položky:</label>
-              <input type="text" id="predefined-polozka-name" required placeholder="Napríklad: Olejový filter">
+                <input type="text" id="predefined-polozka-name" placeholder="Napríklad: Olejový filter">
+              </div>
+            </div>
+            
+            <!-- Oil type fields -->
+            <div id="predefined-polozka-oil-fields" class="polozka-type-fields" style="display: none;">
+              <div class="form-group">
+                <label for="predefined-polozka-oil-search">Vyhľadať olej:</label>
+                <input type="text" id="predefined-polozka-oil-search" placeholder="Zadajte názov oleja..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 8px;">
+                <select id="predefined-polozka-oil-select" size="5" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; max-height: 200px; overflow-y: auto;">
+                  <option value="">-- Vyberte olej --</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="predefined-polozka-oil-quantity">Množstvo (L):</label>
+                <input type="number" id="predefined-polozka-oil-quantity" step="0.1" min="0" placeholder="Napríklad: 14" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+              </div>
+            </div>
+            
+            <!-- Part type fields -->
+            <div id="predefined-polozka-part-fields" class="polozka-type-fields" style="display: none;">
+              <div class="form-group">
+                <label for="predefined-polozka-part-search">Vyhľadať diel:</label>
+                <input type="text" id="predefined-polozka-part-search" placeholder="Zadajte názov dielu..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 8px;">
+                <select id="predefined-polozka-part-select" size="5" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; max-height: 200px; overflow-y: auto;">
+                  <option value="">-- Vyberte diel (zatiaľ prázdne) --</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="predefined-polozka-part-quantity">Množstvo (ks):</label>
+                <input type="number" id="predefined-polozka-part-quantity" step="1" min="1" placeholder="Napríklad: 2" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+              </div>
             </div>
           </form>
         </div>
@@ -2250,6 +3980,141 @@ class FlotilaManager {
     
     document.body.appendChild(modal);
     
+    // Populate oil dropdown and setup search
+    const oilSelect = modal.querySelector('#predefined-polozka-oil-select');
+    const oilSearch = modal.querySelector('#predefined-polozka-oil-search');
+    let allOils = [...oils];
+    
+    const updateOilDropdown = (filteredOils) => {
+      if (!oilSelect) return;
+      oilSelect.innerHTML = '';
+      if (filteredOils.length === 0) {
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = '-- Žiadne oleje načítané --';
+        option.disabled = true;
+        oilSelect.appendChild(option);
+      } else {
+        // Group oils by category
+        const oilsByCategory = {};
+        filteredOils.forEach(oil => {
+          const category = oil.category || 'motorove';
+          if (!oilsByCategory[category]) {
+            oilsByCategory[category] = [];
+          }
+          oilsByCategory[category].push(oil);
+        });
+        
+        // Create optgroups for each category
+        const categoryOrder = ['motorove', 'prevodove', 'diferencial', 'chladiaca'];
+        categoryOrder.forEach(categoryId => {
+          if (oilsByCategory[categoryId] && oilsByCategory[categoryId].length > 0) {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = this.getOilCategoryTitle(categoryId);
+            oilsByCategory[categoryId].forEach(oil => {
+              const option = document.createElement('option');
+              option.value = JSON.stringify({ id: oil.id, name: oil.name, category: oil.category });
+              option.textContent = `${oil.name} (${(oil.quantity || 0).toFixed(1)}L)`;
+              optgroup.appendChild(option);
+            });
+            oilSelect.appendChild(optgroup);
+          }
+        });
+        
+        // Add any oils with unknown categories at the end
+        Object.keys(oilsByCategory).forEach(categoryId => {
+          if (!categoryOrder.includes(categoryId) && oilsByCategory[categoryId].length > 0) {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = this.getOilCategoryTitle(categoryId);
+            oilsByCategory[categoryId].forEach(oil => {
+              const option = document.createElement('option');
+              option.value = JSON.stringify({ id: oil.id, name: oil.name, category: oil.category });
+              option.textContent = `${oil.name} (${(oil.quantity || 0).toFixed(1)}L)`;
+              optgroup.appendChild(option);
+            });
+            oilSelect.appendChild(optgroup);
+          }
+        });
+      }
+    };
+    
+    // Setup real-time oil updates
+    if (window.DatabaseService && typeof window.DatabaseService.onOilsUpdate === 'function') {
+      const realTimeUnsubscribe = await window.DatabaseService.onOilsUpdate((oilsList) => {
+        allOils = oilsList || [];
+        console.log('Oils updated in predefined modal:', allOils.length);
+        if (oilSearch && oilSearch.value) {
+          // Re-filter if search is active
+          const searchTerm = oilSearch.value.toLowerCase();
+          const filtered = allOils.filter(oil => 
+            oil.name.toLowerCase().includes(searchTerm)
+          );
+          updateOilDropdown(filtered);
+        } else {
+          updateOilDropdown(allOils);
+        }
+      });
+      
+      // Clean up on modal close
+      const closeBtn = modal.querySelector('.close-btn');
+      if (closeBtn) {
+        const originalClose = closeBtn.onclick;
+        closeBtn.onclick = function() {
+          if (realTimeUnsubscribe) realTimeUnsubscribe();
+          if (originalClose) originalClose.call(this);
+        };
+      }
+    }
+    
+    if (oilSearch && oilSelect) {
+      oilSearch.addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase();
+        const filtered = allOils.filter(oil => 
+          oil.name.toLowerCase().includes(searchTerm)
+        );
+        updateOilDropdown(filtered);
+      });
+    }
+    
+    updateOilDropdown(allOils);
+    
+    // Clean up old unsubscribe
+    if (unsubscribeFn) {
+      setTimeout(() => unsubscribeFn && unsubscribeFn(), 2000);
+    }
+    
+    // Setup part search (empty for now, can be populated later)
+    const partSearch = modal.querySelector('#predefined-polozka-part-search');
+    if (partSearch) {
+      partSearch.addEventListener('input', (e) => {
+        // Placeholder for future parts search
+        console.log('Parts search:', e.target.value);
+      });
+    }
+    
+    // Set initial selected state for radio buttons
+    const checkedRadio = modal.querySelector('input[name="predefined-polozka-type"]:checked');
+    if (checkedRadio) {
+      const checkedType = checkedRadio.value;
+      const selectedOption = modal.querySelector(`.polozka-type-option[data-type="${checkedType}"]`);
+      if (selectedOption) {
+        selectedOption.classList.add('selected');
+      }
+    }
+    
+    // Add change listeners to radio buttons to update visual state
+    modal.querySelectorAll('input[name="predefined-polozka-type"]').forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        modal.querySelectorAll('.polozka-type-option').forEach(opt => {
+          opt.classList.remove('selected');
+        });
+        const selectedOption = modal.querySelector(`.polozka-type-option[data-type="${e.target.value}"]`);
+        if (selectedOption) {
+          selectedOption.classList.add('selected');
+        }
+      });
+    });
+    
     // Focus on first input
     setTimeout(() => {
       const firstInput = modal.querySelector('#predefined-polozka-name');
@@ -2260,11 +4125,79 @@ class FlotilaManager {
   // Add predefined service detail to the list
   addPredefinedServicePolozka() {
     const modal = document.querySelector('.polozka-modal-overlay');
-    const name = document.getElementById('predefined-polozka-name').value.trim();
+    const typeRadio = modal.querySelector('input[name="predefined-polozka-type"]:checked');
+    const type = typeRadio ? typeRadio.value : 'text';
     
+    let polozkaData = { type: type };
+    let displayName = '';
+    
+    if (type === 'text') {
+      const name = document.getElementById('predefined-polozka-name').value.trim();
     if (!name) {
       alert('Prosím vyplňte názov položky.');
       return;
+      }
+      polozkaData.name = name;
+      displayName = name;
+    } else if (type === 'oil') {
+      const oilSelect = document.getElementById('predefined-polozka-oil-select');
+      const quantityInput = document.getElementById('predefined-polozka-oil-quantity');
+      
+      if (!oilSelect || !oilSelect.value) {
+        alert('Prosím vyberte olej.');
+        return;
+      }
+      
+      const quantity = parseFloat(quantityInput.value);
+      if (isNaN(quantity) || quantity <= 0) {
+        alert('Prosím zadajte platné množstvo v litroch.');
+        return;
+      }
+      
+      const oilInfo = JSON.parse(oilSelect.value);
+      polozkaData.oilId = oilInfo.id;
+      polozkaData.category = oilInfo.category;
+      polozkaData.name = oilInfo.name;
+      polozkaData.quantity = quantity;
+      displayName = `${oilInfo.name} - ${quantity}L`;
+    } else if (type === 'part') {
+      const partSelect = document.getElementById('predefined-polozka-part-select');
+      const quantityInput = document.getElementById('predefined-polozka-part-quantity');
+      
+      // For now, allow manual entry if no part selected
+      let partName = '';
+      let partCategory = null;
+      if (partSelect && partSelect.value) {
+        try {
+          const partInfo = JSON.parse(partSelect.value);
+          partName = partInfo.name;
+          polozkaData.partId = partInfo.id;
+          polozkaData.category = partInfo.category || 'olejove';
+          partCategory = partInfo.category || 'olejove';
+        } catch (e) {
+          partName = partSelect.value;
+        }
+      } else {
+        // Manual entry fallback
+        const manualInput = document.getElementById('predefined-polozka-part-search');
+        if (manualInput && manualInput.value.trim()) {
+          partName = manualInput.value.trim();
+        } else {
+          alert('Prosím vyberte alebo zadajte názov dielu.');
+          return;
+        }
+      }
+      
+      const quantity = parseInt(quantityInput.value);
+      if (isNaN(quantity) || quantity <= 0) {
+        alert('Prosím zadajte platné množstvo v kusoch.');
+        return;
+      }
+      
+      polozkaData.name = partName;
+      polozkaData.quantity = quantity;
+      const subcategoryTitle = partCategory ? this.getSubcategoryTitle(partCategory) : '';
+      displayName = partCategory ? `${subcategoryTitle} - ${partName} - ${quantity}ks` : `${partName} - ${quantity}ks`;
     }
     
     // Add to service polozky list
@@ -2278,9 +4211,13 @@ class FlotilaManager {
     const detailId = 'predefined_detail_' + Date.now();
     const detailElement = document.createElement('div');
     detailElement.className = 'service-polozka-item';
+    detailElement.dataset.polozkaData = JSON.stringify(polozkaData);
     detailElement.innerHTML = `
       <div class="polozka-header">
-        <span class="polozka-name">${name}</span>
+        <span class="polozka-type-badge" style="display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-right: 8px; background: ${type === 'oil' ? '#3b82f6' : type === 'part' ? '#10b981' : '#6b7280'}; color: white;">
+          ${type === 'oil' ? 'Olej' : type === 'part' ? 'Diel' : 'Text'}
+        </span>
+        <span class="polozka-name">${this.escapeHtml(displayName)}</span>
         <button type="button" class="remove-polozka-btn" onclick="window.flotilaManager.removePredefinedServicePolozka('${detailId}')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -2314,15 +4251,34 @@ class FlotilaManager {
   // Get current predefined service polozky from the modal
   getCurrentPredefinedServicePolozky() {
     const polozkyList = document.getElementById('predefined-service-polozky-list');
-    const polozky = [];
+    if (!polozkyList) return [];
     
+    const polozky = [];
     const detailItems = polozkyList.querySelectorAll('.service-polozka-item');
-    detailItems.forEach(item => {
-      const nameElement = item.querySelector('.polozka-name');
-      
+    
+    detailItems.forEach((item, index) => {
+      const polozkaDataStr = item.dataset.polozkaData;
+      if (polozkaDataStr) {
+        try {
+          const polozkaData = JSON.parse(polozkaDataStr);
+          polozky.push(polozkaData);
+        } catch (e) {
+          // Fallback: try to get from text content
+          const nameElement = item.querySelector('.polozka-name');
       if (nameElement) {
         const name = nameElement.textContent.trim();
-        polozky.push(name);
+            const cleanName = name.replace(/^(Olej|Diel|Text)\s*/, '').trim();
+            polozky.push({ type: 'text', name: cleanName });
+          }
+        }
+      } else {
+        // Legacy support: get from text content
+        const nameElement = item.querySelector('.polozka-name');
+        if (nameElement) {
+          const name = nameElement.textContent.trim();
+          const cleanName = name.replace(/^(Olej|Diel|Text)\s*/, '').trim();
+          polozky.push({ type: 'text', name: cleanName });
+        }
       }
     });
     
@@ -2412,19 +4368,23 @@ class FlotilaManager {
 
     // Add service polozky
     const servicePolozky = this.getCurrentPredefinedServicePolozky();
-    if (Object.keys(servicePolozky).length > 0) {
-      serviceData.servicePolozky = servicePolozky;
+    if (servicePolozky && servicePolozky.length > 0) {
+      // Store as array of structured objects
+      serviceData.servicePolozky = servicePolozky.map((polozka, idx) => ({
+        ...polozka,
+        key: polozka.key || `polozka_${idx}`
+      }));
     }
 
     try {
       if (serviceId) {
         // Update existing service
-        await window.db.collection('predefined_services').doc(serviceId).update(serviceData);
+        await this._predefinedServicesCollection().doc(serviceId).update(serviceData);
         this.showNotification('Preddefinovaný servis bol aktualizovaný', 'success');
       } else {
         // Create new service
         serviceData.createdAt = new Date();
-        await window.db.collection('predefined_services').add(serviceData);
+        await this._predefinedServicesCollection().add(serviceData);
         this.showNotification('Preddefinovaný servis bol vytvorený', 'success');
       }
       
@@ -2447,7 +4407,7 @@ class FlotilaManager {
     }
     
     try {
-      await window.db.collection('predefined_services').doc(serviceId).delete();
+      await this._predefinedServicesCollection().doc(serviceId).delete();
       this.showNotification('Preddefinovaný servis bol vymazaný', 'success');
       this.refreshPredefinedServicesList();
     } catch (error) {
@@ -2462,7 +4422,7 @@ class FlotilaManager {
     if (!rowsContainer) return;
     
     try {
-      const snapshot = await window.db.collection('predefined_services').orderBy('name').get();
+      const snapshot = await this._predefinedServicesCollection().orderBy('name').get();
       const rows = snapshot.docs.map(doc => {
         const s = { id: doc.id, ...doc.data() };
         const polozkyCount = s.servicePolozky ? s.servicePolozky.length : 0;
@@ -2503,13 +4463,80 @@ class FlotilaManager {
 
   // Handle service type form submission
   async handleServiceTypeSubmit(serviceIndex = null) {
+    if (!this.selectedVehicle) {
+      alert('Prosím vyberte vozidlo pred pridávaním služieb.');
+      return;
+    }
+    
+    // Ensure user is authenticated (non-anonymous)
+    const currentUser = window.auth?.currentUser;
+    if (!currentUser) {
+      this.showNotification('Musíte byť prihlásený pre pridávanie služieb. Prosím prihláste sa cez email a heslo.', 'error');
+      // Show auth section
+      const authSection = document.getElementById('auth-section');
+      const mainContent = document.getElementById('flotila-main-content');
+      if (authSection) authSection.style.display = 'block';
+      if (mainContent) mainContent.style.display = 'none';
+      return;
+    }
+    
+    // Check if user is anonymous - anonymous users don't have write permissions
+    if (currentUser.isAnonymous) {
+      this.showNotification('Anonymný používateľ nemá oprávnenia na zápis. Prosím prihláste sa cez email a heslo.', 'error');
+      // Show auth section
+      const authSection = document.getElementById('auth-section');
+      const mainContent = document.getElementById('flotila-main-content');
+      if (authSection) authSection.style.display = 'block';
+      if (mainContent) mainContent.style.display = 'none';
+      return;
+    }
+    
     const modal = document.querySelector('.service-type-modal-overlay');
-    const name = document.getElementById('service-type-name').value.trim();
+    if (!modal) {
+      console.error('[ERROR] Modal not found');
+      alert('Chyba: Modal sa nenašiel. Skúste to znova.');
+      return;
+    }
+    
+    const nameInput = document.getElementById('service-type-name');
+    if (!nameInput) {
+      console.error('[ERROR] Name input not found');
+      alert('Chyba: Pole pre názov servisu sa nenašlo. Skúste to znova.');
+      return;
+    }
+    
+    const name = nameInput.value.trim();
+    
+    // First, ensure radio button is checked if interval-option has selected class
+    const selectedOption = modal.querySelector('.interval-option.selected');
+    if (selectedOption) {
+      const radio = selectedOption.querySelector('input[name="interval-type"]');
+      if (radio && !radio.checked) {
+        radio.checked = true;
+      }
+    }
+    
+    // Now find the selected radio button
     const selectedType = modal.querySelector('input[name="interval-type"]:checked');
     const type = selectedType ? selectedType.value : '';
     
-    if (!name || !type) {
-      alert('Prosím vyplňte názov servisu a vyberte typ intervalu.');
+    if (selectedOption) {
+      const radioInOption = selectedOption.querySelector('input[name="interval-type"]');
+    }
+    
+    if (!name) {
+      alert('Prosím vyplňte názov servisu.');
+      nameInput.focus();
+      return;
+    }
+    
+    if (!type) {
+      alert('Prosím vyberte typ intervalu (Kilometre, Čas alebo Špecifický dátum).');
+      // Try to focus first interval option
+      const firstIntervalOption = modal.querySelector('input[name="interval-type"]');
+      if (firstIntervalOption) {
+        firstIntervalOption.closest('.interval-option')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
       return;
     }
     
@@ -2518,7 +4545,7 @@ class FlotilaManager {
       type
     };
     
-    // Handle different interval types
+    // Handle different interval types - convert to new structure (unit, norm)
     switch (type) {
       case 'km':
         const intervalKm = document.getElementById('service-interval-km').value;
@@ -2529,9 +4556,12 @@ class FlotilaManager {
           return;
         }
         
-        serviceData.interval = parseInt(intervalKm);
+        serviceData.unit = 'km';
+        serviceData.norm = parseInt(intervalKm);
+        serviceData.interval = parseInt(intervalKm); // Keep for backward compatibility
         if (reminderKm) {
           serviceData.reminderKm = parseInt(reminderKm);
+          serviceData.signal = parseInt(reminderKm); // signal = reminderKm
         }
         break;
         
@@ -2546,9 +4576,19 @@ class FlotilaManager {
           return;
         }
         
-        serviceData.interval = parseInt(intervalTime);
+        // Map timeUnit to unit
+        if (timeUnit === 'years') {
+          serviceData.unit = 'year';
+        } else if (timeUnit === 'months') {
+          serviceData.unit = 'month';
+        } else {
+          serviceData.unit = 'day';
+        }
+        
+        serviceData.norm = parseInt(intervalTime);
+        serviceData.interval = parseInt(intervalTime); // Keep for backward compatibility
         serviceData.timeUnit = timeUnit;
-        serviceData.type = 'date'; // Convert to date for compatibility
+        serviceData.type = 'date'; // Keep for backward compatibility
         
         // Convert time units to days for reminder
         if (reminderTime) {
@@ -2556,6 +4596,7 @@ class FlotilaManager {
           if (reminderTimeUnit === 'weeks') reminderDays *= 7;
           if (reminderTimeUnit === 'months') reminderDays *= 30;
           serviceData.reminderDays = reminderDays;
+          serviceData.signal = reminderDays; // signal = reminderDays
         }
         break;
         
@@ -2568,10 +4609,16 @@ class FlotilaManager {
           return;
         }
         
-        serviceData.specificDate = specificDate;
-        serviceData.type = 'date'; // Convert to date for compatibility
+        // Convert YYYY-MM-DD to DD.MM.YYYY format
+        // Parse the date string directly to avoid timezone issues
+        const [year, month, day] = specificDate.split('-');
+        const dateInDDMMYYYY = `${day}.${month}.${year}`;
+        
+        serviceData.unit = 'specificDate';
+        serviceData.norm = dateInDDMMYYYY; // Save in DD.MM.YYYY format
+        // Only save signal (reminder days), don't save specificDate, type, or reminderDays
         if (reminderDays) {
-          serviceData.reminderDays = parseInt(reminderDays);
+          serviceData.signal = parseInt(reminderDays);
         }
         break;
     }
@@ -2584,25 +4631,35 @@ class FlotilaManager {
 
     // Add service polozky
     const servicePolozky = this.getCurrentServicePolozky();
-    if (Object.keys(servicePolozky).length > 0) {
-      // Convert to simple key-value format for storage
-      const simpleDetails = {};
-      Object.keys(servicePolozky).forEach(key => {
-        const detail = servicePolozky[key];
-        if (typeof detail === 'object') {
-          simpleDetails[key] = detail.value;
-        } else {
-          simpleDetails[key] = detail;
-        }
-      });
-      serviceData.servicePolozky = simpleDetails;
+    if (servicePolozky && servicePolozky.length > 0) {
+      // Store as array of structured objects
+      serviceData.servicePolozky = servicePolozky.map((polozka, idx) => ({
+        ...polozka,
+        key: polozka.key || `polozka_${idx}`
+      }));
     }
 
-    // Only add lastService for new services
-    if (serviceIndex === null) {
+    // Handle lastKm and lastDate
+    if (serviceIndex !== null) {
+      // When editing, preserve lastKm and lastDate from existing service
+      const existingService = this.selectedVehicle.services[serviceIndex];
+      if (existingService.lastKm !== undefined && existingService.lastKm !== null) {
+        serviceData.lastKm = existingService.lastKm;
+      }
+      if (existingService.lastDate) {
+        serviceData.lastDate = existingService.lastDate;
+      }
+      // Also preserve lastService for backward compatibility
+      if (existingService.lastService) {
+        serviceData.lastService = existingService.lastService;
+      }
+    } else {
+      // For new services, initialize lastKm and lastService
+      const currentKm = this.selectedVehicle?.currentKm || this.selectedVehicle?.kilometers || 0;
+      serviceData.lastKm = 0; // Will be updated when service is performed
       serviceData.lastService = {
         date: new Date(),
-        km: this.selectedVehicle.currentKm || this.selectedVehicle.kilometers || 0
+        km: currentKm
       };
     }
     
@@ -2648,6 +4705,13 @@ class FlotilaManager {
         ...serviceData,
         lastService: existingService.lastService || serviceData.lastService
       };
+      
+      // For specificDate services, remove unnecessary fields
+      if (updatedService.unit === 'specificDate') {
+        delete updatedService.specificDate;
+        delete updatedService.type;
+        delete updatedService.reminderDays;
+      }
       
       this.selectedVehicle.services[serviceIndex] = updatedService;
       
@@ -2700,6 +4764,14 @@ class FlotilaManager {
           cleaned[key] = service[key];
         }
       });
+      
+      // For specificDate services, remove unnecessary fields
+      if (cleaned.unit === 'specificDate') {
+        delete cleaned.specificDate;
+        delete cleaned.type;
+        delete cleaned.reminderDays;
+      }
+      
       return cleaned;
     });
   }
@@ -2770,149 +4842,6 @@ class FlotilaManager {
     }).join('');
   }
 
-  // Show service detail modal
-  showServicePolozkaModal() {
-    const modal = document.createElement('div');
-    modal.className = 'polozka-modal-overlay';
-    modal.innerHTML = `
-      <div class="polozka-modal">
-        <div class="modal-header">
-          <h3>Pridať položku servisu</h3>
-          <button class="close-btn" onclick="this.closest('.polozka-modal-overlay').remove()">×</button>
-        </div>
-        <div class="modal-body">
-          <div class="form-group">
-            <label for="service-polozka-value">Detail:</label>
-            <input type="text" id="service-polozka-value" placeholder="Napríklad: Typ oleja: 5W-30, Množstvo: 6.5 l...">
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn-secondary" onclick="this.closest('.polozka-modal-overlay').remove()">Zrušiť</button>
-          <button class="btn-primary" onclick="window.flotilaManager.addServicePolozka()">Pridať</button>
-        </div>
-      </div>
-    `;
-    
-    document.body.appendChild(modal);
-  }
-
-  // Add service detail
-  addServicePolozka() {
-    const valueInput = document.getElementById('service-polozka-value');
-    
-    if (!valueInput || !valueInput.value.trim()) {
-      alert('Prosím vyplňte detail.');
-      return;
-    }
-    
-    const detailText = valueInput.value.trim();
-    
-    // Parse the detail text (format: "Label: Value")
-    let label, value;
-    if (detailText.includes(':')) {
-      const parts = detailText.split(':');
-      label = parts[0].trim();
-      value = parts.slice(1).join(':').trim();
-    } else {
-      label = detailText;
-      value = '';
-    }
-    
-    // Store the original label for display and use a clean key for storage
-    const key = label.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
-    
-    // Get current service polozky
-    const polozkyList = document.getElementById('service-polozky-list');
-    if (polozkyList) {
-      const currentDetails = this.getCurrentServicePolozky();
-      currentDetails[key] = {
-        label: label,
-        value: value
-      };
-      
-      // Update the display
-      polozkyList.innerHTML = this.renderServiceDetailsList(currentDetails);
-    }
-    
-    // Close modal
-    const modal = document.querySelector('.polozka-modal-overlay');
-    if (modal) {
-      modal.remove();
-    }
-  }
-
-  // Remove service detail
-  removeServicePolozka(key) {
-    const polozkyList = document.getElementById('service-polozky-list');
-    if (polozkyList) {
-      const currentDetails = this.getCurrentServicePolozky();
-      delete currentDetails[key];
-      
-      // Update the display
-      polozkyList.innerHTML = this.renderServiceDetailsList(currentDetails);
-    }
-  }
-
-  // Update service detail
-  updateServiceDetail(key, value) {
-    const polozkyList = document.getElementById('service-polozky-list');
-    if (polozkyList) {
-      const currentDetails = this.getCurrentServicePolozky();
-      
-      // Parse the full detail text (format: "Label: Value")
-      let label, detailValue;
-      if (value.includes(':')) {
-        const parts = value.split(':');
-        label = parts[0].trim();
-        detailValue = parts.slice(1).join(':').trim();
-      } else {
-        label = value;
-        detailValue = '';
-      }
-      
-      if (typeof currentDetails[key] === 'object') {
-        currentDetails[key].label = label;
-        currentDetails[key].value = detailValue;
-      } else {
-        currentDetails[key] = {
-          label: label,
-          value: detailValue
-        };
-      }
-    }
-  }
-
-  // Get current service polozky from the form
-  getCurrentServicePolozky() {
-    const polozkyList = document.getElementById('service-polozky-list');
-    if (!polozkyList) return {};
-    
-    const polozky = {};
-    const detailInputs = polozkyList.querySelectorAll('input[id^="service-polozka-"]');
-    
-    detailInputs.forEach(input => {
-      const key = input.id.replace('service-polozka-', '');
-      const fullDetail = input.value.trim();
-      
-      // Parse the full detail text (format: "Label: Value")
-      let label, value;
-      if (fullDetail.includes(':')) {
-        const parts = fullDetail.split(':');
-        label = parts[0].trim();
-        value = parts.slice(1).join(':').trim();
-      } else {
-        label = fullDetail;
-        value = '';
-      }
-      
-      polozky[key] = {
-        label: label,
-        value: value
-      };
-    });
-    
-    return polozky;
-  }
 
   // Show interval polozky based on type
   showIntervalDetails(type) {
@@ -2943,15 +4872,64 @@ class FlotilaManager {
   async saveServices() {
     if (!this.selectedVehicle) return;
     
+    // Verify authentication - require email/password login, not anonymous
+    const currentUser = window.auth.currentUser;
+    if (!currentUser) {
+      this.showNotification('Musíte byť prihlásený pre ukladanie služieb. Prosím prihláste sa cez email a heslo.', 'error');
+      // Show auth section
+      const authSection = document.getElementById('auth-section');
+      const mainContent = document.getElementById('flotila-main-content');
+      if (authSection) authSection.style.display = 'block';
+      if (mainContent) mainContent.style.display = 'none';
+      return;
+    }
+    
+    // Check if user is anonymous - anonymous users don't have write permissions
+    if (currentUser.isAnonymous) {
+      this.showNotification('Anonymný používateľ nemá oprávnenia na zápis. Prosím prihláste sa cez email a heslo.', 'error');
+      // Show auth section
+      const authSection = document.getElementById('auth-section');
+      const mainContent = document.getElementById('flotila-main-content');
+      if (authSection) authSection.style.display = 'block';
+      if (mainContent) mainContent.style.display = 'none';
+      return;
+    }
+    
     try {
+      console.log('Saving services with user:', currentUser.uid, currentUser.email || '(no email)');
+      
       const cleanedServices = this.cleanServiceData(this.selectedVehicle.services);
-      await window.db.collection('vehicles')
-        .doc(this.selectedVehicle.licensePlate)
-        .collection('info')
-        .doc('basic')
-        .update({
-          services: cleanedServices
-        });
+      const plate = this.selectedVehicle.licensePlate;
+      const normalizedPlate = this.normalizeLicensePlate(plate);
+      
+      // Save to FLOTILA collection based on vehicle type
+      const vehicleType = this.selectedVehicle.vehicleType;
+      let collection;
+      
+      if (vehicleType === 'trailer' || (this.selectedVehicle.licensePlate && this.trailers[this.selectedVehicle.licensePlate])) {
+        collection = this._flotilaTrailersCollection();
+      } else if (vehicleType === 'car' || (this.selectedVehicle.licensePlate && this.cars[this.selectedVehicle.licensePlate])) {
+        collection = this._flotilaCarsCollection();
+      } else if (vehicleType === 'other' || (this.selectedVehicle.licensePlate && this.other[this.selectedVehicle.licensePlate])) {
+        collection = this._flotilaOtherCollection();
+      } else {
+        collection = this._flotilaTrucksCollection();
+      }
+      
+      await collection.doc(normalizedPlate).set({
+        services: cleanedServices
+      }, { merge: true });
+      
+      // Update local data to keep vehicle in memory synchronized
+      const vehicleInMemory = this.trucks[plate] || this.trailers[plate] || this.cars[plate] || this.other[plate];
+      if (vehicleInMemory) {
+        vehicleInMemory.services = cleanedServices;
+      }
+      
+      // Also update selectedVehicle to ensure it has the latest services
+      if (this.selectedVehicle && this.selectedVehicle.licensePlate === plate) {
+        this.selectedVehicle.services = cleanedServices;
+      }
     } catch (error) {
       console.error('Error saving services:', error);
       this.showNotification('Chyba pri ukladaní servisov', 'error');
@@ -3037,35 +5015,158 @@ class FlotilaManager {
   async saveWorkSession() {
     if (!this.selectedVehicle) return;
     
+    // Ensure user is authenticated
+    if (!this.currentUser && window.AuthService && window.AuthService.ensureAnonymousSession) {
+      try {
+        await window.AuthService.ensureAnonymousSession();
+        this.currentUser = window.auth.currentUser;
+      } catch (authError) {
+        console.error('Auth error:', authError);
+        return;
+      }
+    }
+    
+    if (!this.currentUser) {
+      return;
+    }
+    
     try {
-      await window.db.collection('vehicles')
-        .doc(this.selectedVehicle.licensePlate)
-        .collection('info')
-        .doc('basic')
-        .update({
-          activeWorkSession: this.selectedVehicle.activeWorkSession
-        });
+      const plate = this.selectedVehicle.licensePlate;
+      const normalizedPlate = this.normalizeLicensePlate(plate);
+      const collection = this._getFlotilaCollectionForVehicle(this.selectedVehicle);
+      await collection.doc(normalizedPlate).set({
+        activeWorkSession: this.selectedVehicle.activeWorkSession
+      }, { merge: true });
     } catch (error) {
       console.error('Error saving work session:', error);
       this.showNotification('Chyba pri ukladaní pracovnej sessiony', 'error');
     }
   }
 
+  // Sync selectedVehicle back to the cache (trucks, trailers, etc.)
+  _syncSelectedVehicleToCache() {
+    if (!this.selectedVehicle) return;
+    
+    const plate = this.selectedVehicle.licensePlate;
+    const normalizedPlate = this.normalizeLicensePlate(plate);
+    
+    // Try to find the vehicle in all caches
+    let cachedVehicle = null;
+    
+    // Check trucks
+    cachedVehicle = Object.values(this.trucks).find(v => 
+      this.normalizeLicensePlate(v.licensePlate) === normalizedPlate
+    );
+    if (cachedVehicle) {
+      // Update services and history in the cached vehicle
+      if (this.selectedVehicle.services) {
+        cachedVehicle.services = this.selectedVehicle.services;
+      }
+      if (this.selectedVehicle.history) {
+        cachedVehicle.history = this.selectedVehicle.history;
+      }
+      return;
+    }
+    
+    // Check trailers
+    cachedVehicle = Object.values(this.trailers).find(v => 
+      this.normalizeLicensePlate(v.licensePlate) === normalizedPlate
+    );
+    if (cachedVehicle) {
+      if (this.selectedVehicle.services) {
+        cachedVehicle.services = this.selectedVehicle.services;
+      }
+      if (this.selectedVehicle.history) {
+        cachedVehicle.history = this.selectedVehicle.history;
+      }
+      return;
+    }
+    
+    // Check cars
+    cachedVehicle = Object.values(this.cars).find(v => 
+      this.normalizeLicensePlate(v.licensePlate) === normalizedPlate
+    );
+    if (cachedVehicle) {
+      if (this.selectedVehicle.services) {
+        cachedVehicle.services = this.selectedVehicle.services;
+      }
+      if (this.selectedVehicle.history) {
+        cachedVehicle.history = this.selectedVehicle.history;
+      }
+      return;
+    }
+    
+    // Check other
+    cachedVehicle = Object.values(this.other).find(v => 
+      this.normalizeLicensePlate(v.licensePlate) === normalizedPlate
+    );
+    if (cachedVehicle) {
+      if (this.selectedVehicle.services) {
+        cachedVehicle.services = this.selectedVehicle.services;
+      }
+      if (this.selectedVehicle.history) {
+        cachedVehicle.history = this.selectedVehicle.history;
+      }
+    }
+  }
+
+  // Remove undefined values from an object (Firebase doesn't allow undefined)
+  _removeUndefinedValues(obj) {
+    if (obj === null || typeof obj !== 'object') {
+      return obj;
+    }
+    
+    if (Array.isArray(obj)) {
+      return obj.map(item => this._removeUndefinedValues(item));
+    }
+    
+    const cleaned = {};
+    for (const key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        const value = obj[key];
+        if (value !== undefined) {
+          cleaned[key] = this._removeUndefinedValues(value);
+        }
+      }
+    }
+    return cleaned;
+  }
+
   // Save vehicle data to database
   async saveVehicleData() {
     if (!this.selectedVehicle) return;
     
+    // Ensure user is authenticated
+    if (!this.currentUser && window.AuthService && window.AuthService.ensureAnonymousSession) {
+      try {
+        await window.AuthService.ensureAnonymousSession();
+        this.currentUser = window.auth.currentUser;
+      } catch (authError) {
+        console.error('Auth error:', authError);
+        return;
+      }
+    }
+    
+    if (!this.currentUser) {
+      return;
+    }
+    
     try {
       const updateData = {};
       
-      // Update current kilometers
-      if (this.selectedVehicle.currentKm !== undefined) {
-        updateData.currentKm = this.selectedVehicle.currentKm;
-      }
+      // Don't save currentKm to FLOTILA - it comes from SHARED/vehicles_km
+      // Only save services and history
       
       // Update services if they exist
       if (this.selectedVehicle.services) {
-        updateData.services = this.selectedVehicle.services;
+        // Create a deep copy to ensure all updates are included
+        updateData.services = JSON.parse(JSON.stringify(this.selectedVehicle.services));
+        console.log('Saving services to database:', updateData.services.map(s => ({
+          name: s.name,
+          lastKm: s.lastKm,
+          lastDate: s.lastDate,
+          lastService: s.lastService
+        })));
       }
       
       // Update history if it exists
@@ -3073,23 +5174,47 @@ class FlotilaManager {
         updateData.history = this.selectedVehicle.history;
       }
       
-      // Save to vehicles collection
-      if (Object.keys(updateData).length > 0) {
-        await window.db.collection('vehicles')
-          .doc(this.selectedVehicle.licensePlate)
-          .collection('info')
-          .doc('basic')
-          .update(updateData);
+      // Remove undefined values before saving (Firebase doesn't allow undefined)
+      const cleanedData = this._removeUndefinedValues(updateData);
+      
+      // Save to FLOTILA collection based on vehicle category
+      if (Object.keys(cleanedData).length > 0) {
+        const plate = this.selectedVehicle.licensePlate;
+        const normalizedPlate = this.normalizeLicensePlate(plate);
+        
+        // Determine collection by checking which cache the vehicle is in (most reliable)
+        let collection;
+        if (this.trailers[plate]) {
+          // Vehicle exists in trailers cache
+          collection = this._flotilaTrailersCollection();
+        } else if (this.cars[plate]) {
+          // Vehicle exists in cars cache
+          collection = this._flotilaCarsCollection();
+        } else if (this.other[plate]) {
+          // Vehicle exists in other cache
+          collection = this._flotilaOtherCollection();
+        } else {
+          // Fallback to category/type check, or default to trucks
+          const category = this.selectedVehicle.category || this.selectedVehicle.type || this.selectedVehicle.vehicleType || 'truck';
+          if (category === 'trailer') {
+            collection = this._flotilaTrailersCollection();
+          } else if (category === 'car') {
+            collection = this._flotilaCarsCollection();
+          } else if (category === 'other') {
+            collection = this._flotilaOtherCollection();
+          } else {
+            collection = this._flotilaTrucksCollection();
+          }
+        }
+        
+        await collection.doc(normalizedPlate).set(cleanedData, { merge: true });
+        
+        // Sync the selectedVehicle back to cache after successful save
+        this._syncSelectedVehicleToCache();
       }
       
-      // Also update vehicles_km collection if kilometers changed
-      if (this.selectedVehicle.currentKm !== undefined) {
-        const normalizedPlate = this.normalizeLicensePlate(this.selectedVehicle.licensePlate);
-        await window.db.collection('vehicles_km').doc(normalizedPlate).set({
-          kilometers: this.selectedVehicle.currentKm,
-          updatedAt: new Date()
-        }, { merge: true });
-      }
+      // Don't update vehicles_km here - it should only be updated explicitly via updateWorkCurrentKm
+      // or from external sources. currentKm is read-only from SHARED/vehicles_km
     } catch (error) {
       console.error('Error saving vehicle data:', error);
       this.showNotification('Chyba pri ukladaní dát vozidla', 'error');
@@ -3176,28 +5301,25 @@ class FlotilaManager {
     this.showNotification('Dátum začiatku práce aktualizovaný', 'info');
   }
 
-  // Update work current kilometers
+  // Update work current kilometers (only for work session display, NOT for vehicle km)
   async updateWorkCurrentKm(newKm) {
     if (!this.selectedVehicle.activeWorkSession) return;
     
-    this.selectedVehicle.currentKm = parseInt(newKm) || 0;
-    await this.saveVehicleData();
+    const newKmValue = parseInt(newKm) || 0;
+    // Only update the work session km for display - DO NOT update vehicle's actual km
+    // Store it in the work session itself, not in selectedVehicle.currentKm
+    this.selectedVehicle.activeWorkSession.workKm = newKmValue;
     
-    // Update vehicles_km collection with new kilometer data
-    try {
-      const normalizedPlate = this.normalizeLicensePlate(this.selectedVehicle.licensePlate);
-      await window.db.collection('vehicles_km').doc(normalizedPlate).set({
-        kilometers: this.selectedVehicle.currentKm,
-        updatedAt: new Date()
-      }, { merge: true });
-    } catch (error) {
-      console.error('Error updating vehicles_km collection:', error);
-    }
+    // DO NOT update SHARED/vehicles_km - vehicle km should only be updated explicitly by user
+    // DO NOT update selectedVehicle.currentKm - it should always come from SHARED/vehicles_km
     
-    // Update services UI to reflect new current kilometers
-    this.updateServicesUI();
+    // Save work session to database (but not vehicle km)
+    await this.saveWorkSession();
     
-    this.showNotification('Aktuálne km aktualizované', 'info');
+    // Update work session UI to show the new km value
+    this.updateWorkSessionUI();
+    
+    this.showNotification('Km pre službu aktualizované (nezmení aktuálne km vozidla)', 'info');
   }
 
   // Finish job - move completed items to history
@@ -3212,14 +5334,24 @@ class FlotilaManager {
       return;
     }
     
+    // Deduct polozky from storage before creating history entry
+    await this.deductPolozkyFromStorage(completedItems);
+    
     // Create history entry for completed items
     // Use the completion date from work session if available, otherwise use current date
     const completionDate = this.selectedVehicle.activeWorkSession.completionDate || new Date().toISOString();
     
+    // Use work session km if available, otherwise use actual vehicle km from SHARED
+    // The work session km is the km the service was performed at, not the vehicle's current km
+    const workKm = this.selectedVehicle.activeWorkSession.workKm;
+    const normalizedPlate = this.selectedVehicle.licensePlate ? this.normalizeLicensePlate(this.selectedVehicle.licensePlate) : null;
+    const actualVehicleKm = normalizedPlate ? (this.cache.vehicleKms[normalizedPlate] || 0) : 0;
+    const serviceKm = workKm !== undefined && workKm !== null ? workKm : actualVehicleKm;
+    
     const historyEntry = {
       id: Date.now(),
       date: completionDate,
-      kilometers: this.selectedVehicle.currentKm || 0,
+      kilometers: serviceKm,
       items: completedItems.map(item => ({
         name: item.name,
         type: item.type,
@@ -3238,7 +5370,7 @@ class FlotilaManager {
     }
     this.selectedVehicle.history.push(historyEntry);
     
-    // Update services with completion data
+    // Update services with completion data BEFORE updating selectedVehicle reference
     completedItems.forEach(item => {
       this.updateServiceLastService(item.name, completionDate, historyEntry.kilometers);
     });
@@ -3252,7 +5384,10 @@ class FlotilaManager {
     }
     
     // Update the selectedVehicle reference to ensure consistency
-    this.selectedVehicle = { ...this.selectedVehicle };
+    // Preserve category to ensure correct collection is used when saving
+    // Note: services array is updated in-place by updateServiceLastService, so the reference persists
+    const category = this.selectedVehicle.category || this.selectedVehicle.type || this.selectedVehicle.vehicleType;
+    this.selectedVehicle = { ...this.selectedVehicle, category };
     
     // Save to database first
     await Promise.all([
@@ -3267,48 +5402,306 @@ class FlotilaManager {
     
     this.showNotification(`${completedItems.length} úloh dokončených a uložených do histórie!`, 'success');
   }
+  
+  // Deduct polozky from storage when services are completed
+  async deductPolozkyFromStorage(completedItems) {
+    if (!window.DatabaseService) {
+      console.warn('DatabaseService not available');
+      return;
+    }
+    
+    let oilDeductionCount = 0;
+    let partDeductionCount = 0;
+    let errorCount = 0;
+    
+    for (const item of completedItems) {
+      const servicePolozky = item.servicePolozky || {};
+      const polozkyStatus = item.polozkyStatus || {};
+      
+      // Handle both array and object formats
+      let polozkyArray = [];
+      if (Array.isArray(servicePolozky)) {
+        polozkyArray = servicePolozky;
+      } else if (typeof servicePolozky === 'object') {
+        Object.entries(servicePolozky).forEach(([key, value]) => {
+          if (typeof value === 'object' && value !== null) {
+            polozkyArray.push({ ...value, key: key });
+          } else if (typeof value === 'string') {
+            // Legacy format - skip (no deduction for text-only polozky)
+            return;
+          }
+        });
+      }
+      
+      // Process each polozka
+      for (const polozka of polozkyArray) {
+        const key = polozka.key || polozka.name;
+        const isUsed = polozkyStatus[key] === true;
+        
+        if (!isUsed || !polozka.quantity) {
+          continue; // Skip unused polozky or those without quantity
+        }
+        
+        // Deduct oil-type polozky
+        if (polozka.type === 'oil') {
+          // Check if we have oilId and category (required for deduction)
+          if (!polozka.oilId || !polozka.category) {
+            // Oil ID/category not set yet (filter will be added later)
+            console.log(`Skipping oil deduction for ${polozka.name} - oilId/category not set (filter will be added later)`);
+            continue;
+          }
+          
+          if (!window.DatabaseService.adjustOilQuantity) {
+            console.warn('adjustOilQuantity not available');
+            continue;
+          }
+          
+          try {
+            const quantity = parseFloat(polozka.quantity);
+            if (isNaN(quantity) || quantity <= 0) {
+              console.warn(`Invalid quantity for polozka ${polozka.name}: ${polozka.quantity}`);
+              continue;
+            }
+            
+            // Deduct from storage (negative delta)
+            await window.DatabaseService.adjustOilQuantity(
+              polozka.oilId,
+              polozka.category,
+              -quantity
+            );
+            
+            oilDeductionCount++;
+            console.log(`Deducted ${quantity}L of ${polozka.name} from storage`);
+          } catch (error) {
+            console.error(`Error deducting oil ${polozka.name}:`, error);
+            errorCount++;
+            this.showNotification(`Chyba pri odpočítaní oleja ${polozka.name}`, 'error');
+          }
+        }
+        // Deduct part-type polozky
+        else if (polozka.type === 'part') {
+          // Check if we have partId and category (required for deduction)
+          if (!polozka.partId || !polozka.category) {
+            // Try to get category from partInfo if available
+            if (polozka.partId) {
+              // If we have partId but no category, we need to find it
+              // For now, skip if category is missing
+              console.log(`Skipping part deduction for ${polozka.name} - category not set`);
+              continue;
+            } else {
+              console.log(`Skipping part deduction for ${polozka.name} - partId not set`);
+              continue;
+            }
+          }
+          
+          if (!window.DatabaseService.adjustDielQuantity) {
+            console.warn('adjustDielQuantity not available');
+            continue;
+          }
+          
+          try {
+            const quantity = parseInt(polozka.quantity);
+            if (isNaN(quantity) || quantity <= 0) {
+              console.warn(`Invalid quantity for polozka ${polozka.name}: ${polozka.quantity}`);
+              continue;
+            }
+            
+            // Deduct from storage (negative delta)
+            await window.DatabaseService.adjustDielQuantity(
+              polozka.partId,
+              polozka.category,
+              -quantity
+            );
+            
+            partDeductionCount++;
+            console.log(`Deducted ${quantity}ks of ${polozka.name} from storage`);
+          } catch (error) {
+            console.error(`Error deducting part ${polozka.name}:`, error);
+            errorCount++;
+            this.showNotification(`Chyba pri odpočítaní dielu ${polozka.name}`, 'error');
+          }
+        }
+      }
+    }
+    
+    const totalDeductions = oilDeductionCount + partDeductionCount;
+    if (totalDeductions > 0) {
+      const messages = [];
+      if (oilDeductionCount > 0) {
+        messages.push(`${oilDeductionCount} olej${oilDeductionCount > 1 ? 'ov' : ''}`);
+      }
+      if (partDeductionCount > 0) {
+        messages.push(`${partDeductionCount} diel${partDeductionCount > 1 ? 'ov' : ''}`);
+      }
+      this.showNotification(`Odpočítaných ${messages.join(' a ')} zo skladu`, 'success');
+    }
+    
+    if (errorCount > 0) {
+      this.showNotification(`${errorCount} chýb pri odpočítaní zo skladu`, 'error');
+    }
+  }
 
   // Update service last service data
   updateServiceLastService(serviceName, date, kilometers) {
-    if (!this.selectedVehicle.services) return;
+    if (!this.selectedVehicle || !this.selectedVehicle.services) {
+      console.warn('updateServiceLastService: No selectedVehicle or services array');
+      return;
+    }
     
-    const service = this.selectedVehicle.services.find(s => s.name === serviceName);
+    // Try exact match first
+    let service = this.selectedVehicle.services.find(s => s.name === serviceName);
+    
+    // If not found, try case-insensitive match
+    if (!service) {
+      const normalizedName = (serviceName || '').trim().toLowerCase();
+      service = this.selectedVehicle.services.find(s => 
+        (s.name || '').trim().toLowerCase() === normalizedName
+      );
+    }
+    
     if (service) {
+      console.log(`Updating service interval for: ${service.name}`, { date, kilometers });
+      
+      // Update both lastService (for backward compatibility) and lastKm/lastDate (new structure)
       service.lastService = {
         date: date,
         km: kilometers  // Use 'km' to match the calculation methods
       };
+      // Also update lastKm and lastDate fields
+      service.lastKm = kilometers;
+      // Convert date to YYYY-MM-DD format if it's a Date object or ISO string
+      if (date instanceof Date) {
+        service.lastDate = date.toISOString().split('T')[0];
+      } else if (typeof date === 'string') {
+        // If it's already in YYYY-MM-DD format, use it directly
+        if (date.match(/^\d{4}-\d{2}-\d{2}/)) {
+          service.lastDate = date.split('T')[0].split(' ')[0];
+        } else {
+          // Try to parse and format
+          const parsed = this.parseDateFlexible(date);
+          if (parsed) {
+            service.lastDate = parsed.toISOString().split('T')[0];
+          } else {
+            service.lastDate = date;
+          }
+        }
+      } else {
+        service.lastDate = date;
+      }
+      
+      // Also update the service in the cached vehicle object to keep it in sync
+      const plate = this.selectedVehicle.licensePlate;
+      const cachedVehicle = this.trucks[plate] || this.trailers[plate] || this.cars[plate] || this.other[plate];
+      if (cachedVehicle && cachedVehicle.services) {
+        // Try exact match first, then case-insensitive
+        let cachedService = cachedVehicle.services.find(s => s.name === serviceName);
+        if (!cachedService) {
+          const normalizedName = (serviceName || '').trim().toLowerCase();
+          cachedService = cachedVehicle.services.find(s => 
+            (s.name || '').trim().toLowerCase() === normalizedName
+          );
+        }
+        if (cachedService) {
+          cachedService.lastService = service.lastService;
+          cachedService.lastKm = service.lastKm;
+          cachedService.lastDate = service.lastDate;
+          console.log(`Updated cached service: ${cachedService.name}`);
+        } else {
+          console.warn(`Service ${serviceName} not found in cached vehicle`);
+        }
+      }
+      
+      console.log(`Service interval updated successfully for: ${service.name}`, {
+        lastKm: service.lastKm,
+        lastDate: service.lastDate,
+        lastService: service.lastService
+      });
+    } else {
+      console.warn(`Service not found: ${serviceName}. Available services:`, 
+        this.selectedVehicle.services.map(s => s.name));
     }
   }
 
   // Recalculate all services' lastService from history items
+  // Only resets and recalculates services that appear in history entries
+  // Services not in history keep their existing lastService data
   recalculateServicesLastServiceFromHistory() {
     if (!this.selectedVehicle) return;
     const services = this.selectedVehicle.services || [];
     const history = this.selectedVehicle.history || [];
 
-    // Reset lastService for all services
+    // First, collect all service names that appear in history
+    const servicesInHistory = new Set();
+    history.forEach(entry => {
+      const items = Array.isArray(entry.items) ? entry.items : [];
+      items.forEach(item => {
+        if (item && item.name) {
+          servicesInHistory.add(item.name);
+        }
+      });
+    });
+
+    // Only reset lastService for services that appear in history
+    // Services not in history keep their existing lastService data
     services.forEach(svc => {
-      if (!svc.lastService) svc.lastService = {};
-      svc.lastService.date = undefined;
-      svc.lastService.km = undefined;
+      if (servicesInHistory.has(svc.name)) {
+        // This service appears in history, so reset it and it will be recalculated
+        if (!svc.lastService) {
+          svc.lastService = {};
+        } else {
+          delete svc.lastService.date;
+          delete svc.lastService.km;
+        }
+        delete svc.lastKm;
+        delete svc.lastDate;
+      }
+      // If service doesn't appear in history, keep its existing lastService data unchanged
     });
 
     // Build a map of latest (by date) history per service name
     history.forEach(entry => {
-      const entryDate = new Date(entry.date || entry.completedAt);
+      // Parse entry date safely
+      const dateSource = entry.date || entry.completedAt;
+      if (!dateSource) return; // Skip entries without dates
+      
+      const entryDate = new Date(dateSource);
+      if (isNaN(entryDate.getTime())) {
+        console.warn('Invalid date in history entry:', dateSource);
+        return; // Skip entries with invalid dates
+      }
+      
       const entryKm = entry.kilometers || 0;
       const items = Array.isArray(entry.items) ? entry.items : [];
       items.forEach(item => {
+        if (!item || !item.name) return; // Skip invalid items
         const svc = services.find(s => s.name === item.name);
         if (!svc) return;
+        
         const prevDateRaw = svc.lastService?.date;
-        let prevDate = prevDateRaw ? (prevDateRaw.toDate ? prevDateRaw.toDate() : new Date(prevDateRaw)) : null;
+        let prevDate = null;
+        if (prevDateRaw) {
+          if (prevDateRaw.toDate) {
+            prevDate = prevDateRaw.toDate();
+          } else {
+            prevDate = new Date(prevDateRaw);
+          }
+          if (isNaN(prevDate.getTime())) {
+            prevDate = null; // Invalid previous date, ignore it
+          }
+        }
+        
         if (!prevDate || entryDate > prevDate) {
+          const dateStr = entryDate.toISOString().split('T')[0]; // YYYY-MM-DD format
           svc.lastService = { date: entryDate.toISOString(), km: entryKm };
+          svc.lastKm = entryKm;
+          svc.lastDate = dateStr;
         }
       });
     });
+    
+    // Create a new services array to ensure reference change is detected
+    // This helps ensure UI updates properly
+    this.selectedVehicle.services = services.map(svc => ({ ...svc }));
   }
 
   // Update work session UI without reloading from database
@@ -3470,6 +5863,15 @@ class FlotilaManager {
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;');
   }
+  
+  // Safely escape text for use inside HTML content
+  escapeHtml(text) {
+    if (text == null) return '';
+    return String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
 
   // Show modal to edit history entry (date, kilometers)
   showEditHistoryEntryModal(entryId) {
@@ -3538,11 +5940,22 @@ class FlotilaManager {
     if (!this.selectedVehicle || !this.selectedVehicle.history) return;
     if (!confirm('Naozaj chcete vymazať celý záznam histórie?')) return;
 
+    // Remove the history entry
     this.selectedVehicle.history = (this.selectedVehicle.history || []).filter(e => e.id !== entryId);
+    
+    // Recalculate services' lastService from remaining history
     this.recalculateServicesLastServiceFromHistory();
+    
+    // Update the selectedVehicle reference to ensure UI picks up changes
+    this.selectedVehicle = { ...this.selectedVehicle };
+    
+    // Save to database (this also syncs to cache)
     await this.saveVehicleData();
+    
+    // Update UI after recalculation and save are complete
     this.updateHistoryUI();
     this.updateServicesUI();
+    
     this.showNotification('Záznam histórie bol vymazaný', 'info');
   }
 
@@ -3556,6 +5969,7 @@ class FlotilaManager {
 
     if (!confirm('Naozaj chcete odstrániť túto položku z vykonanej práce?')) return;
 
+    // Remove the item from the entry
     entry.items.splice(itemIndex, 1);
     if (entry.items.length === 0) {
       // Remove whole entry if no items remain
@@ -3567,9 +5981,17 @@ class FlotilaManager {
 
     // Recalculate lastService fields from updated history
     this.recalculateServicesLastServiceFromHistory();
+    
+    // Update the selectedVehicle reference to ensure UI picks up changes
+    this.selectedVehicle = { ...this.selectedVehicle };
+    
+    // Save to database (this also syncs to cache)
     await this.saveVehicleData();
+    
+    // Update UI after recalculation and save are complete
     this.updateHistoryUI();
     this.updateServicesUI();
+    
     this.showNotification('Položka bola odstránená z histórie', 'info');
   }
 
@@ -3610,24 +6032,128 @@ class FlotilaManager {
     }
   }
 
+  // Update work item service polozka (structured format)
+  async updateWorkItemServicePolozka(itemId, key, polozkaData) {
+    if (!this.selectedVehicle.activeWorkSession) return;
+    
+    const item = this.selectedVehicle.activeWorkSession.items.find(i => i.id === itemId);
+    if (item) {
+      // Convert servicePolozky to array format if it's an object
+      if (!item.servicePolozky) {
+        item.servicePolozky = [];
+      } else if (!Array.isArray(item.servicePolozky)) {
+        // Convert object to array
+        item.servicePolozky = Object.entries(item.servicePolozky).map(([k, v]) => {
+          if (typeof v === 'string') {
+            return { type: 'text', name: v, key: k };
+          } else if (typeof v === 'object' && v !== null) {
+            return { ...v, key: k };
+          }
+          return { type: 'text', name: String(v), key: k };
+        });
+      }
+      
+      // Add the new polozka
+      item.servicePolozky.push(polozkaData);
+      
+      // Initialize polozkyStatus if needed
+      if (!item.polozkyStatus) {
+        item.polozkyStatus = {};
+      }
+      item.polozkyStatus[key] = false; // Default to not completed
+      
+      // Update the selectedVehicle reference to ensure consistency
+      this.selectedVehicle = { ...this.selectedVehicle };
+      
+      // Save to database
+      await this.saveWorkSession();
+    }
+  }
+
   // Show modal to add new service detail to work item
-  showAddWorkItemDetailModal(itemId) {
+  async showAddWorkItemDetailModal(itemId) {
+    // Remove any existing modal first
+    const existingModal = document.querySelector('.polozka-modal-overlay');
+    if (existingModal) {
+      existingModal.remove();
+    }
+    
+    // Load oils for dropdown - wait a bit for the service to be available
+    let oils = [];
+    let unsubscribeFn = null;
+    
+    // Try to get oils from OilDatabaseService
+    if (window.DatabaseService && typeof window.DatabaseService.onOilsUpdate === 'function') {
+      try {
+        unsubscribeFn = await window.DatabaseService.onOilsUpdate((oilsList) => {
+          oils = oilsList || [];
+          console.log('Loaded oils for work item:', oils.length);
+        });
+        // Wait a bit for initial load
+        await new Promise(resolve => setTimeout(resolve, 500));
+      } catch (error) {
+        console.warn('Could not load oils:', error);
+      }
+    } else {
+      console.warn('DatabaseService.onOilsUpdate not available');
+    }
+    
     const modal = document.createElement('div');
     modal.className = 'polozka-modal-overlay';
     modal.innerHTML = `
-      <div class="polozka-modal">
+      <div class="polozka-modal" style="max-width: 500px;">
         <div class="modal-header">
           <h3>Pridať položku servisu</h3>
           <button class="close-btn" onclick="this.closest('.polozka-modal-overlay').remove()">×</button>
         </div>
         <div class="modal-body">
-          <div class="form-group">
-            <label for="work-item-detail-label">Názov položky:</label>
-            <input type="text" id="work-item-detail-label" placeholder="napr. Typ oleja, Značka pneumatík...">
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 500;">Typ položky:</label>
+            <div style="display: flex; gap: 12px;">
+              <label class="polozka-type-option" data-type="text" style="display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 8px 12px; border: 2px solid #e5e7eb; border-radius: 8px; flex: 1; transition: all 0.2s; background: #f9fafb;">
+                <input type="radio" name="polozka-type-${String(itemId).replace(/[^a-zA-Z0-9]/g, '_')}" value="text" checked style="margin: 0;">
+                <span>Len text</span>
+              </label>
+              <label class="polozka-type-option" data-type="oil" style="display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 8px 12px; border: 2px solid #e5e7eb; border-radius: 8px; flex: 1; transition: all 0.2s; background: #f9fafb;">
+                <input type="radio" name="polozka-type-${String(itemId).replace(/[^a-zA-Z0-9]/g, '_')}" value="oil" style="margin: 0;">
+                <span>Olej</span>
+              </label>
+              <label class="polozka-type-option" data-type="part" style="display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 8px 12px; border: 2px solid #e5e7eb; border-radius: 8px; flex: 1; transition: all 0.2s; background: #f9fafb;">
+                <input type="radio" name="polozka-type-${String(itemId).replace(/[^a-zA-Z0-9]/g, '_')}" value="part" style="margin: 0;">
+                <span>Diel</span>
+              </label>
           </div>
-          <div class="form-group">
-            <label for="work-item-detail-value">Hodnota:</label>
-            <input type="text" id="work-item-detail-value" placeholder="napr. 5W-30, Michelin...">
+          </div>
+          <!-- Text type fields -->
+          <div class="form-group" id="polozka-text-fields-${String(itemId).replace(/[^a-zA-Z0-9]/g, '_')}">
+            <label for="work-item-detail-label-${String(itemId).replace(/[^a-zA-Z0-9]/g, '_')}">Názov položky:</label>
+            <input type="text" id="work-item-detail-label-${String(itemId).replace(/[^a-zA-Z0-9]/g, '_')}" placeholder="napr. Typ oleja, Značka pneumatík...">
+          </div>
+          
+          <!-- Oil type fields -->
+          <div class="form-group" id="polozka-oil-fields-${String(itemId).replace(/[^a-zA-Z0-9]/g, '_')}" style="display: none;">
+            <label for="work-item-oil-search-${String(itemId).replace(/[^a-zA-Z0-9]/g, '_')}">Vyhľadať olej:</label>
+            <input type="text" id="work-item-oil-search-${String(itemId).replace(/[^a-zA-Z0-9]/g, '_')}" placeholder="Zadajte názov oleja..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 8px;">
+            <select id="work-item-oil-select-${String(itemId).replace(/[^a-zA-Z0-9]/g, '_')}" size="5" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; max-height: 200px; overflow-y: auto;">
+              <option value="">-- Vyberte olej --</option>
+            </select>
+            <div class="form-group" style="margin-top: 12px;">
+              <label for="work-item-oil-quantity-${String(itemId).replace(/[^a-zA-Z0-9]/g, '_')}">Množstvo (L):</label>
+              <input type="number" id="work-item-oil-quantity-${String(itemId).replace(/[^a-zA-Z0-9]/g, '_')}" step="0.1" min="0" placeholder="napr. 14" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+          </div>
+          
+          <!-- Part type fields -->
+          <div class="form-group" id="polozka-part-fields-${String(itemId).replace(/[^a-zA-Z0-9]/g, '_')}" style="display: none;">
+            <label for="work-item-part-search-${String(itemId).replace(/[^a-zA-Z0-9]/g, '_')}">Vyhľadať diel:</label>
+            <input type="text" id="work-item-part-search-${String(itemId).replace(/[^a-zA-Z0-9]/g, '_')}" placeholder="Zadajte názov dielu..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 8px;">
+            <select id="work-item-part-select-${String(itemId).replace(/[^a-zA-Z0-9]/g, '_')}" size="5" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; max-height: 200px; overflow-y: auto;">
+              <option value="">-- Vyberte diel (zatiaľ prázdne) --</option>
+            </select>
+            <div class="form-group" style="margin-top: 12px;">
+              <label for="work-item-part-quantity-${String(itemId).replace(/[^a-zA-Z0-9]/g, '_')}">Množstvo (ks):</label>
+              <input type="number" id="work-item-part-quantity-${String(itemId).replace(/[^a-zA-Z0-9]/g, '_')}" step="1" min="1" placeholder="napr. 2" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
           </div>
         </div>
         <div class="modal-footer">
@@ -3638,26 +6164,342 @@ class FlotilaManager {
     `;
     
     document.body.appendChild(modal);
+    
+    // Add event listeners for radio buttons - sanitize itemId for selector
+    const safeItemId = String(itemId).replace(/[^a-zA-Z0-9]/g, '_');
+    const radioButtons = modal.querySelectorAll(`input[type="radio"][name="polozka-type-${safeItemId}"]`);
+    radioButtons.forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        const type = e.target.value;
+        this.togglePolozkaTypeInput(type, itemId);
+        
+        // Update visual state of radio options
+        modal.querySelectorAll('.polozka-type-option').forEach(opt => {
+          opt.style.background = '#f9fafb';
+          opt.style.borderColor = '#e5e7eb';
+        });
+        const selectedOption = modal.querySelector(`.polozka-type-option[data-type="${type}"]`);
+        if (selectedOption) {
+          selectedOption.style.background = '#eff6ff';
+          selectedOption.style.borderColor = '#3b82f6';
+        }
+      });
+    });
+    
+    // Set initial state
+    const selectedOption = modal.querySelector('.polozka-type-option[data-type="text"]');
+    if (selectedOption) {
+      selectedOption.style.background = '#eff6ff';
+      selectedOption.style.borderColor = '#3b82f6';
+    }
+    
+    // Populate oil dropdown and setup search
+    const oilSelect = modal.querySelector(`#work-item-oil-select-${safeItemId}`);
+    const oilSearch = modal.querySelector(`#work-item-oil-search-${safeItemId}`);
+    let allOils = [...oils];
+    
+    const updateOilDropdown = (filteredOils) => {
+      if (!oilSelect) return;
+      oilSelect.innerHTML = '';
+      if (filteredOils.length === 0) {
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = '-- Žiadne oleje načítané --';
+        option.disabled = true;
+        oilSelect.appendChild(option);
+      } else {
+        // Group oils by category
+        const oilsByCategory = {};
+        filteredOils.forEach(oil => {
+          const category = oil.category || 'motorove';
+          if (!oilsByCategory[category]) {
+            oilsByCategory[category] = [];
+          }
+          oilsByCategory[category].push(oil);
+        });
+        
+        // Create optgroups for each category
+        const categoryOrder = ['motorove', 'prevodove', 'diferencial', 'chladiaca'];
+        categoryOrder.forEach(categoryId => {
+          if (oilsByCategory[categoryId] && oilsByCategory[categoryId].length > 0) {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = this.getOilCategoryTitle(categoryId);
+            oilsByCategory[categoryId].forEach(oil => {
+              const option = document.createElement('option');
+              option.value = JSON.stringify({ id: oil.id, name: oil.name, category: oil.category });
+              option.textContent = `${oil.name} (${(oil.quantity || 0).toFixed(1)}L)`;
+              optgroup.appendChild(option);
+            });
+            oilSelect.appendChild(optgroup);
+          }
+        });
+        
+        // Add any oils with unknown categories at the end
+        Object.keys(oilsByCategory).forEach(categoryId => {
+          if (!categoryOrder.includes(categoryId) && oilsByCategory[categoryId].length > 0) {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = this.getOilCategoryTitle(categoryId);
+            oilsByCategory[categoryId].forEach(oil => {
+              const option = document.createElement('option');
+              option.value = JSON.stringify({ id: oil.id, name: oil.name, category: oil.category });
+              option.textContent = `${oil.name} (${(oil.quantity || 0).toFixed(1)}L)`;
+              optgroup.appendChild(option);
+            });
+            oilSelect.appendChild(optgroup);
+          }
+        });
+      }
+    };
+    
+    // Setup real-time oil updates
+    if (window.DatabaseService && typeof window.DatabaseService.onOilsUpdate === 'function') {
+      const realTimeUnsubscribe = await window.DatabaseService.onOilsUpdate((oilsList) => {
+        allOils = oilsList || [];
+        console.log('Oils updated in work item modal:', allOils.length);
+        if (oilSearch && oilSearch.value) {
+          // Re-filter if search is active
+          const searchTerm = oilSearch.value.toLowerCase();
+          const filtered = allOils.filter(oil => 
+            oil.name.toLowerCase().includes(searchTerm)
+          );
+          updateOilDropdown(filtered);
+        } else {
+          updateOilDropdown(allOils);
+        }
+      });
+      
+      // Clean up on modal close
+      const closeBtn = modal.querySelector('.close-btn');
+      if (closeBtn) {
+        const originalClose = closeBtn.onclick;
+        closeBtn.onclick = function() {
+          if (realTimeUnsubscribe) realTimeUnsubscribe();
+          if (originalClose) originalClose.call(this);
+        };
+      }
+    }
+    
+    if (oilSearch && oilSelect) {
+      oilSearch.addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase();
+        const filtered = allOils.filter(oil => 
+          oil.name.toLowerCase().includes(searchTerm)
+        );
+        updateOilDropdown(filtered);
+      });
+    }
+    
+    updateOilDropdown(allOils);
+    
+    // Clean up old unsubscribe
+    if (unsubscribeFn) {
+      setTimeout(() => unsubscribeFn && unsubscribeFn(), 2000);
+    }
+    
+    // Parts will be loaded when part type is selected via togglePolozkaTypeInput
+    // No need to pre-load here
+    
+    // Close on overlay click
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.remove();
+      }
+    });
+  }
+
+  // Toggle polozka type input visibility
+  async togglePolozkaTypeInput(type, itemId = null) {
+    if (!itemId) {
+      console.warn('[WARNING] togglePolozkaTypeInput: itemId is null');
+      return;
+    }
+    
+    const safeItemId = String(itemId).replace(/[^a-zA-Z0-9]/g, '_');
+    const textFields = document.getElementById(`polozka-text-fields-${safeItemId}`);
+    const oilFields = document.getElementById(`polozka-oil-fields-${safeItemId}`);
+    const partFields = document.getElementById(`polozka-part-fields-${safeItemId}`);
+    
+    // Hide all fields first
+    if (textFields) textFields.style.display = 'none';
+    if (oilFields) oilFields.style.display = 'none';
+    if (partFields) partFields.style.display = 'none';
+    
+    // Show appropriate fields
+    if (type === 'text' && textFields) {
+      textFields.style.display = 'block';
+    } else if (type === 'oil' && oilFields) {
+      oilFields.style.display = 'block';
+    } else if (type === 'part' && partFields) {
+      partFields.style.display = 'block';
+      // Load parts when part type is selected
+      await this.loadPartsIntoSelect(
+        `work-item-part-search-${safeItemId}`,
+        `work-item-part-select-${safeItemId}`
+      );
+    }
   }
 
   // Add new service detail to work item
   async addWorkItemDetail(itemId) {
-    const labelInput = document.getElementById('work-item-detail-label');
-    const valueInput = document.getElementById('work-item-detail-value');
+    const safeItemId = String(itemId).replace(/[^a-zA-Z0-9]/g, '_');
+    const typeRadio = document.querySelector(`input[name="polozka-type-${itemId}"]:checked`);
+    const type = typeRadio ? typeRadio.value : 'text';
     
-    if (!labelInput || !valueInput || !labelInput.value.trim() || !valueInput.value.trim()) {
-      this.showNotification('Prosím vyplňte názov aj hodnotu detailu.', 'warning');
+    // Create a clean key for storage
+    const key = 'polozka_' + Date.now();
+    
+    let polozkaData;
+    
+    if (type === 'text') {
+      const nameInput = document.getElementById(`work-item-detail-label-${safeItemId}`);
+      if (!nameInput || !nameInput.value.trim()) {
+        this.showNotification('Prosím vyplňte názov položky.', 'warning');
+        return;
+      }
+      const name = nameInput.value.trim();
+      polozkaData = {
+        type: 'text',
+        name: name,
+        key: key
+      };
+    } else if (type === 'oil') {
+      const oilSelect = document.getElementById(`work-item-oil-select-${safeItemId}`);
+      const quantityInput = document.getElementById(`work-item-oil-quantity-${safeItemId}`);
+      
+      if (!oilSelect || !oilSelect.value) {
+        this.showNotification('Prosím vyberte olej.', 'warning');
+        return;
+      }
+      
+      const quantity = parseFloat(quantityInput.value);
+      if (isNaN(quantity) || quantity <= 0) {
+        this.showNotification('Prosím zadajte platné množstvo v litroch.', 'warning');
+        return;
+      }
+      
+      const oilInfo = JSON.parse(oilSelect.value);
+      
+      // Validate that this is actually an oil, not a part
+      if (oilInfo.category && this.isPartsCategory(oilInfo.category)) {
+        console.error('[ERROR] Selected item is a part, not an oil! Category:', oilInfo.category);
+        this.showNotification('Chyba: Vybratá položka je diel, nie olej. Prosím vyberte olej.', 'error');
+        return;
+      }
+      
+      if (oilInfo.category && !this.isOilCategory(oilInfo.category)) {
+        console.warn('[WARNING] Unknown oil category:', oilInfo.category);
+      }
+      
+      polozkaData = {
+        type: 'oil',
+        name: oilInfo.name,
+        oilId: oilInfo.id,
+        category: oilInfo.category,
+        quantity: quantity,
+        key: key
+      };
+    } else if (type === 'part') {
+      const partSelect = document.getElementById(`work-item-part-select-${safeItemId}`);
+      const quantityInput = document.getElementById(`work-item-part-quantity-${safeItemId}`);
+      const partSearch = document.getElementById(`work-item-part-search-${safeItemId}`);
+      
+      // For now, allow manual entry if no part selected
+      let partName = '';
+      let partCategory = null;
+      if (partSelect && partSelect.value) {
+        try {
+          const partInfo = JSON.parse(partSelect.value);
+          
+          // Validate that this is actually a part, not an oil
+          if (partInfo.category && this.isOilCategory(partInfo.category)) {
+            console.error('[ERROR] Selected item is an oil, not a part! Category:', partInfo.category);
+            this.showNotification('Chyba: Vybratá položka je olej, nie diel. Prosím vyberte diel.', 'error');
+            return;
+          }
+          
+          if (partInfo.category && !this.isPartsCategory(partInfo.category)) {
+            console.warn('[WARNING] Unknown part category:', partInfo.category);
+          }
+          
+          partName = partInfo.name || '';
+          partCategory = partInfo.category || 'olejove';
+        } catch (e) {
+          // If JSON.parse fails, try to extract name from JSON string manually
+          const valueStr = partSelect.value;
+          // Try to extract name from JSON string like {"id":"...","name":"Part Name","category":"..."}
+          const nameMatch = valueStr.match(/"name"\s*:\s*"([^"]+)"/);
+          if (nameMatch && nameMatch[1]) {
+            partName = nameMatch[1];
+            // Try to extract category too
+            const categoryMatch = valueStr.match(/"category"\s*:\s*"([^"]+)"/);
+            if (categoryMatch && categoryMatch[1]) {
+              partCategory = categoryMatch[1];
+            }
+          } else {
+            // If we can't extract, use the raw value but warn
+            console.warn('Could not parse part info, using raw value:', valueStr);
+            partName = valueStr;
+          }
+        }
+      } else if (partSearch && partSearch.value.trim()) {
+        partName = partSearch.value.trim();
+      } else {
+        this.showNotification('Prosím vyberte alebo zadajte názov dielu.', 'warning');
+        return;
+      }
+      
+      // Ensure we have a valid part name
+      if (!partName || partName.trim() === '') {
+        this.showNotification('Prosím vyberte alebo zadajte názov dielu.', 'warning');
+        return;
+      }
+      
+      const quantity = parseInt(quantityInput.value);
+      if (isNaN(quantity) || quantity <= 0) {
+        this.showNotification('Prosím zadajte platné množstvo v kusoch.', 'warning');
+        return;
+      }
+      
+      const finalPartName = partName.trim();
+      
+      polozkaData = {
+        type: 'part',
+        name: finalPartName,
+        quantity: quantity,
+        key: key
+      };
+      
+      // Add partId and category if part was selected from dropdown
+      if (partSelect && partSelect.value) {
+        try {
+          const partInfo = JSON.parse(partSelect.value);
+          polozkaData.partId = partInfo.id;
+          polozkaData.category = partInfo.category || 'olejove';
+        } catch (e) {
+          console.error('[ERROR] addWorkItemDetail - Failed to parse part JSON:', e);
+          // If parsing fails, try manual extraction
+          const valueStr = partSelect.value;
+          const idMatch = valueStr.match(/"id"\s*:\s*"([^"]+)"/);
+          const categoryMatch = valueStr.match(/"category"\s*:\s*"([^"]+)"/);
+          if (idMatch && idMatch[1]) {
+            polozkaData.partId = idMatch[1];
+          }
+          if (categoryMatch && categoryMatch[1]) {
+            polozkaData.category = categoryMatch[1];
+          }
+        }
+      }
+    }
+    
+    // Final validation
+    if (!polozkaData || !polozkaData.name || polozkaData.name.trim() === '') {
+      console.error('[ERROR] addWorkItemDetail - Invalid polozkaData:', polozkaData);
+      this.showNotification('Chyba: Názov položky je prázdny.', 'error');
       return;
     }
     
-    const label = labelInput.value.trim();
-    const value = valueInput.value.trim();
-    
-    // Create a clean key for storage
-    const key = label.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
-    
-    // Add the detail to the work item
-    await this.updateWorkItemServiceDetail(itemId, key, value);
+    // Add the polozka to the work item
+    await this.updateWorkItemServicePolozka(itemId, key, polozkaData);
     
     // Close modal
     const modal = document.querySelector('.polozka-modal-overlay');
@@ -3665,10 +6507,10 @@ class FlotilaManager {
       modal.remove();
     }
     
-    // Update the UI to show the new detail
+    // Update the UI to show the new polozka
     this.updateWorkSessionUI();
     
-    this.showNotification('Detail pridaný', 'success');
+    this.showNotification('Položka pridaná', 'success');
   }
 
   // Render work item service polozky
@@ -3676,20 +6518,86 @@ class FlotilaManager {
     // Get existing service polozky
     const servicePolozky = item.servicePolozky || {};
     const polozkyStatus = item.polozkyStatus || {}; // Track completion status
-    const detailKeys = Object.keys(servicePolozky);
+    
+    // Handle both array and object formats, and both structured and legacy string formats
+    let polozkyArray = [];
+    if (Array.isArray(servicePolozky)) {
+      polozkyArray = servicePolozky.map((polozka, idx) => {
+        if (typeof polozka === 'string') {
+          return { type: 'text', name: polozka, key: `polozka_${idx}` };
+        } else if (typeof polozka === 'object') {
+          return { ...polozka, key: polozka.key || `polozka_${idx}` };
+        }
+        return { type: 'text', name: String(polozka), key: `polozka_${idx}` };
+      });
+    } else if (typeof servicePolozky === 'object') {
+      Object.entries(servicePolozky).forEach(([key, value]) => {
+        if (typeof value === 'string') {
+          // Legacy format: just a string
+          polozkyArray.push({ type: 'text', name: value, key: key });
+        } else if (typeof value === 'object' && value !== null) {
+          // Structured format
+          polozkyArray.push({ ...value, key: key });
+        }
+      });
+    }
     
     // Generate HTML for existing detail fields
-    const detailFields = detailKeys.map(key => {
+    const detailFields = polozkyArray.map(polozka => {
+      const key = polozka.key;
       const isCompleted = polozkyStatus[key] === true;
+      
+      // Format display name and create editable quantity input for oil and parts
+      let displayName = polozka.name || '';
+      const quantity = polozka.quantity || 0;
+      
+      const typeBadge = polozka.type === 'oil' ? '<span style="display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-right: 8px; background: #3b82f6; color: white;">Olej</span>' :
+                      polozka.type === 'part' ? '<span style="display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-right: 8px; background: #10b981; color: white;">Diel</span>' :
+                      '<span style="display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-right: 8px; background: #6b7280; color: white;">Text</span>';
+      
+      // Create editable quantity input for oil and parts
+      let quantityInput = '';
+      if (polozka.type === 'oil') {
+        // Editable input for liters
+        quantityInput = `
+          <div style="display: flex; align-items: center; gap: 4px; margin-left: 8px;">
+            <input 
+              type="number" 
+              step="0.1" 
+              min="0" 
+              value="${quantity}"
+              style="width: 80px; padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;"
+              onchange="window.flotilaManager.updatePolozkaQuantity(${item.id}, '${key}', parseFloat(this.value) || 0)"
+              onclick="event.stopPropagation()"
+            >
+            <span style="font-size: 12px; color: #6b7280;">L</span>
+          </div>
+        `;
+      } else if (polozka.type === 'part') {
+        // Editable input for pieces
+        quantityInput = `
+          <div style="display: flex; align-items: center; gap: 4px; margin-left: 8px;">
+            <input 
+              type="number" 
+              step="1" 
+              min="1" 
+              value="${quantity || 1}"
+              style="width: 80px; padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;"
+              onchange="window.flotilaManager.updatePolozkaQuantity(${item.id}, '${key}', parseInt(this.value) || 1)"
+              onclick="event.stopPropagation()"
+            >
+            <span style="font-size: 12px; color: #6b7280;">ks</span>
+          </div>
+        `;
+      }
+      
       return `
         <div class="work-item-service-polozka ${isCompleted ? 'completed' : ''}" id="detail-${item.id}-${key}">
-          <input 
-            type="text" 
-            id="${key}-${item.id}" 
-            value="${servicePolozky[key]}"
-            placeholder="Zadajte hodnotu..."
-            onchange="window.flotilaManager.updateWorkItemServiceDetail(${item.id}, '${key}', this.value)"
-          >
+          <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
+            ${typeBadge}
+            <span style="flex: 1;">${this.escapeHtml(displayName)}</span>
+            ${quantityInput}
+          </div>
           <div class="polozka-checkbox">
             <input 
               type="checkbox" 
@@ -3717,6 +6625,56 @@ class FlotilaManager {
         </div>
       </div>
     `;
+  }
+
+  // Update polozka quantity
+  async updatePolozkaQuantity(itemId, polozkaKey, newQuantity) {
+    if (!this.selectedVehicle || !this.selectedVehicle.activeWorkSession) {
+      console.error('[ERROR] No active work session');
+      return;
+    }
+    
+    const item = this.selectedVehicle.activeWorkSession.items.find(i => i.id === itemId);
+    if (!item) {
+      console.error('[ERROR] Work item not found:', itemId);
+      return;
+    }
+    
+    // Ensure servicePolozky is in array format
+    if (!item.servicePolozky) {
+      item.servicePolozky = [];
+    } else if (!Array.isArray(item.servicePolozky)) {
+      // Convert object to array
+      item.servicePolozky = Object.entries(item.servicePolozky).map(([k, v]) => {
+        if (typeof v === 'string') {
+          return { type: 'text', name: v, key: k };
+        } else if (typeof v === 'object' && v !== null) {
+          return { ...v, key: k };
+        }
+        return { type: 'text', name: String(v), key: k };
+      });
+    }
+    
+    // Find and update the polozka
+    const polozkaIndex = item.servicePolozky.findIndex(p => p.key === polozkaKey);
+    if (polozkaIndex !== -1) {
+      // Update quantity
+      item.servicePolozky[polozkaIndex].quantity = newQuantity;
+      
+      // Update the selectedVehicle reference to ensure consistency
+      this.selectedVehicle = { ...this.selectedVehicle };
+      
+      // Save to database
+      await this.saveWorkSession();
+      
+      // Re-render the polozky panel to show updated quantity
+      const polozkyPanel = document.getElementById(`work-item-polozky-${itemId}`);
+      if (polozkyPanel) {
+        polozkyPanel.innerHTML = this.renderWorkItemServicePolozky(item);
+      }
+    } else {
+      console.error('[ERROR] Polozka not found:', polozkaKey);
+    }
   }
 
   // Toggle polozka completion status
@@ -3945,7 +6903,19 @@ class FlotilaManager {
           services: []
         };
         try {
-          await window.db.collection('vehicles').doc(licensePlate).collection('info').doc('basic').set(vehicleData);
+          const normalizedPlate = this.normalizeLicensePlate(licensePlate);
+          const category = vehicleData.category || 'truck';
+          let collection;
+          if (category === 'trailer') {
+            collection = this._flotilaTrailersCollection();
+          } else if (category === 'car') {
+            collection = this._flotilaCarsCollection();
+          } else if (category === 'other') {
+            collection = this._flotilaOtherCollection();
+          } else {
+            collection = this._flotilaTrucksCollection();
+          }
+          await collection.doc(normalizedPlate).set(vehicleData, { merge: true });
           alert('Vozidlo pridané');
           // Reload data to show new vehicle
           await this.loadDataAndRender();
@@ -4145,8 +7115,9 @@ class FlotilaManager {
         // Persist removal to database (best-effort; UI already updated)
         if (truckWithTrailer) {
           try {
-            const truckRef = window.db.collection('vehicles').doc(truckWithTrailer).collection('info').doc('basic');
-            await truckRef.update({ trailer: null });
+            const normalizedPlate = this.normalizeLicensePlate(truckWithTrailer);
+            const truckCollection = this._getFlotilaCollectionForVehicle(truckWithTrailer);
+            await truckCollection.doc(normalizedPlate).update({ trailer: null });
           } catch (error) {
             console.error('Error saving trailer removal:', error);
             this.showNotification('Chyba pri ukladaní odstránenia prívesu', 'error');
@@ -4181,10 +7152,14 @@ class FlotilaManager {
     try {
       const batch = window.db.batch();
       if (previousTruckPlate && previousTruckPlate !== targetTruckPlate) {
-        const prevRef = window.db.collection('vehicles').doc(previousTruckPlate).collection('info').doc('basic');
+        const prevNormalized = this.normalizeLicensePlate(previousTruckPlate);
+        const prevCollection = this._getFlotilaCollectionForVehicle(previousTruckPlate);
+        const prevRef = prevCollection.doc(prevNormalized);
         batch.update(prevRef, { trailer: null });
       }
-      const targetRef = window.db.collection('vehicles').doc(targetTruckPlate).collection('info').doc('basic');
+      const targetNormalized = this.normalizeLicensePlate(targetTruckPlate);
+      const targetCollection = this._getFlotilaCollectionForVehicle(targetTruckPlate);
+      const targetRef = targetCollection.doc(targetNormalized);
       batch.update(targetRef, { trailer: trailerPlate });
       await batch.commit();
     } catch (error) {
@@ -4253,8 +7228,13 @@ class FlotilaManager {
     try {
       const batch = window.db.batch();
       
-      const targetTruckRef = window.db.collection('vehicles').doc(targetTruckPlate).collection('info').doc('basic');
-      const draggedTruckRef = window.db.collection('vehicles').doc(draggedTruckPlate).collection('info').doc('basic');
+      const targetNormalized = this.normalizeLicensePlate(targetTruckPlate);
+      const draggedNormalized = this.normalizeLicensePlate(draggedTruckPlate);
+      const targetCollection = this._getFlotilaCollectionForVehicle(targetTruckPlate);
+      const draggedCollection = this._getFlotilaCollectionForVehicle(draggedTruckPlate);
+      
+      const targetTruckRef = targetCollection.doc(targetNormalized);
+      const draggedTruckRef = draggedCollection.doc(draggedNormalized);
       
       batch.update(targetTruckRef, { trailer: draggedTrailerPlate });
       batch.update(draggedTruckRef, { trailer: currentTrailerPlate });
@@ -4388,7 +7368,9 @@ class FlotilaManager {
       // Update all trucks with their trailer assignments
       for (const truckPlate in this.trucks) {
         const truck = this.trucks[truckPlate];
-        const truckRef = window.db.collection('vehicles').doc(truckPlate).collection('info').doc('basic');
+        const normalizedPlate = this.normalizeLicensePlate(truckPlate);
+        const truckCollection = this._getFlotilaCollectionForVehicle(truckPlate);
+        const truckRef = truckCollection.doc(normalizedPlate);
         batch.update(truckRef, {
           trailer: truck.trailer || null
         });
@@ -4427,23 +7409,58 @@ class FlotilaManager {
 
   // Get service interval text in Czech/Slovak
   getServiceIntervalText(type, interval, specificDate = null, timeUnit = null) {
-    if (type === 'specificDate' || specificDate) {
+    // Handle unit field (new structure) - for specificDate services
+    if (type === 'specificDate' || type === 'specificDate' || specificDate) {
       const dateValue = specificDate || interval;
-      return `Dátum: ${this.formatDateSk(dateValue)}`;
+      const parsedDate = this.parseDateFlexible(dateValue);
+      if (parsedDate) {
+        return `Dátum: ${parsedDate.toLocaleDateString('sk-SK')}`;
+      }
+      return `Dátum: ${dateValue}`; // Fallback to raw value if parsing fails
     }
+    
+    // Check for km-based service FIRST (before time-based checks)
+    // This handles both 'km' type and 'km' unit
+    if (type === 'km') {
+      const intervalNum = parseInt(interval) || 0;
+      return `Každých ${this.formatNumberWithSpaces(intervalNum)} km`;
+    }
+    
+    // Handle unit field mapping for time-based services
+    if (type === 'year' || timeUnit === 'years' || timeUnit === 'year') {
+      const intervalNum = parseInt(interval) || 1;
+      const prefix = this.getEveryPrefix(intervalNum);
+      return `${prefix} ${intervalNum} ${this.getUnitForm(intervalNum, 'years')}`;
+    }
+    if (type === 'month' || timeUnit === 'months' || timeUnit === 'month') {
+      const intervalNum = parseInt(interval) || 1;
+      const prefix = this.getEveryPrefix(intervalNum);
+      return `${prefix} ${intervalNum} ${this.getUnitForm(intervalNum, 'months')}`;
+    }
+    if (type === 'day' || timeUnit === 'days' || timeUnit === 'day') {
+      const intervalNum = parseInt(interval) || 1;
+      const prefix = this.getEveryPrefix(intervalNum);
+      return `${prefix} ${intervalNum} ${this.getUnitForm(intervalNum, 'days')}`;
+    }
+    
     switch (type) {
-      case 'km':
-        return `Každých ${this.formatNumberWithSpaces(interval)} km`;
       case 'date': {
-        const prefix = this.getEveryPrefix(interval);
-        const unitForm = this.getUnitForm(interval, timeUnit);
-        return `${prefix} ${interval} ${unitForm}`;
+        const intervalNum = parseInt(interval) || 1;
+        const prefix = this.getEveryPrefix(intervalNum);
+        const unitForm = this.getUnitForm(intervalNum, timeUnit || 'days');
+        return `${prefix} ${intervalNum} ${unitForm}`;
       }
       default: {
-        // Fallback to days
-        const prefix = this.getEveryPrefix(interval);
-        const unitForm = this.getUnitForm(interval, 'days');
-        return `${prefix} ${interval} ${unitForm}`;
+        // Fallback: if interval is a large number (>1000), assume it's km, otherwise days
+        const intervalNum = parseInt(interval) || 1;
+        if (intervalNum > 1000) {
+          // Large numbers are likely km, not days
+          return `Každých ${this.formatNumberWithSpaces(intervalNum)} km`;
+        }
+        // Small numbers default to days
+        const prefix = this.getEveryPrefix(intervalNum);
+        const unitForm = this.getUnitForm(intervalNum, timeUnit || 'days');
+        return `${prefix} ${intervalNum} ${unitForm}`;
       }
     }
   }
@@ -4481,10 +7498,23 @@ class FlotilaManager {
 
   // Calculate due date based on last performed date, interval and type
   calculateDueDate(lastPerformed, interval, type = 'date', specificDate = null, timeUnit = null) {
-    if (type === 'specificDate' || specificDate) {
-      const specific = this.parseDateFlexible(specificDate || interval);
+    // Handle unit field (new structure) - check if this is a specificDate service
+    // For specificDate services, use specificDate or interval (which might be norm)
+    if (type === 'specificDate' || type === 'specificDate' || specificDate) {
+      const dateValue = specificDate || interval;
+      const specific = this.parseDateFlexible(dateValue);
       return !specific ? 'Nastaviť dátum' : specific.toLocaleDateString('sk-SK');
     }
+    
+    // Handle unit field mapping for time-based services
+    if (type === 'year' || timeUnit === 'years' || timeUnit === 'year') {
+      timeUnit = 'years';
+    } else if (type === 'month' || timeUnit === 'months' || timeUnit === 'month') {
+      timeUnit = 'months';
+    } else if (type === 'day' || timeUnit === 'days' || timeUnit === 'day') {
+      timeUnit = 'days';
+    }
+    
     if (!lastPerformed) {
       return 'Nastaviť dátum';
     }
@@ -4497,10 +7527,13 @@ class FlotilaManager {
     
     const dueDate = new Date(lastDate);
     const intervalNum = parseInt(interval);
-    // type is 'date' here, so use timeUnit
-    if (timeUnit === 'years') {
+    if (isNaN(intervalNum)) return 'Neplatný interval';
+    
+    // Use timeUnit to determine how to add interval (default to days if not specified)
+    const finalTimeUnit = timeUnit || 'days';
+    if (finalTimeUnit === 'years') {
       dueDate.setFullYear(dueDate.getFullYear() + intervalNum);
-    } else if (timeUnit === 'months') {
+    } else if (finalTimeUnit === 'months') {
       dueDate.setMonth(dueDate.getMonth() + intervalNum);
     } else {
       dueDate.setDate(dueDate.getDate() + intervalNum);
@@ -4514,7 +7547,7 @@ class FlotilaManager {
     return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
   }
 
-  // Parse various date input shapes (string YYYY-MM-DD, number ms, Firebase Timestamp, {_seconds})
+  // Parse various date input shapes (string YYYY-MM-DD, DD.MM.YYYY, number ms, Firebase Timestamp, {_seconds})
   parseDateFlexible(value) {
     if (!value) return null;
     if (typeof value.toDate === 'function') {
@@ -4529,8 +7562,16 @@ class FlotilaManager {
       return isNaN(d.getTime()) ? null : d;
     }
     if (typeof value === 'string') {
+      // Try DD.MM.YYYY format first
+      const ddmmyyyyMatch = value.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+      if (ddmmyyyyMatch) {
+        const [, day, month, year] = ddmmyyyyMatch;
+        const d = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        if (!isNaN(d.getTime())) return d;
+      }
+      // Try standard Date parsing (YYYY-MM-DD, etc.)
       const d = new Date(value);
-      return isNaN(d.getTime()) ? null : d;
+      if (!isNaN(d.getTime())) return d;
     }
     return null;
   }
@@ -4539,6 +7580,34 @@ class FlotilaManager {
   formatDateSk(value) {
     const d = this.parseDateFlexible(value);
     return d ? d.toLocaleDateString('sk-SK') : '—';
+  }
+
+  // Get date input value (YYYY-MM-DD) from service data (handles both DD.MM.YYYY and YYYY-MM-DD)
+  getDateInputValue(service) {
+    if (!service) return '';
+    
+    // Try specificDate first (YYYY-MM-DD format)
+    if (service.specificDate && typeof service.specificDate === 'string') {
+      if (service.specificDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        return service.specificDate;
+      }
+    }
+    
+    // Try norm field (might be DD.MM.YYYY or YYYY-MM-DD)
+    if (service.norm && typeof service.norm === 'string') {
+      // Check if it's already in YYYY-MM-DD format
+      if (service.norm.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        return service.norm;
+      }
+      // Try to parse DD.MM.YYYY format
+      const ddmmyyyyMatch = service.norm.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+      if (ddmmyyyyMatch) {
+        const [, day, month, year] = ddmmyyyyMatch;
+        return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+      }
+    }
+    
+    return '';
   }
 
   // Filter history by search term
@@ -4577,8 +7646,10 @@ class FlotilaManager {
 
   // Calculate remaining days until due date
   calculateRemainingDays(lastPerformed, interval, type = 'date', specificDate = null, timeUnit = null) {
-    if (type === 'specificDate' || specificDate) {
-      const specific = this.parseDateFlexible(specificDate || interval);
+    // Handle unit field (new structure) - for specificDate services
+    if (type === 'specificDate' || type === 'specificDate' || specificDate) {
+      const dateValue = specificDate || interval;
+      const specific = this.parseDateFlexible(dateValue);
       if (!specific) return 'Nastaviť dátum';
       const today = new Date();
       const diffTime = specific - today;
@@ -4586,6 +7657,15 @@ class FlotilaManager {
       if (diffDays < 0) return `Prešlo ${Math.abs(diffDays)} dní`;
       if (diffDays === 0) return 'Dnes';
       return `Zostáva ${diffDays} dní`;
+    }
+    
+    // Handle unit field mapping for time-based services
+    if (type === 'year' || timeUnit === 'years' || timeUnit === 'year') {
+      timeUnit = 'years';
+    } else if (type === 'month' || timeUnit === 'months' || timeUnit === 'month') {
+      timeUnit = 'months';
+    } else if (type === 'day' || timeUnit === 'days' || timeUnit === 'day') {
+      timeUnit = 'days';
     }
     if (!lastPerformed) {
       return 'Nastaviť dátum';
@@ -4599,17 +7679,24 @@ class FlotilaManager {
     
     const dueDate = new Date(lastDate);
     const intervalNum = parseInt(interval);
-    if (timeUnit === 'years') {
+    if (isNaN(intervalNum)) return 'Neplatný interval';
+    
+    // Use timeUnit to determine how to add interval (default to days if not specified)
+    const finalTimeUnit = timeUnit || 'days';
+    if (finalTimeUnit === 'years') {
       dueDate.setFullYear(dueDate.getFullYear() + intervalNum);
-    } else if (timeUnit === 'months') {
+    } else if (finalTimeUnit === 'months') {
       dueDate.setMonth(dueDate.getMonth() + intervalNum);
     } else {
       dueDate.setDate(dueDate.getDate() + intervalNum);
     }
     
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const diffTime = dueDate - today;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (isNaN(diffDays)) return 'Chyba výpočtu';
     
     if (diffDays < 0) {
       return `Prešlo ${Math.abs(diffDays)} dní`;
@@ -4622,7 +7709,9 @@ class FlotilaManager {
 
   // Get service status class (normal, reminder, overdue)
   getServiceStatusClass(service) {
-    if (service.type === 'km') {
+    // Check both type and unit fields
+    const serviceType = service.type || service.unit;
+    if (serviceType === 'km') {
       return this.getKmServiceStatus(service);
     } else {
       return this.getDateServiceStatus(service);
@@ -4631,13 +7720,28 @@ class FlotilaManager {
 
   // Get status for km-based services
   getKmServiceStatus(service) {
-    const currentKm = this.selectedVehicle?.currentKm || this.selectedVehicle?.kilometers || 0;
+    // Always get currentKm from SHARED/vehicles_km (via cache), not from selectedVehicle.currentKm
+    const normalizedPlate = this.selectedVehicle?.licensePlate ? this.normalizeLicensePlate(this.selectedVehicle.licensePlate) : null;
+    const currentKmFromShared = normalizedPlate ? (this.cache.vehicleKms[normalizedPlate] || 0) : 0;
+    const currentKm = currentKmFromShared || this.selectedVehicle?.currentKm || this.selectedVehicle?.kilometers || 0;
     
-    // Use lastService.km when provided (including 0), otherwise fall back to current km
-    const hasLastKm = service.lastService && typeof service.lastService.km === 'number';
-    const lastServiceKm = hasLastKm ? service.lastService.km : currentKm;
-    const targetKm = lastServiceKm + parseInt(service.interval);
-    const reminderKm = targetKm - (service.reminderKm || 15000);
+    // Get interval from norm or interval field
+    const interval = service.norm || service.interval;
+    if (!interval) return 'no-date';
+    
+    // Check if we have lastKm or lastService.km - if not, return grey status
+    const hasLastKm = (service.lastKm !== undefined && service.lastKm !== null) || (service.lastService && typeof service.lastService.km === 'number');
+    if (!hasLastKm) {
+      return 'no-date';
+    }
+    
+    const lastServiceKm = service.lastKm !== undefined && service.lastKm !== null ? service.lastKm : service.lastService.km;
+    
+    const intervalNum = parseInt(interval);
+    if (isNaN(intervalNum)) return 'no-date';
+    
+    const targetKm = lastServiceKm + intervalNum;
+    const reminderKm = targetKm - (service.reminderKm || service.signal || 15000);
     
     if (currentKm >= targetKm) {
       return 'overdue';
@@ -4650,18 +7754,27 @@ class FlotilaManager {
 
   // Calculate remaining km for km-based services
   calculateRemainingKm(service) {
-    const currentKm = this.selectedVehicle?.currentKm || this.selectedVehicle?.kilometers || 0;
+    // Always get currentKm from SHARED/vehicles_km (via cache), not from selectedVehicle.currentKm
+    // which might be updated by work session but not reflect actual vehicle km
+    const normalizedPlate = this.selectedVehicle?.licensePlate ? this.normalizeLicensePlate(this.selectedVehicle.licensePlate) : null;
+    const currentKmFromShared = normalizedPlate ? (this.cache.vehicleKms[normalizedPlate] || 0) : 0;
+    const currentKm = currentKmFromShared || this.selectedVehicle?.currentKm || this.selectedVehicle?.kilometers || 0;
     
-    // Use lastService.km when provided (including 0), otherwise fall back to current km
-    const hasLastKm = service.lastService && typeof service.lastService.km === 'number';
-    const lastServiceKm = hasLastKm ? service.lastService.km : currentKm;
-    const targetKm = lastServiceKm + parseInt(service.interval);
+    // Get interval from norm or interval field
+    const interval = service.norm || service.interval;
+    if (!interval) return 'Nastaviť interval';
+    
+    // Use lastKm or lastService.km when provided (including 0), otherwise fall back to current km
+    const hasLastKm = (service.lastKm !== undefined && service.lastKm !== null) || (service.lastService && typeof service.lastService.km === 'number');
+    const lastServiceKm = hasLastKm ? (service.lastKm !== undefined && service.lastKm !== null ? service.lastKm : service.lastService.km) : currentKm;
+    
+    const intervalNum = parseInt(interval);
+    if (isNaN(intervalNum)) return 'Neplatný interval';
+    
+    const targetKm = lastServiceKm + intervalNum;
     const remainingKm = targetKm - currentKm;
     
-    // Debug logging for first service calculation
-    if (service.name && !this._debugLogged) {
-      this._debugLogged = true;
-    }
+    if (isNaN(remainingKm)) return 'Chyba výpočtu';
     
     if (remainingKm <= 0) {
       return `Prešlo ${this.formatNumberWithSpaces(Math.abs(remainingKm))} km`;
@@ -4672,49 +7785,70 @@ class FlotilaManager {
 
   // Calculate target km for km-based services
   calculateTargetKm(service) {
-    const currentKm = this.selectedVehicle?.currentKm || this.selectedVehicle?.kilometers || 0;
+    // Always get currentKm from SHARED/vehicles_km (via cache) for fallback, but target is based on lastService
+    const normalizedPlate = this.selectedVehicle?.licensePlate ? this.normalizeLicensePlate(this.selectedVehicle.licensePlate) : null;
+    const currentKmFromShared = normalizedPlate ? (this.cache.vehicleKms[normalizedPlate] || 0) : 0;
+    const currentKm = currentKmFromShared || this.selectedVehicle?.currentKm || this.selectedVehicle?.kilometers || 0;
     
-    // Use lastService.km when provided (including 0), otherwise fall back to current km
-    const hasLastKm = service.lastService && typeof service.lastService.km === 'number';
-    const lastServiceKm = hasLastKm ? service.lastService.km : currentKm;
-    const targetKm = lastServiceKm + parseInt(service.interval);
+    // Get interval from norm or interval field
+    const interval = service.norm || service.interval;
+    if (!interval) return 'Nastaviť interval';
+    
+    // Use lastKm or lastService.km when provided (including 0), otherwise fall back to current km
+    const hasLastKm = (service.lastKm !== undefined && service.lastKm !== null) || (service.lastService && typeof service.lastService.km === 'number');
+    const lastServiceKm = hasLastKm ? (service.lastKm !== undefined && service.lastKm !== null ? service.lastKm : service.lastService.km) : currentKm;
+    
+    const intervalNum = parseInt(interval);
+    if (isNaN(intervalNum)) return 'Neplatný interval';
+    
+    const targetKm = lastServiceKm + intervalNum;
+    if (isNaN(targetKm)) return 'Chyba výpočtu';
+    
     return `Pri ${this.formatNumberWithSpaces(targetKm)} km`;
   }
 
   // Get status for date-based services
   getDateServiceStatus(service) {
+    // Handle unit field (new structure)
+    const serviceUnit = service.unit || service.type;
+    
     // If a specific absolute date is set, use it directly
-    if (service.type === 'specificDate' || service.specificDate) {
-      const dueDate = this.parseDateFlexible(service.specificDate || service.interval);
-      if (!dueDate) return 'normal';
+    if (serviceUnit === 'specificDate' || service.type === 'specificDate' || service.specificDate) {
+      const dueDate = this.parseDateFlexible(service.specificDate || service.norm || service.interval);
+      if (!dueDate) return 'no-date';
       const today = new Date();
       const diffDays = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
-      let reminderDays = service.reminderDays || 30;
+      let reminderDays = service.reminderDays || service.signal || 30;
       if (diffDays < 0) return 'overdue';
       if (diffDays <= reminderDays) return 'reminder';
       return 'normal';
     }
-    if (!service.lastService?.date) return 'normal';
     
-    let lastDate;
-    if (service.lastService.date.toDate) {
-      lastDate = service.lastService.date.toDate();
-    } else if (typeof service.lastService.date === 'string') {
-      lastDate = new Date(service.lastService.date);
-    } else if (service.lastService.date.seconds) {
-      lastDate = new Date(service.lastService.date.seconds * 1000);
-    } else {
-      lastDate = new Date(service.lastService.date);
-    }
+    // Use lastDate or lastService.date - if not set, return grey status
+    const lastPerformed = service.lastDate || service.lastService?.date;
+    if (!lastPerformed) return 'no-date';
     
-    if (isNaN(lastDate.getTime())) return 'normal';
+    let lastDate = this.parseDateFlexible(lastPerformed);
+    if (!lastDate || isNaN(lastDate.getTime())) return 'normal';
     
     const dueDate = new Date(lastDate);
-    const intervalNum = parseInt(service.interval);
-    // type is 'date' here; use timeUnit
-    if (service.timeUnit === 'years') {
+    const interval = service.norm || service.interval;
+    const intervalNum = parseInt(interval);
+    if (isNaN(intervalNum)) return 'normal';
+    
+    // Determine time unit from service.unit or service.timeUnit
+    let timeUnit = service.timeUnit;
+    if (!timeUnit && serviceUnit) {
+      if (serviceUnit === 'year') timeUnit = 'years';
+      else if (serviceUnit === 'month') timeUnit = 'months';
+      else if (serviceUnit === 'day') timeUnit = 'days';
+    }
+    timeUnit = timeUnit || 'days';
+    
+    // Add interval based on time unit
+    if (timeUnit === 'years') {
       dueDate.setFullYear(dueDate.getFullYear() + intervalNum);
-    } else if (service.timeUnit === 'months') {
+    } else if (timeUnit === 'months') {
       dueDate.setMonth(dueDate.getMonth() + intervalNum);
     } else {
       dueDate.setDate(dueDate.getDate() + intervalNum);
@@ -4725,11 +7859,11 @@ class FlotilaManager {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
     // Adjust reminder period based on service type
-    let reminderDays = service.reminderDays || 30;
-    if (service.timeUnit === 'years') {
-      reminderDays = service.reminderDays || 90; // 3 months for yearly services
-    } else if (service.timeUnit === 'months') {
-      reminderDays = service.reminderDays || 14; // 2 weeks for monthly services
+    let reminderDays = service.reminderDays || service.signal || 30;
+    if (timeUnit === 'years') {
+      reminderDays = service.reminderDays || service.signal || 90; // 3 months for yearly services
+    } else if (timeUnit === 'months') {
+      reminderDays = service.reminderDays || service.signal || 14; // 2 weeks for monthly services
     }
     
     if (diffDays < 0) {

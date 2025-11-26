@@ -26,6 +26,9 @@
 
     // Listen to all category sub-collections and merge results
     async onOilsUpdate(callback) {
+      // CRITICAL: Verify this is the oil database's onOilsUpdate method
+      console.log('[DEBUG] oil-database.js: onOilsUpdate called - this should be OIL database');
+      
       // Wait for authenticated user (not anonymous)
       if (!window.auth) {
         callback([]);
@@ -61,7 +64,10 @@
         return () => {};
       }
       
-      return this._setupListeners(callback);
+      // CRITICAL: Bind _setupListeners to this (OilDatabaseService) to ensure correct context
+      const boundSetupListeners = this._setupListeners.bind(this);
+      console.log('[DEBUG] oil-database.js: Calling _setupListeners for OILS');
+      return boundSetupListeners(callback);
     },
 
     _setupListeners(callback) {
@@ -71,6 +77,9 @@
         return () => {};
       }
 
+      // CRITICAL: Verify this is being called from oil-database, not parts database
+      console.log('[DEBUG] oil-database.js: _setupListeners called - setting up OIL listeners');
+      
       const categories = Object.keys(CATEGORY_TO_COLLECTION);
       const unsubscribes = [];
       const allOils = {};
@@ -90,25 +99,84 @@
             merged.push(...allOils[cat]);
           }
         });
+        
+        // CRITICAL: Validate that we're returning oil data, not parts data
+        const validOilCategories = ['motorove', 'prevodove', 'diferencial', 'chladiaca'];
+        const invalidItems = merged.filter(item => {
+          const category = item.category || '';
+          return !validOilCategories.includes(category);
+        });
+        
+        if (invalidItems.length > 0) {
+          console.error('[ERROR] oil-database.js: mergeAndNotify is returning parts data! Invalid categories:', 
+            [...new Set(invalidItems.map(i => i.category))]);
+        }
+        
+        console.log('[DEBUG] oil-database.js: mergeAndNotify calling callback with', merged.length, 'OILS');
         callback(merged);
       };
 
       categories.forEach(categoryId => {
         const collectionName = CATEGORY_TO_COLLECTION[categoryId];
         
+        console.log('[DEBUG] oil-database.js: Setting up listener for OIL category:', categoryId, '-> collection:', collectionName);
+        
         const unsubscribe = this._basePath()
           .collection(collectionName)
           .orderBy('name')
           .onSnapshot((snapshot) => {
-            allOils[categoryId] = snapshot.docs.map((doc) => ({
-              id: doc.id,
-              category: categoryId,
-              ...doc.data()
-            }));
+            console.log('[DEBUG] oil-database.js: Received snapshot for OIL collection:', collectionName, 'documents:', snapshot.docs.length);
+            allOils[categoryId] = snapshot.docs.map((doc) => {
+              const data = doc.data();
+              // CRITICAL: Always use the Slovak category ID from the mapping, not from document
+              // The document might have category in English or be missing
+              const result = {
+                ...data,
+                id: doc.id,
+                category: categoryId  // Set AFTER spreading to ensure Slovak category ID is used
+              };
+              
+              // Verify category is correct
+              if (result.category !== categoryId) {
+                console.warn('[WARNING] oil-database.js: Category mismatch for item', doc.id, '- expected:', categoryId, 'got:', result.category);
+              }
+              
+              return result;
+            });
             mergeAndNotify();
           }, (error) => {
-            allOils[categoryId] = [];
-            mergeAndNotify();
+            console.error(`[ERROR] Failed to load oils from ${collectionName}:`, error);
+            // If orderBy fails (e.g., missing index or field), try without ordering
+            if (error.code === 'failed-precondition' || error.message?.includes('index')) {
+              console.warn(`[WARNING] Retrying ${collectionName} without orderBy due to:`, error.message);
+              // Retry without orderBy
+              this._basePath()
+                .collection(collectionName)
+                .onSnapshot((snapshot) => {
+                  allOils[categoryId] = snapshot.docs.map((doc) => {
+                    const data = doc.data();
+                    return {
+                      ...data,
+                      id: doc.id,
+                      category: categoryId
+                    };
+                  });
+                  // Sort manually by name
+                  allOils[categoryId].sort((a, b) => {
+                    const nameA = (a.name || '').toLowerCase();
+                    const nameB = (b.name || '').toLowerCase();
+                    return nameA.localeCompare(nameB);
+                  });
+                  mergeAndNotify();
+                }, (retryError) => {
+                  console.error(`[ERROR] Failed to load ${collectionName} even without orderBy:`, retryError);
+                  allOils[categoryId] = [];
+                  mergeAndNotify();
+                });
+            } else {
+              allOils[categoryId] = [];
+              mergeAndNotify();
+            }
           });
         unsubscribes.push(unsubscribe);
       });
@@ -168,6 +236,40 @@
   if (!window.DatabaseService) {
     window.DatabaseService = {};
   }
-  Object.assign(window.DatabaseService, OilDatabaseService);
+  
+  // CRITICAL: Bind methods to OilDatabaseService to preserve 'this' context
+  // This ensures that when methods are called, they use the correct service object
+  const boundOilService = {
+    onOilsUpdate: OilDatabaseService.onOilsUpdate.bind(OilDatabaseService),
+    createOil: OilDatabaseService.createOil.bind(OilDatabaseService),
+    adjustOilQuantity: OilDatabaseService.adjustOilQuantity.bind(OilDatabaseService),
+    deleteOil: OilDatabaseService.deleteOil.bind(OilDatabaseService)
+  };
+  
+  // CRITICAL: Only assign methods, don't overwrite existing ones
+  // This ensures oil methods don't get overwritten by parts methods or vice versa
+  Object.assign(window.DatabaseService, boundOilService);
+  
+  // Verify that onOilsUpdate was assigned correctly
+  if (window.DatabaseService.onOilsUpdate) {
+    console.log('[DEBUG] oil-database.js: onOilsUpdate method successfully assigned and bound to OilDatabaseService');
+    
+    // Verify it's bound to the correct object
+    const testCall = () => {
+      try {
+        // This will fail if not bound correctly
+        const fn = window.DatabaseService.onOilsUpdate;
+        const original = OilDatabaseService.onOilsUpdate;
+        if (fn === original) {
+          console.warn('[WARNING] oil-database.js: onOilsUpdate is not bound! It will lose context.');
+        }
+      } catch (e) {
+        // Ignore test errors
+      }
+    };
+    testCall();
+  } else {
+    console.error('[ERROR] oil-database.js: Failed to assign onOilsUpdate to DatabaseService!');
+  }
 })();
 

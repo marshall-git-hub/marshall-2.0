@@ -1,0 +1,896 @@
+{
+  "ZC206YD": {
+    "licensePlate": "ZC206YD",
+    "vehicleType": "Nakladný náves",
+    "model": "PONGRATZ L-PAT300/16",
+    "vin": "VAPB0000000351601",
+    "inServiceFrom": "2020-10-13",
+    "yearOfManufacture": 2020,
+    "services": [
+      {
+        "name": "Technická kontrola (STK)",
+        "unit": "year",
+        "norm": "4",
+        "signal": 30,
+        "lastDate": "2024-10-01",
+        "lastKm": 0
+      },
+      {
+        "name": "Poistenie - zelená karta",
+        "unit": "specificDate",
+        "norm": "16.08.2025",
+        "signal": 30,
+        "lastDate": "2025-08-16",
+        "lastKm": 0
+      },
+      {
+        "name": "mýto  diaľničná známka ročná SK",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2024-01-31",
+        "lastKm": 0
+      }
+    ]
+  },
+  "ZC212YC": {
+    "licensePlate": "ZC212YC",
+    "vehicleType": "Nakladný náves",
+    "model": "KÖGEL",
+    "vin": "WK0S0002400300259",
+    "inServiceFrom": "2023-06-01",
+    "yearOfManufacture": 2023,
+    "services": [
+      {
+        "name": "Technická kontrola (STK)",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-05-23",
+        "lastKm": 0
+      },
+      {
+        "name": "Ročná kontrola náves",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-05-05",
+        "lastKm": 0
+      },
+      {
+        "name": "Kontrola brźd",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-05-05",
+        "lastKm": 0
+      },
+      {
+        "name": "Poistenie - zelená karta",
+        "unit": "year",
+        "norm": "1",
+        "signal": 14,
+        "lastDate": "2025-08-16",
+        "lastKm": 0
+      }
+    ]
+  },
+  "ZC235YC": {
+    "licensePlate": "ZC235YC",
+    "vehicleType": "Nakladný náves",
+    "model": "Schwarzmuller",
+    "vin": "VAVJS1339DD330954",
+    "inServiceFrom": "2013-05-29",
+    "yearOfManufacture": 2013,
+    "services": [
+      {
+        "name": "Technická kontrola (STK)",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-02-07",
+        "lastKm": 0
+      },
+      {
+        "name": "Ročná kontrola náves",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-04-10",
+        "lastKm": 0
+      },
+      {
+        "name": "Kontrola brźd",
+        "unit": "month",
+        "norm": "12",
+        "signal": 30,
+        "lastDate": "2025-04-10",
+        "lastKm": 0
+      },
+      {
+        "name": "Poistenie - zelená karta",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-08-16",
+        "lastKm": 0
+      }
+    ]
+  },
+  "ZC237YC": {
+    "licensePlate": "ZC237YC",
+    "vehicleType": "Nakladný náves",
+    "model": "Náves SCHWARZMULLER J-serie ty",
+    "vin": "VAVJS1339DD330956",
+    "inServiceFrom": "2013-05-29",
+    "yearOfManufacture": 2013,
+    "services": [
+      {
+        "name": "Technická kontrola (STK)",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-01-07",
+        "lastKm": 0
+      },
+      {
+        "name": "Ročná kontrola náves",
+        "unit": "month",
+        "norm": "10",
+        "signal": 30,
+        "lastDate": "2024-12-05",
+        "lastKm": 0
+      },
+      {
+        "name": "Kontrola brźd",
+        "unit": "month",
+        "norm": "10",
+        "signal": 30,
+        "lastDate": "2024-12-05",
+        "lastKm": 0
+      },
+      {
+        "name": "Poistenie - zelená karta",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-08-16",
+        "lastKm": 0
+      }
+    ]
+  },
+  "ZC278YC": {
+    "licensePlate": "ZC278YC",
+    "vehicleType": "Nakladný náves MEGA",
+    "model": "KÖGEL",
+    "vin": "WK0S0002400306118",
+    "inServiceFrom": "2024-01-09",
+    "yearOfManufacture": 2024,
+    "services": [
+      {
+        "name": "Technická kontrola (STK)",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-01-07",
+        "lastKm": 0
+      },
+      {
+        "name": "Ročná kontrola náves",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-04-24",
+        "lastKm": 0
+      },
+      {
+        "name": "Kontrola brźd",
+        "unit": "month",
+        "norm": "8",
+        "signal": 30,
+        "lastDate": "2025-04-24",
+        "lastKm": 0
+      },
+      {
+        "name": "Poistenie - zelená karta",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-08-16",
+        "lastKm": 0
+      }
+    ]
+  },
+  "ZC291YD": {
+    "licensePlate": "ZC291YD",
+    "vehicleType": "Nakladný náves",
+    "model": "KÖGEL",
+    "vin": "WK0S0002400262741",
+    "inServiceFrom": "2021-05-21",
+    "yearOfManufacture": 2021,
+    "services": [
+      {
+        "name": "Technická kontrola (STK)",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-04-24",
+        "lastKm": 0
+      },
+      {
+        "name": "Ročná kontrola náves",
+        "unit": "month",
+        "norm": "15",
+        "signal": 30,
+        "lastDate": "2025-04-23",
+        "lastKm": 0
+      },
+      {
+        "name": "Kontrola brźd",
+        "unit": "month",
+        "norm": "15",
+        "signal": 30,
+        "lastDate": "2025-04-23",
+        "lastKm": 0
+      },
+      {
+        "name": "Poistenie - zelená karta",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-08-16",
+        "lastKm": 0
+      }
+    ]
+  },
+  "ZC298YC": {
+    "licensePlate": "ZC298YC",
+    "vehicleType": "Nakladný náves",
+    "model": "KÖGEL",
+    "vin": "WK0S0002400319924",
+    "inServiceFrom": "2025-05-29",
+    "yearOfManufacture": 2025,
+    "services": [
+      {
+        "name": "Technická kontrola (STK)",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastKm": 0
+      },
+      {
+        "name": "Emisná kontrola (EK)",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastKm": 0
+      },
+      {
+        "name": "Kontrola brźd",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastKm": 0
+      },
+      {
+        "name": "Poistenie - zelená karta",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-08-16",
+        "lastKm": 0
+      },
+      {
+        "name": "zaručná kontrola SAF nový náves/km",
+        "unit": "km",
+        "norm": "60000",
+        "signal": 800,
+        "lastKm": 0
+      }
+    ]
+  },
+  "ZC336YD": {
+    "licensePlate": "ZC336YD",
+    "vehicleType": "Nakladný náves MEGA",
+    "model": "SCHMITZ CARGOBULL S01",
+    "vin": "WSM00000003379131",
+    "inServiceFrom": "2021-09-27",
+    "yearOfManufacture": 0,
+    "services": [
+      {
+        "name": "Technická kontrola (STK)",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-07-04",
+        "lastKm": 0
+      },
+      {
+        "name": "Ročná kontrola náves",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-07-03",
+        "lastKm": 0
+      },
+      {
+        "name": "Kontrola brźd",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-07-03",
+        "lastKm": 0
+      },
+      {
+        "name": "Poistenie - zelená karta",
+        "unit": "specificDate",
+        "norm": "25.08.2024",
+        "signal": 7,
+        "lastDate": "2024-08-25",
+        "lastKm": 0
+      }
+    ]
+  },
+  "ZC375YC": {
+    "licensePlate": "ZC375YC",
+    "vehicleType": "Nakladný náves",
+    "model": "Schwarzmuller",
+    "vin": "VAVJS1339ED344692",
+    "inServiceFrom": "2014-05-07",
+    "yearOfManufacture": 2014,
+    "services": [
+      {
+        "name": "Technická kontrola (STK)",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-01-07",
+        "lastKm": 0
+      },
+      {
+        "name": "Ročná kontrola náves",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-08-01",
+        "lastKm": 0
+      },
+      {
+        "name": "Kontrola brźd",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-08-01",
+        "lastKm": 0
+      },
+      {
+        "name": "Poistenie - zelená karta",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-08-16",
+        "lastKm": 0
+      }
+    ]
+  },
+  "ZC388YC": {
+    "licensePlate": "ZC388YC",
+    "vehicleType": "Nakladný náves",
+    "model": "Schwarzmuller",
+    "vin": "VAVJS1339ED344690",
+    "inServiceFrom": "2014-04-30",
+    "yearOfManufacture": 2014,
+    "services": [
+      {
+        "name": "Technická kontrola (STK)",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2024-12-19",
+        "lastKm": 0
+      },
+      {
+        "name": "Ročná kontrola náves",
+        "unit": "specificDate",
+        "norm": "29.10.2024",
+        "signal": 30,
+        "lastDate": "2024-12-19",
+        "lastKm": 0
+      },
+      {
+        "name": "Kontrola brźd",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-02-18",
+        "lastKm": 0
+      },
+      {
+        "name": "PZP",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-08-16",
+        "lastKm": 0
+      }
+    ]
+  },
+  "ZC390YC": {
+    "licensePlate": "ZC390YC",
+    "vehicleType": "Nakladný náves MEGA",
+    "model": "KÖGEL",
+    "vin": "WK0S0002400306119",
+    "inServiceFrom": "2024-02-05",
+    "yearOfManufacture": 2024,
+    "services": [
+      {
+        "name": "Technická kontrola (STK)",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-01-28",
+        "lastKm": 0
+      },
+      {
+        "name": "Ročná kontrola náves",
+        "unit": "month",
+        "norm": "8",
+        "signal": 30,
+        "lastDate": "2025-04-29",
+        "lastKm": 0
+      },
+      {
+        "name": "Kontrola brźd",
+        "unit": "month",
+        "norm": "11",
+        "signal": 30,
+        "lastDate": "2025-04-29",
+        "lastKm": 0
+      },
+      {
+        "name": "Poistenie - zelená karta",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-08-16",
+        "lastKm": 0
+      }
+    ]
+  },
+  "ZC397YD": {
+    "licensePlate": "ZC397YD",
+    "vehicleType": "Nakladný náves MEGA",
+    "model": "Schwarzmuller",
+    "vin": "VAVJS1339ND477500",
+    "inServiceFrom": "2022-04-28",
+    "yearOfManufacture": 2022,
+    "services": [
+      {
+        "name": "Technická kontrola (STK)",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-04-14",
+        "lastKm": 0
+      },
+      {
+        "name": "Ročná kontrola náves",
+        "unit": "month",
+        "norm": "11",
+        "signal": 30,
+        "lastDate": "2025-02-13",
+        "lastKm": 0
+      },
+      {
+        "name": "Kontrola brźd",
+        "unit": "month",
+        "norm": "10",
+        "signal": 30,
+        "lastDate": "2025-02-13",
+        "lastKm": 0
+      },
+      {
+        "name": "Poistenie - zelená karta",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-08-16",
+        "lastKm": 0
+      },
+      {
+        "name": "Poistenie - zelená karta",
+        "unit": "specificDate",
+        "norm": "25.08.2024",
+        "signal": 7,
+        "lastDate": "2024-08-25",
+        "lastKm": 0
+      }
+    ]
+  },
+  "ZC398YC": {
+    "licensePlate": "ZC398YC",
+    "vehicleType": "Nakladný náves MEGA",
+    "model": "KÖGEL",
+    "vin": "WK0S0002400173779",
+    "inServiceFrom": "2014-07-03",
+    "yearOfManufacture": 2014,
+    "services": [
+      {
+        "name": "Technická kontrola (STK)",
+        "unit": "specificDate",
+        "norm": "01.09.2026",
+        "signal": 30,
+        "lastDate": "2025-09-01",
+        "lastKm": 0
+      },
+      {
+        "name": "Ročná kontrola náves",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-01-09",
+        "lastKm": 0
+      },
+      {
+        "name": "Kontrola brźd",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-01-09",
+        "lastKm": 0
+      },
+      {
+        "name": "Poistenie - zelená karta",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-08-16",
+        "lastKm": 0
+      }
+    ]
+  },
+  "ZC421YD": {
+    "licensePlate": "ZC421YD",
+    "vehicleType": "Nakladný náves",
+    "model": "KÖGEL",
+    "vin": "WK0S0002400279133",
+    "inServiceFrom": "2022-03-22",
+    "yearOfManufacture": 2022,
+    "services": [
+      {
+        "name": "Technická kontrola (STK)",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-03-04",
+        "lastKm": 0
+      },
+      {
+        "name": "Ročná kontrola náves",
+        "unit": "month",
+        "norm": "11",
+        "signal": 30,
+        "lastDate": "2025-03-07",
+        "lastKm": 0
+      },
+      {
+        "name": "Kontrola brźd",
+        "unit": "month",
+        "norm": "11",
+        "signal": 30,
+        "lastDate": "2025-03-07",
+        "lastKm": 0
+      },
+      {
+        "name": "Poistenie - zelená karta",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-08-16",
+        "lastKm": 0
+      }
+    ]
+  },
+  "ZC426YD": {
+    "licensePlate": "ZC426YD",
+    "vehicleType": "Nakladný náves",
+    "model": "KÖGEL",
+    "vin": "WK0S0002400203754",
+    "inServiceFrom": "2022-03-18",
+    "yearOfManufacture": 2017,
+    "services": [
+      {
+        "name": "Technická kontrola (STK)",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-03-14",
+        "lastKm": 0
+      },
+      {
+        "name": "Ročná kontrola náves",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-03-12",
+        "lastKm": 0
+      },
+      {
+        "name": "Kontrola brźd",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-03-12",
+        "lastKm": 0
+      },
+      {
+        "name": "Poistenie - zelená karta",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-08-16",
+        "lastKm": 0
+      },
+      {
+        "name": "Poistenie - zelená karta",
+        "unit": "specificDate",
+        "norm": "25.08.2024",
+        "signal": 7,
+        "lastDate": "2024-08-25",
+        "lastKm": 0
+      }
+    ]
+  },
+  "ZC441YD": {
+    "licensePlate": "ZC441YD",
+    "vehicleType": "Nakladný náves MEGA",
+    "model": "Schwarzmuller",
+    "vin": "VAVJS1339ND485554",
+    "inServiceFrom": "2022-07-06",
+    "yearOfManufacture": 2022,
+    "services": [
+      {
+        "name": "Technická kontrola (STK)",
+        "unit": "year",
+        "norm": "1",
+        "signal": 21,
+        "lastDate": "2025-06-19",
+        "lastKm": 0
+      },
+      {
+        "name": "Ročná kontrola náves",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-06-26",
+        "lastKm": 0
+      },
+      {
+        "name": "Kontrola brźd",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-06-26",
+        "lastKm": 0
+      },
+      {
+        "name": "Poistenie - zelená karta",
+        "unit": "year",
+        "norm": "1",
+        "signal": 14,
+        "lastDate": "2025-08-16",
+        "lastKm": 0
+      }
+    ]
+  },
+  "ZC451YD": {
+    "licensePlate": "ZC451YD",
+    "vehicleType": "Nakladný náves",
+    "model": "Schwarzmuller",
+    "vin": "VAVJS1339ND485556",
+    "inServiceFrom": "2022-06-30",
+    "yearOfManufacture": 2022,
+    "services": [
+      {
+        "name": "Technická kontrola (STK)",
+        "unit": "year",
+        "norm": "1",
+        "signal": 31,
+        "lastDate": "2025-06-17",
+        "lastKm": 0
+      },
+      {
+        "name": "Ročná kontrola náves",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-04-25",
+        "lastKm": 0
+      },
+      {
+        "name": "Kontrola brźd",
+        "unit": "month",
+        "norm": "12",
+        "signal": 30,
+        "lastDate": "2025-04-25",
+        "lastKm": 0
+      },
+      {
+        "name": "Poistenie - zelená karta",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastKm": 0
+      }
+    ]
+  },
+  "ZC460YC": {
+    "licensePlate": "ZC460YC",
+    "vehicleType": "Nakladný náves",
+    "model": "Schwarzmuller",
+    "vin": "VAVWS1339ED351090",
+    "inServiceFrom": "2014-11-21",
+    "yearOfManufacture": 2014,
+    "services": [
+      {
+        "name": "Technická kontrola (STK)",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-01-14",
+        "lastKm": 0
+      },
+      {
+        "name": "Ročná kontrola náves",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2024-12-19",
+        "lastKm": 0
+      },
+      {
+        "name": "Kontrola brźd",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2024-12-19",
+        "lastKm": 0
+      },
+      {
+        "name": "Poistenie - zelená karta",
+        "unit": "specificDate",
+        "norm": "16.08.2025",
+        "signal": 30,
+        "lastDate": "2025-08-16",
+        "lastKm": 0
+      }
+    ]
+  },
+  "ZC595YB": {
+    "licensePlate": "ZC595YB",
+    "vehicleType": "Nakladný náves",
+    "model": "AGADOS typ: VZ1/26/N1",
+    "vin": "TKXV261756ANS4377",
+    "inServiceFrom": "2006-07-12",
+    "yearOfManufacture": 2006,
+    "services": [
+      {
+        "name": "Poistenie - zelená karta",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-08-16",
+        "lastKm": 0
+      }
+    ]
+  },
+  "ZC598YD": {
+    "licensePlate": "ZC598YD",
+    "vehicleType": "Nakladný náves",
+    "model": "KÖGEL",
+    "vin": "WK0S0002400300260",
+    "inServiceFrom": "2023-06-01",
+    "yearOfManufacture": 2023,
+    "services": [
+      {
+        "name": "Technická kontrola (STK)",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-05-26",
+        "lastKm": 0
+      },
+      {
+        "name": "Ročná kontrola náves",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-01-10",
+        "lastKm": 0
+      },
+      {
+        "name": "Kontrola brźd",
+        "unit": "month",
+        "norm": "11",
+        "signal": 30,
+        "lastDate": "2025-01-10",
+        "lastKm": 0
+      },
+      {
+        "name": "Poistenie - zelená karta",
+        "unit": "year",
+        "norm": "1",
+        "signal": 15,
+        "lastDate": "2025-08-16",
+        "lastKm": 0
+      }
+    ]
+  },
+  "ZC603YD": {
+    "licensePlate": "ZC603YD",
+    "vehicleType": "Nakladný náves",
+    "model": "KÖGEL",
+    "vin": "WK0S0002400300261",
+    "inServiceFrom": "2023-06-01",
+    "yearOfManufacture": 2023,
+    "services": [
+      {
+        "name": "Technická kontrola (STK)",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-05-23",
+        "lastKm": 0
+      },
+      {
+        "name": "Ročná kontrola náves",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-02-28",
+        "lastKm": 0
+      },
+      {
+        "name": "Kontrola brźd",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-02-28",
+        "lastKm": 0
+      },
+      {
+        "name": "Poistenie - zelená karta",
+        "unit": "year",
+        "norm": "1",
+        "signal": 15,
+        "lastDate": "2025-08-16",
+        "lastKm": 0
+      }
+    ]
+  },
+  "ZC645YB": {
+    "licensePlate": "ZC645YB",
+    "vehicleType": "Nakladný náves",
+    "model": "Schwarzmuller",
+    "vin": "VAVSAP3386H239076",
+    "inServiceFrom": "2006-12-20",
+    "yearOfManufacture": 2006,
+    "services": [
+      {
+        "name": "Technická kontrola (STK)",
+        "unit": "year",
+        "norm": "3",
+        "signal": 30,
+        "lastDate": "2023-07-10",
+        "lastKm": 0
+      },
+      {
+        "name": "Prihlásenie dočasne vyradeného vozidla",
+        "unit": "specificDate",
+        "norm": "10.07.2026",
+        "signal": 30,
+        "lastKm": 0
+      }
+    ]
+  }
+}

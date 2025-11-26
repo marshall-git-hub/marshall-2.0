@@ -1,0 +1,323 @@
+{
+  "VZV": {
+    "licensePlate": "VZV",
+    "vehicleType": "Ostatne",
+    "model": "Linde H20T-03",
+    "inServiceFrom": "2018-04-24",
+    "yearOfManufacture": 2002,
+    "services": [
+      {
+        "name": "Technická kontrola (STK)",
+        "unit": "year",
+        "norm": "1",
+        "signal": 20,
+        "lastDate": "2025-03-21",
+        "lastKm": 0
+      },
+      {
+        "name": "Výmena oleja v motorove",
+        "unit": "month",
+        "norm": "17",
+        "signal": 30,
+        "lastDate": "2025-10-30",
+        "lastKm": 0
+      }
+    ]
+  },
+  "VZV2": {
+    "licensePlate": "VZV2",
+    "vehicleType": "Ostatne",
+    "model": "LINDE H35 T",
+    "inServiceFrom": "2022-04-07",
+    "yearOfManufacture": 2006,
+    "services": [
+      {
+        "name": "Technická kontrola (STK)",
+        "unit": "year",
+        "norm": "1",
+        "signal": 20,
+        "lastDate": "2025-03-21",
+        "lastKm": 0
+      },
+      {
+        "name": "Výmena oleja v motorove",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-10-30",
+        "lastKm": 0
+      }
+    ]
+  },
+  "ZC594BN": {
+    "licensePlate": "ZC594BN",
+    "vehicleType": "specialne obytné vozidlo",
+    "model": "IVECO 70C21",
+    "vin": "ZCFC270FX05181608",
+    "inServiceFrom": "2019-11-19",
+    "yearOfManufacture": 2017,
+    "services": [
+      {
+        "name": "Technická kontrola (STK)",
+        "unit": "year",
+        "norm": "2",
+        "signal": 30,
+        "lastDate": "2024-02-22",
+        "lastKm": 0
+      },
+      {
+        "name": "Emisná kontrola (EK)",
+        "unit": "year",
+        "norm": "2",
+        "signal": 30,
+        "lastDate": "2024-02-22",
+        "lastKm": 0
+      },
+      {
+        "name": "Výmena oleja v motorove",
+        "unit": "month",
+        "norm": "18",
+        "signal": 30,
+        "lastDate": "2025-05-26",
+        "lastKm": 0
+      },
+      {
+        "name": "Výmena oleja v prevodovke",
+        "unit": "year",
+        "norm": "2",
+        "signal": 30,
+        "lastDate": "2023-01-13",
+        "lastKm": 0
+      },
+      {
+        "name": "Výmena oleja v diferenciáli",
+        "unit": "year",
+        "norm": "2",
+        "signal": 15,
+        "lastKm": 0
+      },
+      {
+        "name": "výmena rozvodov remeňa a kladiek",
+        "unit": "km",
+        "norm": "120000",
+        "signal": 15000,
+        "lastDate": "2022-02-21",
+        "lastKm": 0
+      },
+      {
+        "name": "Výmena chladiacej zmesi",
+        "unit": "month",
+        "norm": "28",
+        "signal": 30,
+        "lastDate": "2022-02-21",
+        "lastKm": 0
+      },
+      {
+        "name": "Kontrola chladiacej zmesi",
+        "unit": "year",
+        "norm": "1",
+        "signal": 15,
+        "lastKm": 0
+      },
+      {
+        "name": "Kontrola brźd",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-05-26",
+        "lastKm": 0
+      },
+      {
+        "name": "Karta Eurowag",
+        "unit": "specificDate",
+        "norm": "31.07.2026",
+        "signal": 60,
+        "lastKm": 0
+      },
+      {
+        "name": "Karta AS24",
+        "unit": "specificDate",
+        "norm": "30.11.2027",
+        "signal": 30,
+        "lastKm": 0
+      },
+      {
+        "name": "Poistenie - zelená karta",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-08-16",
+        "lastKm": 0
+      },
+      {
+        "name": "mýto  diaľničná známka ročná SK",
+        "unit": "specificDate",
+        "norm": "02.03.2026",
+        "signal": 30,
+        "lastDate": "2025-03-03",
+        "lastKm": 0
+      }
+    ]
+  },
+  "ZC859BR": {
+    "licensePlate": "ZC859BR",
+    "vehicleType": "Dodávka",
+    "model": "PEUGEOT EXPERT",
+    "vin": "VF3VFAHHWJZ019386",
+    "inServiceFrom": "2021-06-20",
+    "yearOfManufacture": 2018,
+    "services": [
+      {
+        "name": "Technická kontrola (STK)",
+        "unit": "year",
+        "norm": "2",
+        "signal": 30,
+        "lastDate": "2024-06-10",
+        "lastKm": 0
+      },
+      {
+        "name": "Emisná kontrola (EK)",
+        "unit": "year",
+        "norm": "2",
+        "signal": 30,
+        "lastDate": "2024-06-10",
+        "lastKm": 0
+      },
+      {
+        "name": "Výmena oleja v motorove",
+        "unit": "km",
+        "norm": "15000",
+        "signal": 3000,
+        "lastDate": "2023-11-10",
+        "lastKm": 0
+      },
+      {
+        "name": "Výmena oleja v prevodovke",
+        "unit": "km",
+        "norm": "25000",
+        "signal": 10000,
+        "lastDate": "2024-06-07",
+        "lastKm": 0
+      },
+      {
+        "name": "Výmena chladiacej zmesi",
+        "unit": "year",
+        "norm": "2",
+        "signal": 30,
+        "lastDate": "2023-11-09",
+        "lastKm": 0
+      },
+      {
+        "name": "Karta Eurowag",
+        "unit": "specificDate",
+        "norm": "31.07.2027",
+        "signal": 60,
+        "lastKm": 0
+      },
+      {
+        "name": "Karta AS24",
+        "unit": "specificDate",
+        "norm": "30.11.2027",
+        "signal": 30,
+        "lastKm": 0
+      },
+      {
+        "name": "Poistenie - zelená karta",
+        "unit": "year",
+        "norm": "1",
+        "signal": 14,
+        "lastDate": "2025-08-16",
+        "lastKm": 0
+      },
+      {
+        "name": "mýto  diaľničná známka ročná SK",
+        "unit": "specificDate",
+        "norm": "14.08.2026",
+        "signal": 30,
+        "lastDate": "2025-08-15",
+        "lastKm": 0
+      }
+    ]
+  },
+  "ZC954BA": {
+    "licensePlate": "ZC954BA",
+    "vehicleType": "Dodávka",
+    "model": "Ford Tranzit",
+    "vin": "WF0XXXTTFX7J61030",
+    "inServiceFrom": "2013-06-26",
+    "yearOfManufacture": 2008,
+    "services": [
+      {
+        "name": "Technická kontrola (STK)",
+        "unit": "year",
+        "norm": "2",
+        "signal": 30,
+        "lastDate": "2025-07-17",
+        "lastKm": 0
+      },
+      {
+        "name": "Emisná kontrola (EK)",
+        "unit": "year",
+        "norm": "2",
+        "signal": 30,
+        "lastDate": "2025-07-17",
+        "lastKm": 0
+      },
+      {
+        "name": "Výmena oleja v motorove",
+        "unit": "year",
+        "norm": "2",
+        "signal": 10,
+        "lastDate": "2023-07-14",
+        "lastKm": 0
+      },
+      {
+        "name": "Výmena spojky",
+        "unit": "km",
+        "norm": "200000",
+        "signal": 15000,
+        "lastDate": "2019-08-21",
+        "lastKm": 0
+      },
+      {
+        "name": "Kontrola brźd",
+        "unit": "year",
+        "norm": "2",
+        "signal": 30,
+        "lastDate": "2025-05-30",
+        "lastKm": 0
+      },
+      {
+        "name": "Karta Eurowag",
+        "unit": "specificDate",
+        "norm": "31.07.2026",
+        "signal": 60,
+        "lastKm": 0
+      },
+      {
+        "name": "Karta AS24",
+        "unit": "specificDate",
+        "norm": "30.11.2027",
+        "signal": 30,
+        "lastKm": 0
+      },
+      {
+        "name": "mýto  diaľničná známka ročná SK",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2024-03-11",
+        "lastKm": 0
+      }
+    ]
+  },
+  "ZCZ086": {
+    "licensePlate": "ZCZ086",
+    "vehicleType": "Ostatne",
+    "model": "KRAMER TREMO 601",
+    "vin": "601800079",
+    "inServiceFrom": "2024-04-02",
+    "yearOfManufacture": 1994,
+    "services": []
+  }
+}

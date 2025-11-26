@@ -6,9 +6,18 @@ function loadNavbar() {
   
   // Determine the correct path to navbar.html based on current location
   let navbarPath = 'navbar/navbar.html';
-  if (window.location.pathname.includes('/servis/') || 
-      window.location.pathname.includes('/flotila/') || 
-      window.location.pathname.includes('/pneu/')) {
+  const pathname = window.location.pathname;
+  
+  // Handle different module paths
+  if (pathname.includes('/modules/servis/')) {
+    navbarPath = '../../../shared/ui/navbar/navbar.html';
+  } else if (pathname.includes('/modules/flotila/')) {
+    navbarPath = '../../../shared/ui/navbar/navbar.html';
+  } else if (pathname.includes('/modules/pnue/')) {
+    navbarPath = '../../../shared/ui/navbar/navbar.html';
+  } else if (pathname.includes('/servis/') || 
+      pathname.includes('/flotila/') || 
+      pathname.includes('/pneu/')) {
     navbarPath = '../navbar/navbar.html';
   }
   

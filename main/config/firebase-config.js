@@ -34,18 +34,43 @@
       if (!window.auth) {
         throw new Error('AUTH_NOT_READY');
       }
-      if (window.auth.currentUser) {
-        return window.auth.currentUser;
+      
+      // Always check current user first
+      const currentUser = window.auth.currentUser;
+      
+      // If user is already authenticated (non-anonymous), NEVER sign in anonymously
+      if (currentUser && !currentUser.isAnonymous) {
+        console.log('ensureAnonymousSession: User already authenticated (non-anonymous), skipping anonymous sign-in');
+        return currentUser;
+      }
+      
+      // If there's already an anonymous user, return it
+      if (currentUser && currentUser.isAnonymous) {
+        return currentUser;
       }
 
+      // Only sign in anonymously if there's NO user at all
+      // Make sure no other operation is in progress
       if (!window.__marshallAnonAuthPromise) {
         window.__marshallAnonAuthPromise = window.auth.signInAnonymously()
           .then((cred) => {
             window.__marshallAnonAuthPromise = null;
+            // Double check that we didn't get a non-anonymous user somehow
+            if (cred.user && !cred.user.isAnonymous) {
+              console.warn('ensureAnonymousSession: Got non-anonymous user when signing in anonymously');
+            }
             return cred.user;
           })
           .catch((error) => {
             window.__marshallAnonAuthPromise = null;
+            // Check if error is because user is already signed in
+            if (error.code === 'auth/operation-not-allowed' || error.message.includes('already signed in')) {
+              const existingUser = window.auth.currentUser;
+              if (existingUser && !existingUser.isAnonymous) {
+                console.log('ensureAnonymousSession: User is already signed in (non-anonymous)');
+                return existingUser;
+              }
+            }
             throw error;
           });
       }

@@ -7,14 +7,10 @@
     <link rel="manifest" href="../manifest.json">
     <link rel="stylesheet" href="../../../shared/ui/main-styles.css">
     <meta name="theme-color" content="#10b981">
-    <link rel="stylesheet" href="../../../shared/ui/navbar/navbar.css">
-    <script defer src="../../../shared/ui/navbar/navbar.js"></script>
 </head>
 </head>
 <body>
-    <div id="navbar-include"></div>
-    <script>fetch('../../../shared/ui/navbar/navbar.html').then(r=>r.text()).then(t=>{document.getElementById('navbar-include').innerHTML=t})</script>
-        <div class="app-container" style="margin-left:210px;">
+        <div class="app-container">
         <main class="main-content">
             <div class="page-container">
                 <!-- Header -->
@@ -74,7 +70,7 @@
         </main>
 
         <!-- Bottom Navigation -->
-    <nav class="bottom-nav" style="margin-left:180px;">
+    <nav class="bottom-nav">
             <a href="truck.html" class="nav-item active">
                 <div class="nav-icon truck-icon active">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

@@ -1,0 +1,349 @@
+{
+  "AA459VN": {
+    "licensePlate": "AA459VN",
+    "vehicleType": "Osobné Auto",
+    "model": "BMW z4",
+    "inServiceFrom": "2025-11-04",
+    "yearOfManufacture": 0,
+    "services": []
+  },
+  "AA450VN": {
+    "licensePlate": "AA450VN",
+    "vehicleType": "Osobné Auto",
+    "model": "BMW 545e",
+    "inServiceFrom": "2025-10-15",
+    "yearOfManufacture": 0,
+    "services": [
+      {
+        "name": "Technická kontrola (STK)",
+        "unit": "specificDate",
+        "norm": "17.10.2027",
+        "signal": 30,
+        "lastKm": 0
+      },
+      {
+        "name": "Emisná kontrola (EK)",
+        "unit": "specificDate",
+        "norm": "17.10.2027",
+        "signal": 30,
+        "lastKm": 0
+      },
+      {
+        "name": "Kontrola brźd",
+        "unit": "specificDate",
+        "norm": "02.11.2026",
+        "signal": 30,
+        "lastKm": 0
+      },
+      {
+        "name": "mýto  diaľničná známka ročná SK",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-11-06",
+        "lastKm": 0
+      }
+    ]
+  },
+  "EL449AR": {
+    "licensePlate": "EL449AR",
+    "vehicleType": "Osobné Auto",
+    "model": "Mercedes EQC",
+    "vin": "W1K2938901F018938",
+    "inServiceFrom": "2025-01-22",
+    "yearOfManufacture": 2020,
+    "services": [
+      {
+        "name": "Technická kontrola (STK)",
+        "unit": "specificDate",
+        "norm": "05.12.2026",
+        "signal": 30,
+        "lastKm": 0
+      },
+      {
+        "name": "Poistenie - zelená karta",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-08-16",
+        "lastKm": 0
+      },
+      {
+        "name": "mýto  diaľničná známka ročná SK",
+        "unit": "specificDate",
+        "norm": "21.01.2026",
+        "signal": 30,
+        "lastKm": 0
+      }
+    ]
+  },
+  "ZC324BL": {
+    "licensePlate": "ZC324BL",
+    "vehicleType": "Osobné Auto",
+    "model": "Mercedes Benz V-Klasse",
+    "vin": "WDF44781313098894",
+    "inServiceFrom": "2018-10-19",
+    "yearOfManufacture": 2015,
+    "services": [
+      {
+        "name": "Technická kontrola (STK)",
+        "unit": "year",
+        "norm": "2",
+        "signal": 30,
+        "lastDate": "2025-10-03",
+        "lastKm": 0
+      },
+      {
+        "name": "Emisná kontrola (EK)",
+        "unit": "year",
+        "norm": "2",
+        "signal": 30,
+        "lastDate": "2025-10-03",
+        "lastKm": 0
+      },
+      {
+        "name": "Výmena oleja v motorove",
+        "unit": "month",
+        "norm": "6",
+        "signal": 30,
+        "lastDate": "2025-03-27",
+        "lastKm": 0
+      },
+      {
+        "name": "Výmena oleja v prevodovke",
+        "unit": "km",
+        "norm": "120000",
+        "signal": 20000,
+        "lastDate": "2023-06-02",
+        "lastKm": 0
+      },
+      {
+        "name": "Výmena chladiacej zmesi",
+        "unit": "month",
+        "norm": "180",
+        "signal": 60,
+        "lastDate": "2023-06-02",
+        "lastKm": 0
+      },
+      {
+        "name": "Kontrola brźd",
+        "unit": "year",
+        "norm": "3",
+        "signal": 30,
+        "lastDate": "2024-07-31",
+        "lastKm": 0
+      },
+      {
+        "name": "Karta Eurowag",
+        "unit": "specificDate",
+        "norm": "31.07.2026",
+        "signal": 60,
+        "lastKm": 0
+      },
+      {
+        "name": "Karta AS24",
+        "unit": "specificDate",
+        "norm": "30.11.2027",
+        "signal": 30,
+        "lastKm": 0
+      },
+      {
+        "name": "Poistenie - zelená karta",
+        "unit": "year",
+        "norm": "1",
+        "signal": 14,
+        "lastDate": "2025-08-16",
+        "lastKm": 0
+      },
+      {
+        "name": "mýto  diaľničná známka ročná SK",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-01-31",
+        "lastKm": 0
+      }
+    ]
+  },
+  "ZC388BS": {
+    "licensePlate": "ZC388BS",
+    "vehicleType": "Osobné Auto",
+    "model": "Porsche Carrera",
+    "vin": "WP0ZZZ99ZXS642806",
+    "inServiceFrom": "2022-02-07",
+    "yearOfManufacture": 1999,
+    "services": [
+      {
+        "name": "Technická kontrola (STK)",
+        "unit": "year",
+        "norm": "2",
+        "signal": 30,
+        "lastDate": "2024-04-12",
+        "lastKm": 0
+      },
+      {
+        "name": "Emisná kontrola (EK)",
+        "unit": "year",
+        "norm": "2",
+        "signal": 30,
+        "lastDate": "2024-04-12",
+        "lastKm": 0
+      },
+      {
+        "name": "Výmena oleja v motorove",
+        "unit": "month",
+        "norm": "29",
+        "signal": 20,
+        "lastDate": "2022-02-16",
+        "lastKm": 0
+      },
+      {
+        "name": "Výmena chladiacej zmesi",
+        "unit": "year",
+        "norm": "3",
+        "signal": 30,
+        "lastDate": "2022-02-16",
+        "lastKm": 0
+      },
+      {
+        "name": "mýto  diaľničná známka ročná SK",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2024-05-01",
+        "lastKm": 0
+      }
+    ]
+  },
+  "ZC685BP": {
+    "licensePlate": "ZC685BP",
+    "vehicleType": "Osobné Auto",
+    "model": "Fiat Panda 312/PXG2B/P5E",
+    "vin": "ZFA31200003557038",
+    "inServiceFrom": "2020-11-03",
+    "yearOfManufacture": 2015,
+    "services": [
+      {
+        "name": "Technická kontrola (STK)",
+        "unit": "year",
+        "norm": "2",
+        "signal": 30,
+        "lastDate": "2024-10-01",
+        "lastKm": 0
+      },
+      {
+        "name": "Emisná kontrola (EK)",
+        "unit": "year",
+        "norm": "2",
+        "signal": 30,
+        "lastDate": "2024-10-01",
+        "lastKm": 0
+      },
+      {
+        "name": "Výmena oleja v motorove",
+        "unit": "month",
+        "norm": "14",
+        "signal": 15,
+        "lastDate": "2025-05-26",
+        "lastKm": 0
+      },
+      {
+        "name": "Výmena oleja v prevodovke",
+        "unit": "month",
+        "norm": "72",
+        "signal": 30,
+        "lastDate": "2022-03-30",
+        "lastKm": 0
+      },
+      {
+        "name": "Poistenie - zelená karta",
+        "unit": "specificDate",
+        "norm": "16.08.2024",
+        "signal": 14,
+        "lastDate": "2024-08-16",
+        "lastKm": 0
+      },
+      {
+        "name": "mýto  diaľničná známka ročná SK",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2024-01-31",
+        "lastKm": 0
+      }
+    ]
+  },
+  "ZH667CP": {
+    "licensePlate": "ZH667CP",
+    "vehicleType": "Osobné Auto",
+    "model": "BMW 5 GT",
+    "vin": "WBASP610X0C754184",
+    "inServiceFrom": "2014-06-15",
+    "yearOfManufacture": 2010,
+    "services": [
+      {
+        "name": "Technická kontrola (STK)",
+        "unit": "year",
+        "norm": "2",
+        "signal": 30,
+        "lastDate": "2024-04-02",
+        "lastKm": 0
+      },
+      {
+        "name": "Emisná kontrola (EK)",
+        "unit": "year",
+        "norm": "2",
+        "signal": 30,
+        "lastDate": "2024-04-02",
+        "lastKm": 0
+      },
+      {
+        "name": "Výmena oleja v motorove",
+        "unit": "year",
+        "norm": "1",
+        "signal": 15,
+        "lastDate": "2024-11-15",
+        "lastKm": 0
+      },
+      {
+        "name": "Výmena oleja v prevodovke",
+        "unit": "year",
+        "norm": "2",
+        "signal": 30,
+        "lastDate": "2024-06-25",
+        "lastKm": 0
+      },
+      {
+        "name": "Výmena oleja v diferenciáli",
+        "unit": "year",
+        "norm": "3",
+        "signal": 30,
+        "lastDate": "2023-07-20",
+        "lastKm": 0
+      },
+      {
+        "name": "Karta AS24",
+        "unit": "specificDate",
+        "norm": "30.11.2027",
+        "signal": 30,
+        "lastKm": 0
+      },
+      {
+        "name": "Poistenie - zelená karta",
+        "unit": "specificDate",
+        "norm": "03.11.2024",
+        "signal": 30,
+        "lastDate": "2024-11-03",
+        "lastKm": 0
+      },
+      {
+        "name": "mýto  diaľničná známka ročná SK",
+        "unit": "year",
+        "norm": "1",
+        "signal": 30,
+        "lastDate": "2025-01-31",
+        "lastKm": 0
+      }
+    ]
+  }
+}

@@ -189,11 +189,11 @@ body {
   flex-direction: column;
 }
 
-/* Desktop: shift main app to start from sidebar edge */
+/* Desktop: full width layout */
 @media (min-width: 901px) {
   .app-container {
-    margin-left: 200px !important;
-    width: calc(100% - 200px);
+    margin-left: 0;
+    width: 100%;
   }
 }
 
@@ -1090,11 +1090,11 @@ body {
   }
 }
 
-/* Make layout fill from sidebar (200px) to right on desktop */
+/* Make layout fill full width on desktop */
 @media (min-width: 901px) {
   .bottom-nav {
-    margin-left: 200px !important;
-    width: calc(100% - 200px);
+    margin-left: 0;
+    width: 100%;
   }
 }
 

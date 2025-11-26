@@ -1,7 +1,8 @@
 node_modules/
 serviceAccountKey.json
+**/serviceAccountKey.json
 *.log
 .DS_Store
 .env
 .env.local
-
+scripts/update_km/current_km.xls

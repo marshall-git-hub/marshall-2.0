@@ -5,6 +5,7 @@ class ServiceManager {
     this.vehicles = [];
     this.vehicleKms = {};
     this.predefinedServices = [];
+    this.vehiclesDataMap = {}; // Store full vehicle data to avoid redundant queries
     this.init();
   }
 
@@ -22,9 +23,19 @@ class ServiceManager {
       if (window.DatabaseService && window.db) {
         try {
           const vehiclesMap = await window.DatabaseService.getAllVehicles();
+          // Store full vehicle data map for use in loadServices()
+          this.vehiclesDataMap = vehiclesMap;
           const licensePlates = Object.keys(vehiclesMap);
           if (licensePlates.length > 0) {
-            this.vehicles = licensePlates.map(lp => ({ id: lp, name: lp, type: vehiclesMap[lp].type || 'vehicle' }));
+            this.vehicles = licensePlates.map(lp => {
+              const vehicle = vehiclesMap[lp];
+              return { 
+                id: lp, 
+                name: vehicle.licensePlate || lp, 
+                type: vehicle.type || vehicle.vehicleType || 'vehicle',
+                collectionSource: vehicle.collectionSource || ''
+              };
+            });
           }
         } catch (e) {
           // Derive from vehicles_km as a fallback
@@ -115,34 +126,120 @@ class ServiceManager {
         const defaultDaysReminder = 30;
 
         const vehicles = this.vehicles || [];
-        // Fetch per-vehicle services and compute due items
-        for (const vehicle of vehicles) {
+        
+        // Use already-loaded vehicle data to avoid redundant queries
+        // If vehiclesDataMap is available, use it; otherwise fall back to parallel queries
+        let vehicleInfoList = [];
+        
+        if (this.vehiclesDataMap && Object.keys(this.vehiclesDataMap).length > 0) {
+          // Use cached data - much faster!
+          vehicleInfoList = vehicles.map(vehicle => {
+            const licensePlate = vehicle.name || vehicle.id;
+            // Normalize license plate (remove spaces) to match the key format
+            const normalizedPlate = (licensePlate || '').replace(/\s+/g, '');
+            const vehicleData = this.vehiclesDataMap[normalizedPlate];
+            
+            if (!vehicleData) return null;
+            
+            return {
+              vehicle,
+              info: {
+                ...vehicleData,
+                licensePlate: vehicleData.licensePlate || normalizedPlate,
+                kilometers: this.getCurrentKm(normalizedPlate) ?? vehicleData.kilometers ?? vehicleData.currentKm ?? 0,
+                services: vehicleData.services || [],
+                collectionSource: vehicleData.collectionSource || vehicle.collectionSource || ''
+              }
+            };
+          }).filter(item => item !== null && item.info && item.info.services && item.info.services.length > 0);
+        } else {
+          // Fallback: fetch all vehicle info in parallel (still much faster than sequential)
+          const infoPromises = vehicles.map(async (vehicle) => {
+            const licensePlate = vehicle.name || vehicle.id;
+            try {
+              const info = await window.DatabaseService.getVehicleInfo(licensePlate);
+              return info ? { vehicle, info } : null;
+            } catch (e) {
+              return null;
+            }
+          });
+          
+          const results = await Promise.all(infoPromises);
+          vehicleInfoList = results.filter(item => item !== null && item.info && item.info.services && item.info.services.length > 0);
+        }
+        
+        // Process all vehicles with their info
+        for (const { vehicle, info } of vehicleInfoList) {
           const licensePlate = vehicle.name || vehicle.id;
-          let info = null;
-          try {
-            info = await window.DatabaseService.getVehicleInfo(licensePlate);
-          } catch (e) {
-            info = null;
-          }
-          if (!info || !info.services || info.services.length === 0) continue;
 
           const currentKm = this.getCurrentKm(licensePlate) ?? info.kilometers ?? 0;
+          
+          // Check collection source - only cars and other go to "personal"
+          const collectionSource = info.collectionSource || vehicle.collectionSource || '';
+          const isCarOrOther = collectionSource === 'cars' || collectionSource === 'other';
 
           for (const svc of info.services) {
-            const type = svc.type || 'km';
-            const interval = svc.interval || 0;
-            const lastService = svc.lastService || null;
-            const reminderKm = svc.reminderKm != null ? svc.reminderKm : defaultKmReminder;
-            const reminderDays = svc.reminderDays != null ? svc.reminderDays : defaultDaysReminder;
+            // Normalize service format - handle both old (unit/norm/lastDate/lastKm) and new (type/interval/lastService) formats
+            let type = svc.type || svc.unit || 'km';
+            let interval = svc.interval || svc.norm || 0;
+            let lastService = svc.lastService || null;
+            
+            // Convert old format to new format
+            if (!lastService && (svc.lastDate || svc.lastKm !== undefined)) {
+              lastService = {
+                date: svc.lastDate || null,
+                km: svc.lastKm !== undefined ? svc.lastKm : (svc.lastService?.km || 0)
+              };
+            }
+            
+            // Handle specificDate format (norm contains date string like "04.05.2026" or "17.10.2027")
+            if ((type === 'specificDate' || type === 'specificdate') && svc.norm) {
+              // Parse date from norm (format: "DD.MM.YYYY")
+              const dateStr = String(svc.norm).trim();
+              const parts = dateStr.split('.');
+              if (parts.length === 3) {
+                const day = parseInt(parts[0], 10);
+                const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
+                const year = parseInt(parts[2], 10);
+                if (!isNaN(day) && !isNaN(month) && !isNaN(year) && month >= 0 && month < 12) {
+                  const specificDate = new Date(year, month, day);
+                  if (!isNaN(specificDate.getTime())) {
+                    lastService = { date: specificDate.toISOString().split('T')[0] };
+                    type = 'specificDate';
+                    interval = 0; // specificDate doesn't use interval
+                  }
+                }
+              }
+            }
+            
+            // Get reminder values
+            const reminderKm = svc.reminderKm != null ? svc.reminderKm : (svc.signal && type === 'km' ? svc.signal : defaultKmReminder);
+            const reminderDays = svc.reminderDays != null ? svc.reminderDays : (svc.signal && type !== 'km' ? svc.signal : defaultDaysReminder);
 
-            if (!interval || !lastService) continue; // cannot compute
+            // Skip if we can't compute (no interval for non-specificDate, or no lastService)
+            if (type !== 'specificDate' && !interval) continue;
+            if (!lastService) continue;
 
-            const calc = window.DatabaseService.calculateNextService(lastService, interval, currentKm, type);
+            // Get timeUnit from service data (used for year/month/day calculations)
+            // Flotila stores this as 'years', 'months', or 'days'
+            let timeUnit = svc.timeUnit || null;
+            // If timeUnit is not set, try to infer from old unit field
+            if (!timeUnit && svc.unit) {
+              if (svc.unit === 'year') timeUnit = 'years';
+              else if (svc.unit === 'month') timeUnit = 'months';
+              else if (svc.unit === 'day') timeUnit = 'days';
+            }
+
+            const calc = window.DatabaseService.calculateNextService(lastService, interval, currentKm, type, timeUnit);
             if (!calc) continue;
 
             // Decide visibility based on reminder thresholds
             let shouldShow = false;
-            let entry = { id: `${licensePlate}_${svc.name}`, vehicle: licensePlate };
+            let entry = { 
+              id: `${licensePlate}_${svc.name}`, 
+              vehicle: licensePlate,
+              originalName: svc.name || '' // Store original name for STK/EK identification
+            };
 
             if (type === 'km') {
               const remainingKm = calc.remainingKm;
@@ -153,7 +250,7 @@ class ServiceManager {
                 entry.note = `Zostáva ${remainingKm.toLocaleString()} km`;
                 entry.priority = remainingKm <= 0 ? 'high' : (remainingKm <= Math.max(1, Math.floor(reminderKm / 2)) ? 'medium' : 'low');
               }
-            } else if (type === 'date') {
+            } else if (type === 'date' || type === 'specificDate' || type === 'day' || type === 'month' || type === 'year') {
               const daysRemaining = calc.daysRemaining;
               const nextDate = calc.nextDate;
               if (typeof daysRemaining === 'number') {
@@ -166,7 +263,14 @@ class ServiceManager {
             if (!shouldShow) continue;
 
             // Determine UI category and description
-            const category = svc.category || this.mapServiceToCategory(svc.name || '');
+            let category = svc.category || this.mapServiceToCategory(svc.name || '');
+            
+            // If vehicle is from cars or other collection, move services to "personal" category
+            // Except for STK and EK which should stay in their category for combination
+            if (isCarOrOther && category !== 'stk' && category !== 'l-certificate') {
+              category = 'personal';
+            }
+            
             if (!buckets[category]) buckets[category] = [];
 
             if (category === 'other' || category === 'personal') {
@@ -177,6 +281,10 @@ class ServiceManager {
             buckets[category].push(entry);
           }
         }
+
+        // Combine STK and EK services for the same vehicle
+        // Use the earlier date (closer to being past)
+        this.combineSTKAndEK(buckets);
 
         this.services = buckets;
       } else {
@@ -654,7 +762,7 @@ class ServiceManager {
       // Create L-Certifikát section
       currentRow = this.createExcelSection(ws, 'B', 'D', currentRow,
         ['L-Certifikát', 'Datum', 'Poznamka'],
-        this.services.lCert || [], 'l_certifikat', 'TableStyleMedium11');
+        this.services['l-certificate'] || [], 'l_certifikat', 'TableStyleMedium11');
       
       // Reset to column F for second column
       currentRow = 2;
@@ -662,32 +770,32 @@ class ServiceManager {
       // Create Motor. olej section
       currentRow = this.createExcelSection(ws, 'F', 'H', currentRow,
         ['Motor. olej', 'Kilometrov', 'Poznamka'],
-        this.services.engineOil || [], 'motor_olej', 'TableStyleMedium9');
+        this.services['engine-oil'] || [], 'motor_olej', 'TableStyleMedium9');
       
       // Create Diferenciálny olej section
       currentRow = this.createExcelSection(ws, 'F', 'H', currentRow,
         ['Difer. olej', 'Kilometrov', 'Poznamka'],
-        this.services.diffOil || [], 'difer_olej', 'TableStyleMedium9');
+        this.services['differential-oil'] || [], 'difer_olej', 'TableStyleMedium9');
       
       // Create Prevodovka olej section
       currentRow = this.createExcelSection(ws, 'F', 'H', currentRow,
         ['Prevodovka olej', 'Kilometrov', 'Poznamka'],
-        this.services.transmissionOil || [], 'prevodovka_olej', 'TableStyleMedium9');
+        this.services['transmission-oil'] || [], 'prevodovka_olej', 'TableStyleMedium9');
       
       // Create Ročná tahač section
       currentRow = this.createExcelSection(ws, 'F', 'H', currentRow,
         ['Ročná tahač', 'Datum', 'Poznamka'],
-        this.services.annualTractor || [], 'rocna_tahac', 'TableStyleMedium11');
+        this.services['annual-tractor'] || [], 'rocna_tahac', 'TableStyleMedium11');
       
       // Create Ročná náves section
       currentRow = this.createExcelSection(ws, 'F', 'H', currentRow,
         ['Ročná náves', 'Datum', 'Poznamka'],
-        this.services.annualTrailer || [], 'rocna_naves', 'TableStyleMedium11');
+        this.services['annual-trailer'] || [], 'rocna_naves', 'TableStyleMedium11');
       
       // Create Kontrola bŕzd section
       currentRow = this.createExcelSection(ws, 'F', 'H', currentRow,
         ['Kontrola Bŕzd', 'Datum', 'Poznamka'],
-        this.services.brakeCheck || [], 'kontrola_brzd', 'TableStyleMedium9');
+        this.services['brake-check'] || [], 'kontrola_brzd', 'TableStyleMedium9');
       
       // Reset to column J for third column
       currentRow = 2;
@@ -856,17 +964,139 @@ class ServiceManager {
  
   mapServiceToCategory(name) {
     const n = String(name || '').toLowerCase();
-    if (n.includes('stk') || n.includes('ek')) return 'stk';
+    
+    // STK and EK
+    if (n.includes('stk') || n.includes('technická kontrola')) return 'stk';
+    if (n.includes('ek') || n.includes('emisná kontrola')) return 'stk';
+    
+    // Tachograph
     if (n.includes('tach')) return 'tachograph';
+    
+    // Calibration
     if (n.includes('ciach')) return 'calibration';
+    
+    // L-Certificate
     if (n.includes('l-cert')) return 'l-certificate';
+    
+    // DPF - check before other oil services
+    if (n.includes('dpf') || n.includes('výmena dpf') || n.includes('čistenie dpf')) return 'dpf';
+    
+    // Engine oil
     if (n.includes('motor') && n.includes('olej')) return 'engine-oil';
-    if (n.includes('difer')) return 'differential-oil';
-    if (n.includes('prevod')) return 'transmission-oil';
+    
+    // Differential oil
+    if (n.includes('difer') && n.includes('olej')) return 'differential-oil';
+    
+    // Transmission oil
+    if (n.includes('prevod') && n.includes('olej')) return 'transmission-oil';
+    
+    // Annual tractor
     if (n.includes('roč') && (n.includes('taha') || n.includes('ťaha'))) return 'annual-tractor';
+    
+    // Annual trailer
     if (n.includes('roč') && (n.includes('náv') || n.includes('naves'))) return 'annual-trailer';
-    if (n.includes('brzd')) return 'brake-check';
+    
+    // Brake check - check for various brake-related terms
+    // Handle "Kontrola brźd" - check for "kontrola" + "br" pattern (any character after br)
+    // This catches: "kontrola brzd", "kontrola brźd", "kontrola bŕzd", etc.
+    if (n.includes('kontrola') && n.includes('br')) {
+      // Make sure it's actually about brakes (has br followed by z, ź, ŕ, or d)
+      if (n.match(/br[źzdŕ]/) || n.includes('brzd')) return 'brake-check';
+    }
+    // Also check standalone brake terms anywhere in the string
+    if (n.includes('brzd') || n.includes('brźd') || n.includes('bŕzd')) return 'brake-check';
+    
     return 'other';
+  }
+
+  // Combine STK and EK services for the same vehicle, using the earlier date
+  combineSTKAndEK(buckets) {
+    const stkServices = buckets.stk || [];
+    
+    // Group services by vehicle, identifying STK vs EK by original service name
+    const vehicleMap = new Map();
+    
+    stkServices.forEach(service => {
+      const vehicle = service.vehicle;
+      const serviceName = (service.originalName || '').toLowerCase();
+      
+      // Identify if this is STK or EK
+      const isSTK = serviceName.includes('stk') || serviceName.includes('technická');
+      const isEK = serviceName.includes('ek') || serviceName.includes('emisná');
+      
+      if (!vehicleMap.has(vehicle)) {
+        vehicleMap.set(vehicle, { stk: null, ek: null, other: [] });
+      }
+      
+      const entry = vehicleMap.get(vehicle);
+      if (isSTK && !entry.stk) {
+        entry.stk = service;
+      } else if (isEK && !entry.ek) {
+        entry.ek = service;
+      } else {
+        // Not clearly STK or EK, or already have both - keep as other
+        entry.other.push(service);
+      }
+    });
+    
+    // Now combine STK and EK for vehicles that have both
+    const combined = [];
+    vehicleMap.forEach((entry, vehicle) => {
+      if (entry.stk && entry.ek) {
+        // Both STK and EK exist - combine them using the earlier date
+        const stkDate = entry.stk.date ? new Date(entry.stk.date) : null;
+        const ekDate = entry.ek.date ? new Date(entry.ek.date) : null;
+        
+        let combinedDate;
+        let combinedPriority = entry.stk.priority || 'medium';
+        
+        if (stkDate && ekDate) {
+          // Use the earlier date (closer to being past)
+          combinedDate = stkDate < ekDate ? stkDate : ekDate;
+          // Use higher priority (more urgent)
+          const priorityOrder = { high: 3, medium: 2, low: 1 };
+          const stkPriority = priorityOrder[entry.stk.priority || 'medium'] || 2;
+          const ekPriority = priorityOrder[entry.ek.priority || 'medium'] || 2;
+          combinedPriority = stkPriority > ekPriority ? entry.stk.priority : entry.ek.priority;
+        } else if (stkDate) {
+          combinedDate = stkDate;
+        } else if (ekDate) {
+          combinedDate = ekDate;
+        } else {
+          // No dates, keep both separate
+          combined.push(entry.stk);
+          combined.push(entry.ek);
+          combined.push(...entry.other);
+          return;
+        }
+        
+        // Create combined entry
+        const combinedEntry = {
+          id: `${vehicle}_STK_EK`,
+          vehicle: vehicle,
+          date: combinedDate.toISOString().split('T')[0],
+          priority: combinedPriority,
+          note: 'STK + EK'
+        };
+        
+        combined.push(combinedEntry);
+        combined.push(...entry.other);
+      } else if (entry.stk) {
+        // Only STK
+        combined.push(entry.stk);
+        combined.push(...entry.other);
+      } else if (entry.ek) {
+        // Only EK
+        combined.push(entry.ek);
+        combined.push(...entry.other);
+      } else {
+        // Neither STK nor EK
+        combined.push(...entry.other);
+      }
+    });
+    
+    // Update the stk bucket
+    buckets.stk = combined;
   }
  
 }

@@ -5,26 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Flotila</title>
   <link rel="stylesheet" href="../../../shared/ui/main-styles.css">
-  <link rel="stylesheet" href="../../../shared/ui/navbar/navbar.css">
   <link rel="stylesheet" href="flotila.css">
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
   
-  <script defer src="../../../shared/ui/navbar/navbar.js"></script>
   <script defer src="../../../main/config/firebase-config.js"></script>
   <script defer src="../../../shared/services/database-service.js"></script>
+  <script defer src="../../../modules/oleje/logic/oil-database.js"></script>
+  <script defer src="../../../modules/diely/logic/diely-database.js"></script>
   <!-- SheetJS for reading XLS in browser -->
   <script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <!-- Cache-bust to ensure latest script loads -->
-  <script defer src="../populate-flotila-data.js?v=4"></script>
   <script defer src="../logic/flotila.js"></script>
 </head>
 <body>
-  <div id="navbar"></div>
-  
-  <div class="app-container" style="margin-left:210px;">
+  <div class="app-container">
     <main class="main-content">
       <div class="page-container">
         <!-- Header -->
@@ -33,6 +29,12 @@
           <div class="header-content">
             <div class="header-info">
               <div class="header-icon-section">
+                <a href="../../../pages/dashboard/index.html" class="back-to-dashboard-btn" title="Späť na hlavné menu">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M15 18l-6-6 6-6"/>
+                    <path d="M9 12h12"/>
+                  </svg>
+                </a>
                 <div class="header-icon storage-icon">
                   <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/>
@@ -84,16 +86,6 @@
                 <div class="form-group">
                   <input type="text" id="flotilaSearch" placeholder="Hľadať podľa SPZ">
                 </div>
-                <button id="populate-real-data-btn" class="populate-data-btn" title="Naplniť databázu skutočnými dátami z ccc.xls">
-                  <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                    <polyline points="14,2 14,8 20,8"/>
-                    <line x1="16" y1="13" x2="8" y2="13"/>
-                    <line x1="16" y1="17" x2="8" y2="17"/>
-                    <polyline points="10,9 9,9 8,9"/>
-                  </svg>
-                  Naplniť databázu
-                </button>
               </div>
               <div id="pair-list" class="pair-list"></div>
               <div id="unassigned-trailers" class="unassigned-trailers"></div>
@@ -110,6 +102,24 @@
         </div>
       </div>
     </main>
+  </div>
+
+  <!-- Mobile Modal for Vehicle Details (Mobile Only) -->
+  <div id="mobile-vehicle-modal" class="mobile-vehicle-modal">
+    <div class="mobile-vehicle-modal-overlay"></div>
+    <div class="mobile-vehicle-modal-content">
+      <div class="mobile-vehicle-modal-header">
+        <button id="mobile-vehicle-modal-close" class="mobile-vehicle-modal-close">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div id="mobile-vehicle-modal-body" class="mobile-vehicle-modal-body">
+        <!-- Content will be populated here -->
+      </div>
+    </div>
   </div>
 <script src="../../../shared/services/session-guard.js"></script>`n</body>
 </html>
