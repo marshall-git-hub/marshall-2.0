@@ -14,7 +14,7 @@
         <main class="main-content">
             <div class="page-container">
                 <div class="module-top-nav">
-                    <a class="module-back-link" href="/pages/dashboard/index.html">
+                    <a class="module-back-link" href="../../../pages/dashboard/index.html">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M15 18l-6-6 6-6"/>
                             <path d="M9 12h12"/>
@@ -71,6 +71,18 @@
                         <label for="filterSearch">Vyhľadávanie</label>
                         <input type="text" id="filterSearch" placeholder="Hľadať podľa názvu, typu, rozmeru, ID...">
                     </div>
+                </div>
+
+                <!-- Global Search Results (Sklad + Autá + Prívesy) -->
+                <div class="section" id="globalSearchSection" style="display:none; margin-bottom: 1.5rem;">
+                    <div class="section-header">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="7"></circle>
+                            <line x1="16.65" y1="16.65" x2="21" y2="21"></line>
+                        </svg>
+                        <h2>Výsledky vyhľadávania (sklad + vozidlá)</h2>
+                    </div>
+                    <div id="globalSearchList" class="tire-grid"></div>
                 </div>
 
                 <!-- Available Tires Section -->

@@ -154,37 +154,8 @@ class FlotilaManager {
 
   // Helper to get the correct FLOTILA collection reference for a vehicle
   _getFlotilaCollectionForVehicle(vehicleOrPlate) {
-    // First, try to determine by checking which cache the vehicle is in (most reliable)
-    if (typeof vehicleOrPlate === 'string') {
-      // It's a license plate string - check caches directly
-      const plate = vehicleOrPlate;
-      if (this.trailers[plate]) {
-        return this._flotilaTrailersCollection();
-      } else if (this.cars[plate]) {
-        return this._flotilaCarsCollection();
-      } else if (this.other[plate]) {
-        return this._flotilaOtherCollection();
-      } else if (this.trucks[plate]) {
-        return this._flotilaTrucksCollection();
-      }
-    } else {
-      // It's a vehicle object - check which cache it's in by license plate
-      const plate = vehicleOrPlate?.licensePlate;
-      if (plate) {
-        if (this.trailers[plate]) {
-          return this._flotilaTrailersCollection();
-        } else if (this.cars[plate]) {
-          return this._flotilaCarsCollection();
-        } else if (this.other[plate]) {
-          return this._flotilaOtherCollection();
-        } else if (this.trucks[plate]) {
-          return this._flotilaTrucksCollection();
-        }
-      }
-    }
-    
-    // Fallback to category/type check if not found in cache
     let category = 'truck';
+    
     if (typeof vehicleOrPlate === 'string') {
       // It's a plate, find the vehicle
       const vehicle = this.trucks[vehicleOrPlate] || this.trailers[vehicleOrPlate] || this.cars[vehicleOrPlate] || this.other[vehicleOrPlate];
@@ -203,7 +174,7 @@ class FlotilaManager {
       } else if (vehicleOrPlate?.vehicleType === 'other') {
         category = 'other';
       } else {
-        category = vehicleOrPlate?.category || vehicleOrPlate?.type || 'truck';
+        category = vehicleOrPlate?.category || 'truck';
       }
     }
     
@@ -902,9 +873,7 @@ class FlotilaManager {
 
     if (!vehicle) return;
 
-    // Ensure category is set correctly - use type if category doesn't exist
-    const category = vehicle.category || vehicle.vehicleType || type;
-    this.selectedVehicle = { ...vehicle, type, category };
+    this.selectedVehicle = { ...vehicle, type };
     
     // Services should already be loaded with the vehicle data from TIRES collection
     // If not present, initialize empty arrays
@@ -5043,95 +5012,6 @@ class FlotilaManager {
     }
   }
 
-  // Sync selectedVehicle back to the cache (trucks, trailers, etc.)
-  _syncSelectedVehicleToCache() {
-    if (!this.selectedVehicle) return;
-    
-    const plate = this.selectedVehicle.licensePlate;
-    const normalizedPlate = this.normalizeLicensePlate(plate);
-    
-    // Try to find the vehicle in all caches
-    let cachedVehicle = null;
-    
-    // Check trucks
-    cachedVehicle = Object.values(this.trucks).find(v => 
-      this.normalizeLicensePlate(v.licensePlate) === normalizedPlate
-    );
-    if (cachedVehicle) {
-      // Update services and history in the cached vehicle
-      if (this.selectedVehicle.services) {
-        cachedVehicle.services = this.selectedVehicle.services;
-      }
-      if (this.selectedVehicle.history) {
-        cachedVehicle.history = this.selectedVehicle.history;
-      }
-      return;
-    }
-    
-    // Check trailers
-    cachedVehicle = Object.values(this.trailers).find(v => 
-      this.normalizeLicensePlate(v.licensePlate) === normalizedPlate
-    );
-    if (cachedVehicle) {
-      if (this.selectedVehicle.services) {
-        cachedVehicle.services = this.selectedVehicle.services;
-      }
-      if (this.selectedVehicle.history) {
-        cachedVehicle.history = this.selectedVehicle.history;
-      }
-      return;
-    }
-    
-    // Check cars
-    cachedVehicle = Object.values(this.cars).find(v => 
-      this.normalizeLicensePlate(v.licensePlate) === normalizedPlate
-    );
-    if (cachedVehicle) {
-      if (this.selectedVehicle.services) {
-        cachedVehicle.services = this.selectedVehicle.services;
-      }
-      if (this.selectedVehicle.history) {
-        cachedVehicle.history = this.selectedVehicle.history;
-      }
-      return;
-    }
-    
-    // Check other
-    cachedVehicle = Object.values(this.other).find(v => 
-      this.normalizeLicensePlate(v.licensePlate) === normalizedPlate
-    );
-    if (cachedVehicle) {
-      if (this.selectedVehicle.services) {
-        cachedVehicle.services = this.selectedVehicle.services;
-      }
-      if (this.selectedVehicle.history) {
-        cachedVehicle.history = this.selectedVehicle.history;
-      }
-    }
-  }
-
-  // Remove undefined values from an object (Firebase doesn't allow undefined)
-  _removeUndefinedValues(obj) {
-    if (obj === null || typeof obj !== 'object') {
-      return obj;
-    }
-    
-    if (Array.isArray(obj)) {
-      return obj.map(item => this._removeUndefinedValues(item));
-    }
-    
-    const cleaned = {};
-    for (const key in obj) {
-      if (obj.hasOwnProperty(key)) {
-        const value = obj[key];
-        if (value !== undefined) {
-          cleaned[key] = this._removeUndefinedValues(value);
-        }
-      }
-    }
-    return cleaned;
-  }
-
   // Save vehicle data to database
   async saveVehicleData() {
     if (!this.selectedVehicle) return;
@@ -5159,14 +5039,7 @@ class FlotilaManager {
       
       // Update services if they exist
       if (this.selectedVehicle.services) {
-        // Create a deep copy to ensure all updates are included
-        updateData.services = JSON.parse(JSON.stringify(this.selectedVehicle.services));
-        console.log('Saving services to database:', updateData.services.map(s => ({
-          name: s.name,
-          lastKm: s.lastKm,
-          lastDate: s.lastDate,
-          lastService: s.lastService
-        })));
+        updateData.services = this.selectedVehicle.services;
       }
       
       // Update history if it exists
@@ -5174,43 +5047,24 @@ class FlotilaManager {
         updateData.history = this.selectedVehicle.history;
       }
       
-      // Remove undefined values before saving (Firebase doesn't allow undefined)
-      const cleanedData = this._removeUndefinedValues(updateData);
-      
       // Save to FLOTILA collection based on vehicle category
-      if (Object.keys(cleanedData).length > 0) {
+      if (Object.keys(updateData).length > 0) {
         const plate = this.selectedVehicle.licensePlate;
         const normalizedPlate = this.normalizeLicensePlate(plate);
+        const category = this.selectedVehicle.category || 'truck';
         
-        // Determine collection by checking which cache the vehicle is in (most reliable)
         let collection;
-        if (this.trailers[plate]) {
-          // Vehicle exists in trailers cache
+        if (category === 'trailer') {
           collection = this._flotilaTrailersCollection();
-        } else if (this.cars[plate]) {
-          // Vehicle exists in cars cache
+        } else if (category === 'car') {
           collection = this._flotilaCarsCollection();
-        } else if (this.other[plate]) {
-          // Vehicle exists in other cache
+        } else if (category === 'other') {
           collection = this._flotilaOtherCollection();
         } else {
-          // Fallback to category/type check, or default to trucks
-          const category = this.selectedVehicle.category || this.selectedVehicle.type || this.selectedVehicle.vehicleType || 'truck';
-          if (category === 'trailer') {
-            collection = this._flotilaTrailersCollection();
-          } else if (category === 'car') {
-            collection = this._flotilaCarsCollection();
-          } else if (category === 'other') {
-            collection = this._flotilaOtherCollection();
-          } else {
-            collection = this._flotilaTrucksCollection();
-          }
+          collection = this._flotilaTrucksCollection();
         }
         
-        await collection.doc(normalizedPlate).set(cleanedData, { merge: true });
-        
-        // Sync the selectedVehicle back to cache after successful save
-        this._syncSelectedVehicleToCache();
+        await collection.doc(normalizedPlate).set(updateData, { merge: true });
       }
       
       // Don't update vehicles_km here - it should only be updated explicitly via updateWorkCurrentKm
@@ -5370,7 +5224,7 @@ class FlotilaManager {
     }
     this.selectedVehicle.history.push(historyEntry);
     
-    // Update services with completion data BEFORE updating selectedVehicle reference
+    // Update services with completion data
     completedItems.forEach(item => {
       this.updateServiceLastService(item.name, completionDate, historyEntry.kilometers);
     });
@@ -5384,10 +5238,7 @@ class FlotilaManager {
     }
     
     // Update the selectedVehicle reference to ensure consistency
-    // Preserve category to ensure correct collection is used when saving
-    // Note: services array is updated in-place by updateServiceLastService, so the reference persists
-    const category = this.selectedVehicle.category || this.selectedVehicle.type || this.selectedVehicle.vehicleType;
-    this.selectedVehicle = { ...this.selectedVehicle, category };
+    this.selectedVehicle = { ...this.selectedVehicle };
     
     // Save to database first
     await Promise.all([
@@ -5543,25 +5394,10 @@ class FlotilaManager {
 
   // Update service last service data
   updateServiceLastService(serviceName, date, kilometers) {
-    if (!this.selectedVehicle || !this.selectedVehicle.services) {
-      console.warn('updateServiceLastService: No selectedVehicle or services array');
-      return;
-    }
+    if (!this.selectedVehicle.services) return;
     
-    // Try exact match first
-    let service = this.selectedVehicle.services.find(s => s.name === serviceName);
-    
-    // If not found, try case-insensitive match
-    if (!service) {
-      const normalizedName = (serviceName || '').trim().toLowerCase();
-      service = this.selectedVehicle.services.find(s => 
-        (s.name || '').trim().toLowerCase() === normalizedName
-      );
-    }
-    
+    const service = this.selectedVehicle.services.find(s => s.name === serviceName);
     if (service) {
-      console.log(`Updating service interval for: ${service.name}`, { date, kilometers });
-      
       // Update both lastService (for backward compatibility) and lastKm/lastDate (new structure)
       service.lastService = {
         date: date,
@@ -5588,108 +5424,34 @@ class FlotilaManager {
       } else {
         service.lastDate = date;
       }
-      
-      // Also update the service in the cached vehicle object to keep it in sync
-      const plate = this.selectedVehicle.licensePlate;
-      const cachedVehicle = this.trucks[plate] || this.trailers[plate] || this.cars[plate] || this.other[plate];
-      if (cachedVehicle && cachedVehicle.services) {
-        // Try exact match first, then case-insensitive
-        let cachedService = cachedVehicle.services.find(s => s.name === serviceName);
-        if (!cachedService) {
-          const normalizedName = (serviceName || '').trim().toLowerCase();
-          cachedService = cachedVehicle.services.find(s => 
-            (s.name || '').trim().toLowerCase() === normalizedName
-          );
-        }
-        if (cachedService) {
-          cachedService.lastService = service.lastService;
-          cachedService.lastKm = service.lastKm;
-          cachedService.lastDate = service.lastDate;
-          console.log(`Updated cached service: ${cachedService.name}`);
-        } else {
-          console.warn(`Service ${serviceName} not found in cached vehicle`);
-        }
-      }
-      
-      console.log(`Service interval updated successfully for: ${service.name}`, {
-        lastKm: service.lastKm,
-        lastDate: service.lastDate,
-        lastService: service.lastService
-      });
-    } else {
-      console.warn(`Service not found: ${serviceName}. Available services:`, 
-        this.selectedVehicle.services.map(s => s.name));
     }
   }
 
   // Recalculate all services' lastService from history items
-  // Only resets and recalculates services that appear in history entries
-  // Services not in history keep their existing lastService data
   recalculateServicesLastServiceFromHistory() {
     if (!this.selectedVehicle) return;
     const services = this.selectedVehicle.services || [];
     const history = this.selectedVehicle.history || [];
 
-    // First, collect all service names that appear in history
-    const servicesInHistory = new Set();
-    history.forEach(entry => {
-      const items = Array.isArray(entry.items) ? entry.items : [];
-      items.forEach(item => {
-        if (item && item.name) {
-          servicesInHistory.add(item.name);
-        }
-      });
-    });
-
-    // Only reset lastService for services that appear in history
-    // Services not in history keep their existing lastService data
+    // Reset lastService, lastKm, and lastDate for all services
     services.forEach(svc => {
-      if (servicesInHistory.has(svc.name)) {
-        // This service appears in history, so reset it and it will be recalculated
-        if (!svc.lastService) {
-          svc.lastService = {};
-        } else {
-          delete svc.lastService.date;
-          delete svc.lastService.km;
-        }
-        delete svc.lastKm;
-        delete svc.lastDate;
-      }
-      // If service doesn't appear in history, keep its existing lastService data unchanged
+      if (!svc.lastService) svc.lastService = {};
+      svc.lastService.date = undefined;
+      svc.lastService.km = undefined;
+      svc.lastKm = undefined;
+      svc.lastDate = undefined;
     });
 
     // Build a map of latest (by date) history per service name
     history.forEach(entry => {
-      // Parse entry date safely
-      const dateSource = entry.date || entry.completedAt;
-      if (!dateSource) return; // Skip entries without dates
-      
-      const entryDate = new Date(dateSource);
-      if (isNaN(entryDate.getTime())) {
-        console.warn('Invalid date in history entry:', dateSource);
-        return; // Skip entries with invalid dates
-      }
-      
+      const entryDate = new Date(entry.date || entry.completedAt);
       const entryKm = entry.kilometers || 0;
       const items = Array.isArray(entry.items) ? entry.items : [];
       items.forEach(item => {
-        if (!item || !item.name) return; // Skip invalid items
         const svc = services.find(s => s.name === item.name);
         if (!svc) return;
-        
         const prevDateRaw = svc.lastService?.date;
-        let prevDate = null;
-        if (prevDateRaw) {
-          if (prevDateRaw.toDate) {
-            prevDate = prevDateRaw.toDate();
-          } else {
-            prevDate = new Date(prevDateRaw);
-          }
-          if (isNaN(prevDate.getTime())) {
-            prevDate = null; // Invalid previous date, ignore it
-          }
-        }
-        
+        let prevDate = prevDateRaw ? (prevDateRaw.toDate ? prevDateRaw.toDate() : new Date(prevDateRaw)) : null;
         if (!prevDate || entryDate > prevDate) {
           const dateStr = entryDate.toISOString().split('T')[0]; // YYYY-MM-DD format
           svc.lastService = { date: entryDate.toISOString(), km: entryKm };
@@ -5698,10 +5460,6 @@ class FlotilaManager {
         }
       });
     });
-    
-    // Create a new services array to ensure reference change is detected
-    // This helps ensure UI updates properly
-    this.selectedVehicle.services = services.map(svc => ({ ...svc }));
   }
 
   // Update work session UI without reloading from database
@@ -5940,22 +5698,11 @@ class FlotilaManager {
     if (!this.selectedVehicle || !this.selectedVehicle.history) return;
     if (!confirm('Naozaj chcete vymazať celý záznam histórie?')) return;
 
-    // Remove the history entry
     this.selectedVehicle.history = (this.selectedVehicle.history || []).filter(e => e.id !== entryId);
-    
-    // Recalculate services' lastService from remaining history
     this.recalculateServicesLastServiceFromHistory();
-    
-    // Update the selectedVehicle reference to ensure UI picks up changes
-    this.selectedVehicle = { ...this.selectedVehicle };
-    
-    // Save to database (this also syncs to cache)
     await this.saveVehicleData();
-    
-    // Update UI after recalculation and save are complete
     this.updateHistoryUI();
     this.updateServicesUI();
-    
     this.showNotification('Záznam histórie bol vymazaný', 'info');
   }
 
@@ -5969,7 +5716,6 @@ class FlotilaManager {
 
     if (!confirm('Naozaj chcete odstrániť túto položku z vykonanej práce?')) return;
 
-    // Remove the item from the entry
     entry.items.splice(itemIndex, 1);
     if (entry.items.length === 0) {
       // Remove whole entry if no items remain
@@ -5981,17 +5727,9 @@ class FlotilaManager {
 
     // Recalculate lastService fields from updated history
     this.recalculateServicesLastServiceFromHistory();
-    
-    // Update the selectedVehicle reference to ensure UI picks up changes
-    this.selectedVehicle = { ...this.selectedVehicle };
-    
-    // Save to database (this also syncs to cache)
     await this.saveVehicleData();
-    
-    // Update UI after recalculation and save are complete
     this.updateHistoryUI();
     this.updateServicesUI();
-    
     this.showNotification('Položka bola odstránená z histórie', 'info');
   }
 

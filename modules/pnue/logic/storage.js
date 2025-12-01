@@ -2,6 +2,12 @@
 // DatabaseService is now in shared/services/database-service.js
 let tires = []
 
+// Data for global search (tires on vehicles)
+let trucksMap = {}
+let trailersMap = {}
+let truckSlotsByVehicle = {}
+let trailerSlotsByVehicle = {}
+
 // Load tires from database
 async function loadTires() {
   try {
@@ -47,16 +53,51 @@ const closeMoveTireModal = document.getElementById("closeMoveTireModal")
 const cancelMoveTire = document.getElementById("cancelMoveTire")
 const moveTireIdDisplay = document.getElementById("moveTireIdDisplay")
 const storageOptionBtns = document.querySelectorAll("#moveTireModal .storage-option-btn")
+// Global search DOM elements (sklad + vozidlá)
+const globalSearchSection = document.getElementById("globalSearchSection")
+const globalSearchList = document.getElementById("globalSearchList")
 
 // Initialize
 document.addEventListener("DOMContentLoaded", async () => {
+  // Najprv načítaj gumy v sklade
   await loadTires()
+
+  // Potom načítaj informácie o vozidlách a slotoch, aby globálne vyhľadávanie vedelo,
+  // kde sú gumy nahodené (ťahače + návesy)
+  try {
+    const [trucks, trailers, truckSlots, trailerSlots] = await Promise.all([
+      DatabaseService.getTrucks(),
+      DatabaseService.getTrailers(),
+      DatabaseService.getAllTireSlots('truck'),
+      DatabaseService.getAllTireSlots('trailer')
+    ])
+
+    trucksMap = {}
+    trucks.forEach(t => {
+      trucksMap[t.id] = t
+    })
+
+    trailersMap = {}
+    trailers.forEach(t => {
+      trailersMap[t.id] = t
+    })
+
+    truckSlotsByVehicle = truckSlots || {}
+    trailerSlotsByVehicle = trailerSlots || {}
+  } catch (e) {
+    console.warn('Nepodarilo sa načítať údaje o vozidlách / slotoch pneumatík pre globálne vyhľadávanie:', e)
+    trucksMap = {}
+    trailersMap = {}
+    truckSlotsByVehicle = {}
+    trailerSlotsByVehicle = {}
+  }
   
   // Set up real-time listener for tire updates
   DatabaseService.onTiresUpdate((updatedTires) => {
     tires = updatedTires
     renderTires()
     updateStats()
+    renderGlobalSearchResults()
   })
 
   const tireSizeInput = document.getElementById('tireSize');
@@ -88,7 +129,10 @@ closeModal.addEventListener("click", () => closeModalHandler())
 tireForm.addEventListener("submit", handleSubmit)
 
 // Filter listeners
-filterSearch.addEventListener("input", renderTires)
+filterSearch.addEventListener("input", () => {
+  renderTires()
+  renderGlobalSearchResults()
+})
 
 // Modal handlers
 function openModal(tire = null) {
@@ -381,6 +425,127 @@ function renderTires() {
   } else {
     disposedSection.style.display = "none"
   }
+}
+
+// Helper: match tire object against search string
+function tireMatchesSearch(tire, searchVal) {
+  if (!tire || !searchVal) return false
+  const q = searchVal.toLowerCase()
+  return (
+    (tire.brand && tire.brand.toLowerCase().includes(q)) ||
+    (tire.type && tire.type.toLowerCase().includes(q)) ||
+    (tire.size && tire.size.toLowerCase().includes(q)) ||
+    (tire.customId && String(tire.customId).toLowerCase().includes(q)) ||
+    (tire.id && String(tire.id).toLowerCase().includes(q)) ||
+    (tire.dot && String(tire.dot).toLowerCase().includes(q))
+  )
+}
+
+// Render global search results (sklad + ťahače + návesy)
+function renderGlobalSearchResults() {
+  if (!globalSearchSection || !globalSearchList) return
+
+  const searchVal = filterSearch ? filterSearch.value.trim().toLowerCase() : ''
+
+  if (!searchVal) {
+    globalSearchSection.style.display = 'none'
+    globalSearchList.innerHTML = ''
+    return
+  }
+
+  const results = []
+
+  // 1) Gum y v sklade (všetky okrem "assigned" - tie zobrazíme cez vozidlá)
+  tires.forEach((t) => {
+    if (t.status === 'assigned') return
+    if (tireMatchesSearch(t, searchVal)) {
+      results.push({
+        source: 'storage',
+        status: t.status || 'available',
+        tire: t
+      })
+    }
+  })
+
+  // 2) Gumy na ťahačoch
+  Object.entries(truckSlotsByVehicle || {}).forEach(([vehicleId, slots]) => {
+    const truck = trucksMap[vehicleId]
+    const plate = truck?.licensePlate || vehicleId
+    ;(slots || []).forEach((slot) => {
+      if (!slot || !slot.tire) return
+      if (!tireMatchesSearch(slot.tire, searchVal)) return
+      results.push({
+        source: 'truck',
+        vehicleId,
+        plate,
+        position: slot.position || slot.id || 'Pozícia',
+        tire: slot.tire
+      })
+    })
+  })
+
+  // 3) Gumy na návesoch
+  Object.entries(trailerSlotsByVehicle || {}).forEach(([vehicleId, slots]) => {
+    const trailer = trailersMap[vehicleId]
+    const plate = trailer?.licensePlate || vehicleId
+    ;(slots || []).forEach((slot) => {
+      if (!slot || !slot.tire) return
+      if (!tireMatchesSearch(slot.tire, searchVal)) return
+      results.push({
+        source: 'trailer',
+        vehicleId,
+        plate,
+        position: slot.position || slot.id || 'Pozícia',
+        tire: slot.tire
+      })
+    })
+  })
+
+  if (results.length === 0) {
+    globalSearchSection.style.display = 'block'
+    globalSearchList.innerHTML = `<div style="padding:1rem; color:#6b7280;">Nenašli sa žiadne pneumatiky v sklade ani na vozidlách.</div>`
+    return
+  }
+
+  globalSearchSection.style.display = 'block'
+
+  globalSearchList.innerHTML = results
+    .map((r) => {
+      const t = r.tire
+      let locationLabel = ''
+      if (r.source === 'storage') {
+        let stav = 'Sklad'
+        if (r.status === 'forSale') stav = 'Sklad – na predaj'
+        else if (r.status === 'disposed') stav = 'Sklad – vyhodené'
+        locationLabel = stav
+      } else if (r.source === 'truck') {
+        locationLabel = `Ťahač ${r.plate} – ${r.position}`
+      } else if (r.source === 'trailer') {
+        locationLabel = `Náves ${r.plate} – ${r.position}`
+      }
+
+      return `
+        <div class="tire-card">
+          <div class="tire-card-header" style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <div class="tire-info">
+              <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.25rem;">
+                <h3>${t.brand || ''} ${t.type || ''}</h3>
+              </div>
+              <p>${t.size || ''}</p>
+              <div style="font-size:0.8rem; color:#4b5563; margin-top:0.25rem;">
+                <span>ID: ${t.customId || t.id || '-'}</span><br>
+                <span>DOT: ${t.dot || '-'}</span><br>
+                <span>Najazdené km: ${formatKm(t.km ?? 0)} km</span>
+              </div>
+            </div>
+            <span style="align-self:flex-start; padding:0.25rem 0.5rem; border-radius:999px; font-size:0.75rem; background:#e5e7eb; color:#374151;">
+              ${locationLabel}
+            </span>
+          </div>
+        </div>
+      `
+    })
+    .join('')
 }
 
 function createTireCard(tire) {
