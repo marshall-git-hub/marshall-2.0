@@ -42,7 +42,7 @@ jobs:
           node -e "JSON.parse(require('fs').readFileSync(process.env.RUNNER_TEMP + '/creds.json','utf8')); console.log('Service account JSON OK')"
           echo "GOOGLE_APPLICATION_CREDENTIALS=$CRED_FILE" >> "$GITHUB_ENV"
       - name: Run backup
-        run: node backup.js
+        run: node shared\services\backup.js
 
       - name: Commit backup
         run: |
