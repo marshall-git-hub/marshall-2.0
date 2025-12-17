@@ -1,0 +1,260 @@
+/**
+ * Cestaky Admin Styles
+ * Additional styles specific to the admin view
+ */
+
+/* Search Box */
+.search-box {
+    position: relative;
+    flex: 1;
+    max-width: 300px;
+}
+
+.search-box .search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted-foreground);
+    font-size: 20px;
+    pointer-events: none;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 10px 12px 10px 40px;
+    border: 1.5px solid var(--border-color);
+    border-radius: 10px;
+    font-size: 14px;
+    background: var(--neutral-white);
+    transition: all 0.2s ease;
+}
+
+.search-box input:focus {
+    outline: none;
+    border-color: var(--primary-blue);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.search-box input::placeholder {
+    color: var(--muted-foreground);
+}
+
+/* Stats Summary */
+.stats-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+    padding: 16px;
+    background: var(--muted-bg);
+    border-radius: 12px;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 12px;
+    background: var(--neutral-white);
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+}
+
+.stat-value {
+    display: block;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--primary-blue);
+    line-height: 1;
+    margin-bottom: 4px;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Driver Card Enhancements */
+.driver-card {
+    position: relative;
+}
+
+.driver-card::after {
+    content: '';
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 24px;
+    height: 24px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23CBD5E1'%3E%3Cpath d='M9 18L15 12L9 6'/%3E%3C/svg%3E");
+    background-size: contain;
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.driver-card:hover::after {
+    opacity: 1;
+    transform: translateY(-50%) translateX(4px);
+}
+
+/* No Results State */
+.no-results {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted-foreground);
+}
+
+.no-results .material-symbols-outlined {
+    font-size: 48px;
+    color: var(--border-color-dark);
+    margin-bottom: 16px;
+    display: block;
+}
+
+.no-results p {
+    font-size: 14px;
+    margin: 0;
+}
+
+/* Ride Detail Enhancement */
+.ride-header-info {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-blue-dark) 100%);
+    border-radius: 12px;
+    color: var(--neutral-white);
+    margin-bottom: 20px;
+}
+
+.ride-header-icon {
+    width: 56px;
+    height: 56px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.ride-header-icon .material-symbols-outlined {
+    font-size: 32px;
+}
+
+.ride-header-details {
+    flex: 1;
+}
+
+.ride-header-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.ride-header-subtitle {
+    font-size: 13px;
+    opacity: 0.9;
+}
+
+.ride-header-status {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.ride-header-status.completed {
+    background: rgba(16, 185, 129, 0.2);
+    color: #A7F3D0;
+}
+
+.ride-header-status.in-progress {
+    background: rgba(245, 158, 11, 0.2);
+    color: #FDE68A;
+}
+
+/* Quick Stats in Ride Detail */
+.ride-quick-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.quick-stat {
+    text-align: center;
+    padding: 10px 8px;
+    background: var(--muted-bg);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.quick-stat-value {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 2px;
+}
+
+.quick-stat-label {
+    font-size: 10px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+}
+
+/* Empty Driver State */
+.empty-driver-state {
+    text-align: center;
+    padding: 80px 20px;
+}
+
+.empty-driver-state .material-symbols-outlined {
+    font-size: 64px;
+    color: var(--border-color-dark);
+    margin-bottom: 20px;
+}
+
+.empty-driver-state h3 {
+    font-size: 18px;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.empty-driver-state p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+/* Mobile Adjustments */
+@media (max-width: 640px) {
+    .card-header-content {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .search-box {
+        max-width: 100%;
+    }
+    
+    .driver-card::after {
+        display: none;
+    }
+    
+    .ride-header-info {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .ride-header-status {
+        margin-top: 12px;
+    }
+}
+

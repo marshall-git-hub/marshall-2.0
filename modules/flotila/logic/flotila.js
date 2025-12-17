@@ -23,6 +23,14 @@ class FlotilaManager {
       itemsPerPage: 20,
       totalItems: 0
     };
+    // Bulk services state for adding services to multiple vehicles
+    this.bulkServicesState = {
+      selectedServices: [], // Array of service objects {id, name, type, interval, ...}
+      selectedVehicles: [], // Array of {type: 'truck'|'trailer'|'car'|'other', licensePlate: string}
+      predefinedListOpen: false,
+      vehiclesListOpen: false,
+      categoryOpen: { trucks: false, trailers: false, cars: false, other: false }
+    };
     this.init();
   }
 
@@ -875,6 +883,9 @@ class FlotilaManager {
 
     this.selectedVehicle = { ...vehicle, type };
     
+    // Highlight selected vehicle card
+    this.highlightSelectedVehicle(plate);
+    
     // Services should already be loaded with the vehicle data from TIRES collection
     // If not present, initialize empty arrays
     if (!vehicle.services) {
@@ -919,11 +930,34 @@ class FlotilaManager {
   // Deselect current vehicle
   deselectVehicle() {
     this.selectedVehicle = null;
+    this.clearSelectedVehicleHighlight();
     this.clearPolozkaPanel();
     // Close mobile modal if open
     if (this.isMobile()) {
       this.closeMobileModal();
     }
+  }
+  
+  // Highlight selected vehicle card with glow effect
+  highlightSelectedVehicle(plate) {
+    // Remove previous selection
+    this.clearSelectedVehicleHighlight();
+    
+    // Find all vehicle cards and highlight the selected one
+    const allCards = document.querySelectorAll('.vehicle-card');
+    allCards.forEach(card => {
+      const licenseEl = card.querySelector('.vehicle-license');
+      if (licenseEl && licenseEl.textContent === plate) {
+        card.classList.add('selected');
+      }
+    });
+  }
+  
+  // Clear selected vehicle highlight
+  clearSelectedVehicleHighlight() {
+    document.querySelectorAll('.vehicle-card.selected').forEach(card => {
+      card.classList.remove('selected');
+    });
   }
 
   // Render položka panel
@@ -1051,8 +1085,9 @@ class FlotilaManager {
       const normalizedPlate = this.selectedVehicle?.licensePlate ? this.normalizeLicensePlate(this.selectedVehicle.licensePlate) : null;
       const currentKmFromShared = normalizedPlate ? (this.cache.vehicleKms[normalizedPlate] || 0) : 0;
       const currentKm = currentKmFromShared || this.selectedVehicle?.currentKm || this.selectedVehicle?.kilometers || 0;
-      const hasLastKm = (service.lastKm && typeof service.lastKm === 'number') || (service.lastService && typeof service.lastService.km === 'number');
-      const lastServiceKm = hasLastKm ? (service.lastKm || service.lastService.km) : currentKm;
+      // Use lastKm or lastService.km when provided (including 0), otherwise fall back to current km
+      const hasLastKm = (service.lastKm !== undefined && service.lastKm !== null) || (service.lastService && typeof service.lastService.km === 'number');
+      const lastServiceKm = hasLastKm ? (service.lastKm !== undefined && service.lastKm !== null ? service.lastKm : service.lastService.km) : currentKm;
       const targetKm = lastServiceKm + parseInt(serviceInterval || 0);
       const remainingKm = targetKm - currentKm;
       return remainingKm; // Negative for overdue
@@ -1777,8 +1812,10 @@ class FlotilaManager {
   }
 
   // Show service type edit modal (the detailed form)
-  showServiceTypeEditModal(serviceIndex = null, serviceType = null) {
+  // isBulkMode: when true, the service will be added to bulk selection instead of a vehicle
+  showServiceTypeEditModal(serviceIndex = null, serviceType = null, isBulkMode = false) {
     const isEditing = serviceIndex !== null;
+    this._bulkModeForServiceModal = isBulkMode;
     
     // Normalize service data for editing - map unit to type and norm to interval
     let normalizedService = null;
@@ -4432,12 +4469,15 @@ class FlotilaManager {
 
   // Handle service type form submission
   async handleServiceTypeSubmit(serviceIndex = null) {
-    if (!this.selectedVehicle) {
+    const isBulkMode = this._bulkModeForServiceModal === true;
+    
+    // Only check for selected vehicle if not in bulk mode
+    if (!isBulkMode && !this.selectedVehicle) {
       alert('Prosím vyberte vozidlo pred pridávaním služieb.');
       return;
     }
     
-    // Ensure user is authenticated (non-anonymous)
+    // Ensure user is authenticated (non-anonymous) - always required
     const currentUser = window.auth?.currentUser;
     if (!currentUser) {
       this.showNotification('Musíte byť prihlásený pre pridávanie služieb. Prosím prihláste sa cez email a heslo.', 'error');
@@ -4622,14 +4662,23 @@ class FlotilaManager {
       if (existingService.lastService) {
         serviceData.lastService = existingService.lastService;
       }
-    } else {
-      // For new services, initialize lastKm and lastService
+    } else if (!isBulkMode) {
+      // For new services (not bulk mode), initialize lastKm and lastService
       const currentKm = this.selectedVehicle?.currentKm || this.selectedVehicle?.kilometers || 0;
       serviceData.lastKm = 0; // Will be updated when service is performed
       serviceData.lastService = {
         date: new Date(),
         km: currentKm
       };
+    }
+    
+    // Handle bulk mode - add service to bulk selection instead of vehicle
+    if (isBulkMode) {
+      this.addCustomServiceToBulk(serviceData);
+      this._bulkModeForServiceModal = false; // Reset flag
+      modal.remove();
+      this.showNotification('Servis pridaný do výberu', 'success');
+      return;
     }
     
     if (serviceIndex !== null) {
@@ -6488,6 +6537,7 @@ class FlotilaManager {
           <button class="tab-btn active" data-tab="pairing">Párovanie</button>
           <button class="tab-btn" data-tab="add-vehicle">Pridať vozidlo</button>
           <button class="tab-btn" data-tab="predefined-services">Preddefinované servisy</button>
+          <button class="tab-btn" data-tab="bulk-services">Hromadné servisy</button>
         </div>
 
         <div class="modal-body">
@@ -6571,6 +6621,142 @@ class FlotilaManager {
                   <div style="width:120px;">Akcie</div>
                 </div>
                 <div id="predef-services-rows"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tab-panel" data-panel="bulk-services" style="display:none;">
+            <div class="bulk-services-panel">
+              <!-- Section 1: Services Selection -->
+              <div class="bulk-section bulk-services-selection">
+                <div class="bulk-section-header">
+                  <h4>1. Vyberte servisy</h4>
+                  <span class="bulk-count-badge" id="bulk-services-count">0 vybraných</span>
+                </div>
+                
+                <div class="bulk-services-buttons">
+                  <button class="bulk-add-custom-btn" onclick="window.flotilaManager.showBulkCustomServiceModal()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <line x1="12" y1="5" x2="12" y2="19"></line>
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    Pridať vlastný servis
+                  </button>
+                  <button class="bulk-predefined-btn" onclick="window.flotilaManager.toggleBulkPredefinedList()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+                      <rect x="9" y="3" width="6" height="4" rx="1"/>
+                      <path d="M9 12h6"/>
+                      <path d="M9 16h6"/>
+                    </svg>
+                    Vybrať z preddefinovaných
+                  </button>
+                </div>
+
+                <div class="bulk-predefined-list" id="bulk-predefined-list" style="display:none;">
+                  <div class="bulk-search-container">
+                    <input type="text" id="bulk-services-search" placeholder="Hľadať servisy..." oninput="window.flotilaManager.filterBulkPredefinedServices(this.value)">
+                  </div>
+                  <div class="bulk-predefined-items" id="bulk-predefined-items">
+                    <div class="bulk-predefined-loading">Načítavam servisy...</div>
+                  </div>
+                </div>
+
+                <div class="bulk-selected-services" id="bulk-selected-services">
+                  <!-- Selected services chips will appear here -->
+                </div>
+              </div>
+
+              <!-- Section 2: Vehicles Selection -->
+              <div class="bulk-section bulk-vehicles-selection">
+                <div class="bulk-section-header">
+                  <h4>2. Vyberte vozidlá</h4>
+                  <span class="bulk-count-badge" id="bulk-vehicles-count">0 vybraných</span>
+                </div>
+
+                <button class="bulk-vehicles-toggle-btn" onclick="window.flotilaManager.toggleBulkVehiclesList()">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="1" y="3" width="15" height="13"/>
+                    <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
+                    <circle cx="5.5" cy="18.5" r="2.5"/>
+                    <circle cx="18.5" cy="18.5" r="2.5"/>
+                  </svg>
+                  Vybrať vozidlá
+                  <svg class="bulk-toggle-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </button>
+
+                <div class="bulk-vehicles-list" id="bulk-vehicles-list" style="display:none;">
+                  <div class="bulk-search-container">
+                    <input type="text" id="bulk-vehicles-search" placeholder="Hľadať vozidlá (SPZ)..." oninput="window.flotilaManager.filterBulkVehicles(this.value)">
+                  </div>
+                  <!-- Trucks category -->
+                  <div class="bulk-vehicle-category">
+                    <div class="bulk-category-header" onclick="window.flotilaManager.toggleBulkCategory('trucks')">
+                      <input type="checkbox" id="bulk-select-all-trucks" onclick="event.stopPropagation(); window.flotilaManager.toggleBulkCategoryAll('trucks')">
+                      <label for="bulk-select-all-trucks">Ťahače</label>
+                      <span class="bulk-category-count" id="bulk-trucks-count">(0)</span>
+                      <svg class="bulk-category-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                      </svg>
+                    </div>
+                    <div class="bulk-category-items" id="bulk-trucks-items" style="display:none;"></div>
+                  </div>
+
+                  <!-- Trailers category -->
+                  <div class="bulk-vehicle-category">
+                    <div class="bulk-category-header" onclick="window.flotilaManager.toggleBulkCategory('trailers')">
+                      <input type="checkbox" id="bulk-select-all-trailers" onclick="event.stopPropagation(); window.flotilaManager.toggleBulkCategoryAll('trailers')">
+                      <label for="bulk-select-all-trailers">Návesy</label>
+                      <span class="bulk-category-count" id="bulk-trailers-count">(0)</span>
+                      <svg class="bulk-category-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                      </svg>
+                    </div>
+                    <div class="bulk-category-items" id="bulk-trailers-items" style="display:none;"></div>
+                  </div>
+
+                  <!-- Cars category -->
+                  <div class="bulk-vehicle-category">
+                    <div class="bulk-category-header" onclick="window.flotilaManager.toggleBulkCategory('cars')">
+                      <input type="checkbox" id="bulk-select-all-cars" onclick="event.stopPropagation(); window.flotilaManager.toggleBulkCategoryAll('cars')">
+                      <label for="bulk-select-all-cars">Osobné</label>
+                      <span class="bulk-category-count" id="bulk-cars-count">(0)</span>
+                      <svg class="bulk-category-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                      </svg>
+                    </div>
+                    <div class="bulk-category-items" id="bulk-cars-items" style="display:none;"></div>
+                  </div>
+
+                  <!-- Other category -->
+                  <div class="bulk-vehicle-category">
+                    <div class="bulk-category-header" onclick="window.flotilaManager.toggleBulkCategory('other')">
+                      <input type="checkbox" id="bulk-select-all-other" onclick="event.stopPropagation(); window.flotilaManager.toggleBulkCategoryAll('other')">
+                      <label for="bulk-select-all-other">Ostatné</label>
+                      <span class="bulk-category-count" id="bulk-other-count">(0)</span>
+                      <svg class="bulk-category-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                      </svg>
+                    </div>
+                    <div class="bulk-category-items" id="bulk-other-items" style="display:none;"></div>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- Section 3: Apply Button -->
+              <div class="bulk-section bulk-apply-section">
+                <div class="bulk-apply-summary" id="bulk-apply-summary">
+                  Vyberte servisy a vozidlá
+                </div>
+                <button class="bulk-apply-btn" id="bulk-apply-btn" onclick="window.flotilaManager.applyBulkServices()" disabled>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                  Aplikovať
+                </button>
               </div>
             </div>
           </div>
@@ -7612,6 +7798,548 @@ class FlotilaManager {
       return 'normal';
     }
   }
+
+  // ==================== BULK SERVICES METHODS ====================
+
+  // Reset bulk services state
+  resetBulkServicesState() {
+    this.bulkServicesState = {
+      selectedServices: [],
+      selectedVehicles: [],
+      predefinedListOpen: false,
+      vehiclesListOpen: false,
+      categoryOpen: { trucks: false, trailers: false, cars: false, other: false }
+    };
+  }
+
+  // Toggle predefined services list visibility
+  toggleBulkPredefinedList() {
+    this.bulkServicesState.predefinedListOpen = !this.bulkServicesState.predefinedListOpen;
+    const listEl = document.getElementById('bulk-predefined-list');
+    if (listEl) {
+      listEl.style.display = this.bulkServicesState.predefinedListOpen ? 'block' : 'none';
+      if (this.bulkServicesState.predefinedListOpen) {
+        this.loadBulkPredefinedServices();
+      }
+    }
+  }
+
+  // Load predefined services for bulk selection
+  async loadBulkPredefinedServices() {
+    const itemsEl = document.getElementById('bulk-predefined-items');
+    if (!itemsEl) return;
+
+    itemsEl.innerHTML = '<div class="bulk-predefined-loading">Načítavam servisy...</div>';
+
+    try {
+      const snapshot = await this._predefinedServicesCollection().orderBy('name').get();
+      
+      if (snapshot.empty) {
+        itemsEl.innerHTML = '<div class="bulk-no-services">Žiadne preddefinované servisy</div>';
+        return;
+      }
+
+      // Store services for filtering
+      this._bulkPredefinedServicesCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      
+      this.renderBulkPredefinedServices(this._bulkPredefinedServicesCache);
+      
+    } catch (error) {
+      console.error('Error loading predefined services:', error);
+      itemsEl.innerHTML = '<div class="bulk-error">Chyba pri načítavaní servisov</div>';
+    }
+  }
+
+  // Render predefined services list
+  renderBulkPredefinedServices(services) {
+    const itemsEl = document.getElementById('bulk-predefined-items');
+    if (!itemsEl) return;
+
+    if (services.length === 0) {
+      itemsEl.innerHTML = '<div class="bulk-no-services">Žiadne servisy nenájdené</div>';
+      return;
+    }
+
+    const servicesHtml = services.map(service => {
+      const isSelected = this.bulkServicesState.selectedServices.some(s => s.id === service.id);
+      const polozkyCount = service.servicePolozky ? service.servicePolozky.length : 0;
+      
+      return `
+        <div class="bulk-predefined-item ${isSelected ? 'selected' : ''}" data-service-id="${service.id}" data-service-name="${service.name.toLowerCase()}">
+          <input type="checkbox" 
+                 id="bulk-service-${service.id}" 
+                 ${isSelected ? 'checked' : ''}
+                 onchange="window.flotilaManager.toggleBulkServiceSelection('${service.id}')">
+          <label for="bulk-service-${service.id}">
+            <span class="bulk-service-name">${service.name}</span>
+            <span class="bulk-service-details">
+              ${service.type === 'specificDate'
+                ? this.formatDateSk(service.specificDate || service.interval)
+                : (service.type === 'km'
+                    ? `${this.formatNumberWithSpaces(service.interval)} km`
+                    : `${service.interval} ${this.getUnitForm(service.interval, service.timeUnit || 'days')}`)}
+              ${polozkyCount > 0 ? ` · ${polozkyCount} polož${polozkyCount !== 1 ? 'iek' : 'ka'}` : ''}
+            </span>
+          </label>
+        </div>
+      `;
+    }).join('');
+
+    itemsEl.innerHTML = servicesHtml;
+  }
+
+  // Filter predefined services by search term
+  filterBulkPredefinedServices(searchTerm) {
+    if (!this._bulkPredefinedServicesCache) return;
+    
+    const term = searchTerm.toLowerCase().trim();
+    
+    if (!term) {
+      this.renderBulkPredefinedServices(this._bulkPredefinedServicesCache);
+      return;
+    }
+
+    const filtered = this._bulkPredefinedServicesCache.filter(service => 
+      service.name.toLowerCase().includes(term)
+    );
+    
+    this.renderBulkPredefinedServices(filtered);
+  }
+
+  // Toggle service selection in bulk mode
+  async toggleBulkServiceSelection(serviceId) {
+    const existingIndex = this.bulkServicesState.selectedServices.findIndex(s => s.id === serviceId);
+    
+    if (existingIndex >= 0) {
+      // Remove service
+      this.bulkServicesState.selectedServices.splice(existingIndex, 1);
+    } else {
+      // Add service - fetch from database
+      try {
+        const doc = await this._predefinedServicesCollection().doc(serviceId).get();
+        if (doc.exists) {
+          this.bulkServicesState.selectedServices.push({ id: doc.id, ...doc.data() });
+        }
+      } catch (error) {
+        console.error('Error fetching service:', error);
+      }
+    }
+
+    this.updateBulkServicesUI();
+  }
+
+  // Show modal to add custom service for bulk
+  showBulkCustomServiceModal() {
+    // Reuse the existing service type modal but with a callback for bulk mode
+    this.showServiceTypeEditModal(null, null, true);
+  }
+
+  // Add custom service to bulk selection (called from the service edit modal)
+  addCustomServiceToBulk(serviceData) {
+    // Generate a temporary ID for custom services
+    const customId = 'custom_' + Date.now();
+    this.bulkServicesState.selectedServices.push({
+      id: customId,
+      isCustom: true,
+      ...serviceData
+    });
+    this.updateBulkServicesUI();
+  }
+
+  // Remove service from bulk selection
+  removeBulkService(serviceId) {
+    const index = this.bulkServicesState.selectedServices.findIndex(s => s.id === serviceId);
+    if (index >= 0) {
+      this.bulkServicesState.selectedServices.splice(index, 1);
+      this.updateBulkServicesUI();
+      // Also update checkbox in predefined list if visible
+      const checkbox = document.getElementById(`bulk-service-${serviceId}`);
+      if (checkbox) {
+        checkbox.checked = false;
+        checkbox.closest('.bulk-predefined-item')?.classList.remove('selected');
+      }
+    }
+  }
+
+  // Toggle vehicles list visibility
+  toggleBulkVehiclesList() {
+    this.bulkServicesState.vehiclesListOpen = !this.bulkServicesState.vehiclesListOpen;
+    const listEl = document.getElementById('bulk-vehicles-list');
+    const toggleBtn = document.querySelector('.bulk-vehicles-toggle-btn');
+    
+    if (listEl) {
+      listEl.style.display = this.bulkServicesState.vehiclesListOpen ? 'block' : 'none';
+      if (this.bulkServicesState.vehiclesListOpen) {
+        this.populateBulkVehiclesList();
+      }
+    }
+    if (toggleBtn) {
+      toggleBtn.classList.toggle('expanded', this.bulkServicesState.vehiclesListOpen);
+    }
+  }
+
+  // Populate vehicles list for bulk selection
+  populateBulkVehiclesList(searchTerm = '') {
+    const categories = [
+      { id: 'trucks', data: this.trucks, label: 'Ťahače' },
+      { id: 'trailers', data: this.trailers, label: 'Návesy' },
+      { id: 'cars', data: this.cars, label: 'Osobné' },
+      { id: 'other', data: this.other, label: 'Ostatné' }
+    ];
+    
+    const term = searchTerm.toLowerCase().trim();
+
+    categories.forEach(category => {
+      const itemsEl = document.getElementById(`bulk-${category.id}-items`);
+      const countEl = document.getElementById(`bulk-${category.id}-count`);
+      let vehicles = Object.values(category.data).sort((a, b) => 
+        a.licensePlate.localeCompare(b.licensePlate)
+      );
+      
+      // Filter by search term
+      if (term) {
+        vehicles = vehicles.filter(v => 
+          v.licensePlate.toLowerCase().includes(term)
+        );
+      }
+
+      if (countEl) {
+        const totalCount = Object.values(category.data).length;
+        countEl.textContent = term ? `(${vehicles.length}/${totalCount})` : `(${totalCount})`;
+      }
+
+      if (itemsEl) {
+        if (vehicles.length === 0) {
+          itemsEl.innerHTML = term 
+            ? '<div class="bulk-no-vehicles">Žiadne vozidlá nenájdené</div>'
+            : '<div class="bulk-no-vehicles">Žiadne vozidlá</div>';
+        } else {
+          itemsEl.innerHTML = vehicles.map(vehicle => {
+            const isSelected = this.bulkServicesState.selectedVehicles.some(
+              v => v.type === category.id && v.licensePlate === vehicle.licensePlate
+            );
+            return `
+              <div class="bulk-vehicle-item ${isSelected ? 'selected' : ''}" data-license="${vehicle.licensePlate.toLowerCase()}">
+                <input type="checkbox" 
+                       id="bulk-vehicle-${category.id}-${vehicle.licensePlate.replace(/\s/g, '_')}"
+                       ${isSelected ? 'checked' : ''}
+                       onchange="window.flotilaManager.toggleBulkVehicleSelection('${category.id}', '${vehicle.licensePlate}')">
+                <label for="bulk-vehicle-${category.id}-${vehicle.licensePlate.replace(/\s/g, '_')}">
+                  ${vehicle.licensePlate}
+                </label>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+    });
+
+    this.updateBulkCategoryCheckboxes();
+  }
+
+  // Filter vehicles by search term
+  filterBulkVehicles(searchTerm) {
+    this.populateBulkVehiclesList(searchTerm);
+  }
+
+  // Toggle category expand/collapse
+  toggleBulkCategory(categoryId) {
+    this.bulkServicesState.categoryOpen[categoryId] = !this.bulkServicesState.categoryOpen[categoryId];
+    const itemsEl = document.getElementById(`bulk-${categoryId}-items`);
+    const headerEl = document.querySelector(`[onclick*="toggleBulkCategory('${categoryId}')"]`);
+    
+    if (itemsEl) {
+      itemsEl.style.display = this.bulkServicesState.categoryOpen[categoryId] ? 'block' : 'none';
+    }
+    if (headerEl) {
+      headerEl.classList.toggle('expanded', this.bulkServicesState.categoryOpen[categoryId]);
+    }
+  }
+
+  // Toggle all vehicles in a category
+  toggleBulkCategoryAll(categoryId) {
+    const categoryData = {
+      trucks: this.trucks,
+      trailers: this.trailers,
+      cars: this.cars,
+      other: this.other
+    };
+
+    const vehicles = Object.values(categoryData[categoryId] || {});
+    const allSelected = vehicles.every(v => 
+      this.bulkServicesState.selectedVehicles.some(
+        sv => sv.type === categoryId && sv.licensePlate === v.licensePlate
+      )
+    );
+
+    if (allSelected) {
+      // Deselect all in this category
+      this.bulkServicesState.selectedVehicles = this.bulkServicesState.selectedVehicles.filter(
+        v => v.type !== categoryId
+      );
+    } else {
+      // Select all in this category
+      vehicles.forEach(vehicle => {
+        if (!this.bulkServicesState.selectedVehicles.some(
+          v => v.type === categoryId && v.licensePlate === vehicle.licensePlate
+        )) {
+          this.bulkServicesState.selectedVehicles.push({
+            type: categoryId,
+            licensePlate: vehicle.licensePlate
+          });
+        }
+      });
+    }
+
+    this.populateBulkVehiclesList();
+    this.updateBulkServicesUI();
+  }
+
+  // Toggle individual vehicle selection
+  toggleBulkVehicleSelection(type, licensePlate) {
+    const existingIndex = this.bulkServicesState.selectedVehicles.findIndex(
+      v => v.type === type && v.licensePlate === licensePlate
+    );
+
+    if (existingIndex >= 0) {
+      this.bulkServicesState.selectedVehicles.splice(existingIndex, 1);
+    } else {
+      this.bulkServicesState.selectedVehicles.push({ type, licensePlate });
+    }
+
+    this.updateBulkCategoryCheckboxes();
+    this.updateBulkServicesUI();
+  }
+
+  // Update category "select all" checkboxes state
+  updateBulkCategoryCheckboxes() {
+    const categories = ['trucks', 'trailers', 'cars', 'other'];
+    const categoryData = {
+      trucks: this.trucks,
+      trailers: this.trailers,
+      cars: this.cars,
+      other: this.other
+    };
+
+    categories.forEach(categoryId => {
+      const checkbox = document.getElementById(`bulk-select-all-${categoryId}`);
+      if (!checkbox) return;
+
+      const vehicles = Object.values(categoryData[categoryId] || {});
+      if (vehicles.length === 0) {
+        checkbox.checked = false;
+        checkbox.indeterminate = false;
+        return;
+      }
+
+      const selectedCount = vehicles.filter(v => 
+        this.bulkServicesState.selectedVehicles.some(
+          sv => sv.type === categoryId && sv.licensePlate === v.licensePlate
+        )
+      ).length;
+
+      if (selectedCount === 0) {
+        checkbox.checked = false;
+        checkbox.indeterminate = false;
+      } else if (selectedCount === vehicles.length) {
+        checkbox.checked = true;
+        checkbox.indeterminate = false;
+      } else {
+        checkbox.checked = false;
+        checkbox.indeterminate = true;
+      }
+    });
+  }
+
+  // Remove vehicle from bulk selection
+  removeBulkVehicle(type, licensePlate) {
+    const index = this.bulkServicesState.selectedVehicles.findIndex(
+      v => v.type === type && v.licensePlate === licensePlate
+    );
+    if (index >= 0) {
+      this.bulkServicesState.selectedVehicles.splice(index, 1);
+      this.populateBulkVehiclesList();
+      this.updateBulkServicesUI();
+    }
+  }
+
+  // Update the bulk services UI (counts, chips, apply button)
+  updateBulkServicesUI() {
+    const servicesCount = this.bulkServicesState.selectedServices.length;
+    const vehiclesCount = this.bulkServicesState.selectedVehicles.length;
+
+    // Update counts
+    const servicesCountEl = document.getElementById('bulk-services-count');
+    const vehiclesCountEl = document.getElementById('bulk-vehicles-count');
+    if (servicesCountEl) {
+      servicesCountEl.textContent = `${servicesCount} vybraných`;
+    }
+    if (vehiclesCountEl) {
+      vehiclesCountEl.textContent = `${vehiclesCount} vybraných`;
+    }
+
+    // Update selected services chips
+    const servicesChipsEl = document.getElementById('bulk-selected-services');
+    if (servicesChipsEl) {
+      if (servicesCount === 0) {
+        servicesChipsEl.innerHTML = '';
+      } else {
+        servicesChipsEl.innerHTML = this.bulkServicesState.selectedServices.map(service => `
+          <div class="bulk-chip bulk-service-chip">
+            <span>${service.name}</span>
+            <button onclick="window.flotilaManager.removeBulkService('${service.id}')" title="Odstrániť">×</button>
+          </div>
+        `).join('');
+      }
+    }
+
+    // Update apply summary and button
+    const summaryEl = document.getElementById('bulk-apply-summary');
+    const applyBtn = document.getElementById('bulk-apply-btn');
+    
+    if (summaryEl) {
+      if (servicesCount > 0 && vehiclesCount > 0) {
+        summaryEl.textContent = `Pridať ${servicesCount} servis${servicesCount !== 1 ? 'ov' : ''} k ${vehiclesCount} vozidl${vehiclesCount !== 1 ? 'ám' : 'u'}`;
+      } else {
+        summaryEl.textContent = 'Vyberte servisy a vozidlá';
+      }
+    }
+
+    if (applyBtn) {
+      applyBtn.disabled = servicesCount === 0 || vehiclesCount === 0;
+    }
+  }
+
+  // Apply bulk services to selected vehicles
+  async applyBulkServices() {
+    const { selectedServices, selectedVehicles } = this.bulkServicesState;
+
+    if (selectedServices.length === 0 || selectedVehicles.length === 0) {
+      this.showNotification('Vyberte aspoň jeden servis a jedno vozidlo', 'error');
+      return;
+    }
+
+    const applyBtn = document.getElementById('bulk-apply-btn');
+    if (applyBtn) {
+      applyBtn.disabled = true;
+      applyBtn.innerHTML = `
+        <svg class="loading-spinner" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10" stroke-opacity="0.25"/>
+          <path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"/>
+        </svg>
+        Aplikujem...
+      `;
+    }
+
+    try {
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const vehicle of selectedVehicles) {
+        try {
+          // Get the correct collection based on vehicle type
+          let collection;
+          let vehicleData;
+          
+          switch (vehicle.type) {
+            case 'trucks':
+              collection = this._flotilaTrucksCollection();
+              vehicleData = this.trucks[vehicle.licensePlate];
+              break;
+            case 'trailers':
+              collection = this._flotilaTrailersCollection();
+              vehicleData = this.trailers[vehicle.licensePlate];
+              break;
+            case 'cars':
+              collection = this._flotilaCarsCollection();
+              vehicleData = this.cars[vehicle.licensePlate];
+              break;
+            case 'other':
+              collection = this._flotilaOtherCollection();
+              vehicleData = this.other[vehicle.licensePlate];
+              break;
+            default:
+              continue;
+          }
+
+          if (!vehicleData) continue;
+
+          // Prepare services to add (clone to avoid reference issues)
+          const servicesToAdd = selectedServices.map(service => {
+            const serviceClone = { ...service };
+            // Remove the id for custom services to avoid conflicts
+            if (serviceClone.isCustom) {
+              delete serviceClone.id;
+              delete serviceClone.isCustom;
+            }
+            // Add timestamp
+            serviceClone.addedAt = new Date().toISOString();
+            // Set lastKm: 0 for km-based services so next service is calculated from 0km
+            if (serviceClone.type === 'km') {
+              serviceClone.lastKm = 0;
+            }
+            return serviceClone;
+          });
+
+          // Get existing services or empty array
+          const existingServices = vehicleData.services || [];
+          
+          // Combine services
+          const updatedServices = [...existingServices, ...servicesToAdd];
+
+          // Update in Firebase
+          const normalizedPlate = this.normalizeLicensePlate(vehicle.licensePlate);
+          await collection.doc(normalizedPlate).update({
+            services: updatedServices
+          });
+
+          // Update local data
+          vehicleData.services = updatedServices;
+          
+          successCount++;
+        } catch (error) {
+          console.error(`Error adding services to ${vehicle.licensePlate}:`, error);
+          errorCount++;
+        }
+      }
+
+      // Show result notification
+      if (errorCount === 0) {
+        this.showNotification(
+          `Úspešne pridané ${selectedServices.length} servisov k ${successCount} vozidlám`,
+          'success'
+        );
+      } else {
+        this.showNotification(
+          `Pridané k ${successCount} vozidlám, ${errorCount} chýb`,
+          errorCount === selectedVehicles.length ? 'error' : 'warning'
+        );
+      }
+
+      // Reset state and close modal
+      this.resetBulkServicesState();
+      document.querySelector('.settings-modal-overlay')?.remove();
+
+      // Refresh the main view
+      await this.loadDataAndRender();
+
+    } catch (error) {
+      console.error('Error applying bulk services:', error);
+      this.showNotification('Chyba pri aplikovaní servisov: ' + error.message, 'error');
+    } finally {
+      if (applyBtn) {
+        applyBtn.disabled = false;
+        applyBtn.innerHTML = `
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          Aplikovať
+        `;
+      }
+    }
+  }
+
+  // ==================== END BULK SERVICES METHODS ====================
 
   // Cleanup method to close all Firebase listeners
   cleanup() {

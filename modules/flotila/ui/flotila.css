@@ -326,6 +326,60 @@
   background: #f9fafb;
 }
 
+/* Selected vehicle glow effects */
+.vehicle-card.selected {
+  transform: translateY(-1px);
+  z-index: 10;
+}
+
+.vehicle-card.truck-card.selected {
+  box-shadow: 
+    0 0 0 1px #eab308,
+    0 0 10px rgba(234, 179, 8, 0.3);
+  border-left-color: #eab308;
+  background: linear-gradient(135deg, rgba(254, 252, 232, 0.95), rgba(254, 249, 195, 0.9));
+}
+
+.vehicle-card.truck-card.selected .vehicle-license {
+  color: #a16207;
+}
+
+.vehicle-card.trailer-card.selected {
+  box-shadow: 
+    0 0 0 1px #2563eb,
+    0 0 10px rgba(37, 99, 235, 0.3);
+  border-left-color: #2563eb;
+  background: linear-gradient(135deg, rgba(239, 246, 255, 0.95), rgba(219, 234, 254, 0.9));
+}
+
+.vehicle-card.trailer-card.selected .vehicle-license {
+  color: #1e40af;
+}
+
+.vehicle-card.car-card.selected {
+  box-shadow: 
+    0 0 0 1px #10b981,
+    0 0 10px rgba(16, 185, 129, 0.3);
+  border-left-color: #10b981;
+  background: linear-gradient(135deg, rgba(236, 253, 245, 0.95), rgba(209, 250, 229, 0.9));
+}
+
+.vehicle-card.car-card.selected .vehicle-license {
+  color: #047857;
+}
+
+.vehicle-card.other-card.selected {
+  box-shadow: 
+    0 0 0 1px #6b7280,
+    0 0 10px rgba(107, 114, 128, 0.3);
+  border-left-color: #6b7280;
+  background: linear-gradient(135deg, rgba(249, 250, 251, 0.95), rgba(243, 244, 246, 0.9));
+}
+
+.vehicle-card.other-card.selected .vehicle-license {
+  color: #374151;
+}
+
 .vehicle-icon-container {
   width: 40px;
   height: 40px;
@@ -4822,5 +4876,495 @@
   flex: 1;
   font-size: 0.875rem;
   color: #374151;
+}
+
+/* ==================== BULK SERVICES STYLES ==================== */
+
+.bulk-services-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1.5rem;
+}
+
+.bulk-section {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.95));
+  border-radius: 1rem;
+  padding: 1.25rem;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: 0 2px 8px -4px rgba(0, 0, 0, 0.05);
+}
+
+.bulk-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.bulk-section-header h4 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.bulk-count-badge {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* Services Selection */
+.bulk-services-buttons {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.bulk-add-custom-btn,
+.bulk-predefined-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex: 1;
+  min-width: 180px;
+  justify-content: center;
+}
+
+.bulk-add-custom-btn {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.1));
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  color: #3b82f6;
+}
+
+.bulk-add-custom-btn:hover {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(37, 99, 235, 0.15));
+  border-color: rgba(59, 130, 246, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px -4px rgba(59, 130, 246, 0.2);
+}
+
+.bulk-predefined-btn {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1));
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  color: #10b981;
+}
+
+.bulk-predefined-btn:hover {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.15));
+  border-color: rgba(16, 185, 129, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px -4px rgba(16, 185, 129, 0.2);
+}
+
+.bulk-predefined-list {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  padding: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.bulk-predefined-items {
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+/* Search containers for bulk services */
+.bulk-search-container {
+  padding: 0.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 0.5rem;
+  position: sticky;
+  top: 0;
+  background: #f8fafc;
+  z-index: 1;
+}
+
+.bulk-search-container input {
+  width: 100%;
+  padding: 0.625rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.bulk-search-container input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.bulk-search-container input::placeholder {
+  color: #9ca3af;
+}
+
+.bulk-predefined-loading,
+.bulk-no-services,
+.bulk-error {
+  text-align: center;
+  padding: 1.5rem;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.bulk-error {
+  color: #ef4444;
+}
+
+.bulk-predefined-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 0.25rem;
+}
+
+.bulk-predefined-item:hover {
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.bulk-predefined-item.selected {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1));
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.bulk-predefined-item input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #10b981;
+  cursor: pointer;
+}
+
+.bulk-predefined-item label {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  cursor: pointer;
+}
+
+.bulk-service-name {
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 0.9rem;
+}
+
+.bulk-service-details {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+/* Selected Services/Vehicles Chips */
+.bulk-selected-services,
+.bulk-selected-vehicles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  min-height: 32px;
+}
+
+.bulk-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 2rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  animation: chipFadeIn 0.2s ease-out;
+}
+
+@keyframes chipFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.bulk-service-chip {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+}
+
+.bulk-vehicle-chip {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+}
+
+.bulk-chip button {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  line-height: 1;
+  transition: background 0.2s ease;
+  padding: 0;
+}
+
+.bulk-chip button:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+/* Vehicles Selection */
+.bulk-vehicles-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: linear-gradient(135deg, rgba(234, 179, 8, 0.1), rgba(202, 138, 4, 0.1));
+  border: 1px solid rgba(234, 179, 8, 0.2);
+  color: #ca8a04;
+  margin-bottom: 1rem;
+}
+
+.bulk-vehicles-toggle-btn:hover {
+  background: linear-gradient(135deg, rgba(234, 179, 8, 0.15), rgba(202, 138, 4, 0.15));
+  border-color: rgba(234, 179, 8, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px -4px rgba(234, 179, 8, 0.2);
+}
+
+.bulk-vehicles-toggle-btn.expanded {
+  background: linear-gradient(135deg, #eab308, #ca8a04);
+  color: white;
+  border-color: transparent;
+}
+
+.bulk-toggle-arrow {
+  transition: transform 0.3s ease;
+}
+
+.bulk-vehicles-toggle-btn.expanded .bulk-toggle-arrow {
+  transform: rotate(180deg);
+}
+
+.bulk-vehicles-list {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.bulk-vehicle-category {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.bulk-vehicle-category:last-child {
+  border-bottom: none;
+}
+
+.bulk-category-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: linear-gradient(135deg, rgba(248, 250, 252, 0.9), rgba(241, 245, 249, 0.9));
+}
+
+.bulk-category-header:hover {
+  background: linear-gradient(135deg, rgba(241, 245, 249, 0.95), rgba(226, 232, 240, 0.95));
+}
+
+.bulk-category-header.expanded {
+  background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+  border-bottom: 1px solid #7dd3fc;
+}
+
+.bulk-category-header input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #3b82f6;
+  cursor: pointer;
+}
+
+.bulk-category-header label {
+  flex: 1;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.bulk-category-count {
+  color: #6b7280;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.bulk-category-arrow {
+  color: #6b7280;
+  transition: transform 0.3s ease;
+}
+
+.bulk-category-header.expanded .bulk-category-arrow {
+  transform: rotate(180deg);
+}
+
+.bulk-category-items {
+  padding: 0.5rem 1rem;
+  background: white;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.bulk-no-vehicles {
+  padding: 1rem;
+  text-align: center;
+  color: #9ca3af;
+  font-style: italic;
+  width: 100%;
+}
+
+.bulk-vehicle-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid #e2e8f0;
+  background: white;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.bulk-vehicle-item:hover {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.bulk-vehicle-item.selected {
+  border-color: #10b981;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1));
+}
+
+.bulk-vehicle-item input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #10b981;
+  cursor: pointer;
+}
+
+.bulk-vehicle-item label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+}
+
+/* Apply Section */
+.bulk-apply-section {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(5, 150, 105, 0.05));
+  border: 1px solid rgba(16, 185, 129, 0.15);
+  text-align: center;
+}
+
+.bulk-apply-summary {
+  font-size: 0.9rem;
+  color: #374151;
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+.bulk-apply-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 2rem;
+  border-radius: 0.75rem;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: linear-gradient(135deg, #10b981, #059669);
+  border: none;
+  color: white;
+  box-shadow: 0 4px 12px -4px rgba(16, 185, 129, 0.4);
+}
+
+.bulk-apply-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #059669, #047857);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px -4px rgba(16, 185, 129, 0.5);
+}
+
+.bulk-apply-btn:disabled {
+  background: #d1d5db;
+  color: #9ca3af;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.bulk-apply-btn svg.loading-spinner {
+  animation: spin 1s linear infinite;
+}
+
+/* Responsive adjustments for bulk services */
+@media (max-width: 768px) {
+  .bulk-services-panel {
+    padding: 1rem;
+    gap: 1rem;
+  }
+  
+  .bulk-section {
+    padding: 1rem;
+  }
+  
+  .bulk-services-buttons {
+    flex-direction: column;
+  }
+  
+  .bulk-add-custom-btn,
+  .bulk-predefined-btn {
+    min-width: auto;
+  }
+  
+  .bulk-category-items {
+    flex-direction: column;
+  }
+  
+  .bulk-vehicle-item {
+    width: 100%;
+  }
 }
 

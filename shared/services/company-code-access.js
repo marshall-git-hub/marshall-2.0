@@ -54,6 +54,8 @@
 
     const normalizedCode = normalizePassword(trimmedCode);
     const entries = await fetchDriverEntries();
+    
+    // Find entry with matching password
     const entry = entries.find((item) => normalizePassword(item.password) === normalizedCode);
 
     if (!entry) {

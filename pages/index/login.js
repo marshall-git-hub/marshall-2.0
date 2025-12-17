@@ -84,7 +84,7 @@
         sessionStorage.setItem('marshallCompanySession', JSON.stringify(payload));
         setMessage(companyMessage, 'Prístup udelený. Presmerovanie...', 'success');
         setTimeout(() => {
-          window.location.href = '../../modules/cestaky/ui/index.html';
+          window.location.href = '../../modules/cestaky/driver/ui/index.html';
         }, 600);
       } catch (error) {
         console.error('Company code error', error);

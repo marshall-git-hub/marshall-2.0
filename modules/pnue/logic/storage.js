@@ -441,7 +441,7 @@ function tireMatchesSearch(tire, searchVal) {
   )
 }
 
-// Render global search results (sklad + ťahače + návesy)
+// Render global search results (only vehicles - ťahače + návesy)
 function renderGlobalSearchResults() {
   if (!globalSearchSection || !globalSearchList) return
 
@@ -455,19 +455,7 @@ function renderGlobalSearchResults() {
 
   const results = []
 
-  // 1) Gum y v sklade (všetky okrem "assigned" - tie zobrazíme cez vozidlá)
-  tires.forEach((t) => {
-    if (t.status === 'assigned') return
-    if (tireMatchesSearch(t, searchVal)) {
-      results.push({
-        source: 'storage',
-        status: t.status || 'available',
-        tire: t
-      })
-    }
-  })
-
-  // 2) Gumy na ťahačoch
+  // 1) Gumy na ťahačoch
   Object.entries(truckSlotsByVehicle || {}).forEach(([vehicleId, slots]) => {
     const truck = trucksMap[vehicleId]
     const plate = truck?.licensePlate || vehicleId
@@ -484,7 +472,7 @@ function renderGlobalSearchResults() {
     })
   })
 
-  // 3) Gumy na návesoch
+  // 2) Gumy na návesoch
   Object.entries(trailerSlotsByVehicle || {}).forEach(([vehicleId, slots]) => {
     const trailer = trailersMap[vehicleId]
     const plate = trailer?.licensePlate || vehicleId
@@ -502,8 +490,8 @@ function renderGlobalSearchResults() {
   })
 
   if (results.length === 0) {
-    globalSearchSection.style.display = 'block'
-    globalSearchList.innerHTML = `<div style="padding:1rem; color:#6b7280;">Nenašli sa žiadne pneumatiky v sklade ani na vozidlách.</div>`
+    globalSearchSection.style.display = 'none'
+    globalSearchList.innerHTML = ''
     return
   }
 
@@ -513,12 +501,7 @@ function renderGlobalSearchResults() {
     .map((r) => {
       const t = r.tire
       let locationLabel = ''
-      if (r.source === 'storage') {
-        let stav = 'Sklad'
-        if (r.status === 'forSale') stav = 'Sklad – na predaj'
-        else if (r.status === 'disposed') stav = 'Sklad – vyhodené'
-        locationLabel = stav
-      } else if (r.source === 'truck') {
+      if (r.source === 'truck') {
         locationLabel = `Ťahač ${r.plate} – ${r.position}`
       } else if (r.source === 'trailer') {
         locationLabel = `Náves ${r.plate} – ${r.position}`
@@ -532,11 +515,6 @@ function renderGlobalSearchResults() {
                 <h3>${t.brand || ''} ${t.type || ''}</h3>
               </div>
               <p>${t.size || ''}</p>
-              <div style="font-size:0.8rem; color:#4b5563; margin-top:0.25rem;">
-                <span>ID: ${t.customId || t.id || '-'}</span><br>
-                <span>DOT: ${t.dot || '-'}</span><br>
-                <span>Najazdené km: ${formatKm(t.km ?? 0)} km</span>
-              </div>
             </div>
             <span style="align-self:flex-start; padding:0.25rem 0.5rem; border-radius:999px; font-size:0.75rem; background:#e5e7eb; color:#374151;">
               ${locationLabel}

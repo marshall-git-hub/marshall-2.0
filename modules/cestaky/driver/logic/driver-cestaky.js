@@ -247,18 +247,35 @@ async function handleLogin() {
         const cred = await auth.signInAnonymously();
         driverUid = cred.user.uid;
         
-        // Now verify code in accessCodes/{code} (requires auth)
-        const doc = await db.collection('accessCodes').doc(code).get({ source: 'default' });
-        if (!doc.exists || doc.data().active !== true) { 
-            // Sign out if code is invalid
+        // Verify code in DRIVERS_LOG/accessCodes/drivers collection
+        const normalizedCode = code.trim().toUpperCase();
+        const driversSnapshot = await db.collection('DRIVERS_LOG').doc('accessCodes').collection('drivers').get();
+        
+        if (driversSnapshot.empty) {
+            await auth.signOut();
+            driverUid = null;
+            throw new Error('no_drivers');
+        }
+        
+        // Find driver with matching password
+        let matchedDriver = null;
+        driversSnapshot.forEach(doc => {
+            const data = doc.data();
+            const docPassword = (data.password || '').toString().trim().toUpperCase();
+            if (docPassword === normalizedCode) {
+                matchedDriver = { id: doc.id, ...data };
+            }
+        });
+        
+        if (!matchedDriver) { 
             await auth.signOut();
             driverUid = null;
             throw new Error('invalid'); 
         }
         
-        const driverNameFromDoc = doc.data().driverName || null;
-        const vehiclePlateFromDoc = doc.data().vehiclePlate || null;
-        const trailerPlateFromDoc = doc.data().trailerPlate || null;
+        const driverNameFromDoc = matchedDriver.driver || matchedDriver.name || matchedDriver.driver_name || matchedDriver.id || null;
+        const vehiclePlateFromDoc = matchedDriver.truck_spz || matchedDriver.vehiclePlate || null;
+        const trailerPlateFromDoc = matchedDriver.trailer_spz || matchedDriver.trailerPlate || null;
         driverCode = code;
 
         await applyDriverSession({
@@ -481,8 +498,8 @@ function bindHeaderAutosave() {
 
 function getTripDocRef() {
     if (!db || !driverName || !currentTripId) return null;
-    // structure: rides/{driverName}/trips/{tripId}
-    return db.collection('rides').doc(driverName).collection('trips').doc(currentTripId);
+    // structure: DRIVERS_LOG/drivers/{driverName}/trips/{tripId}
+    return db.collection('DRIVERS_LOG').doc('drivers').collection(driverName).doc(currentTripId);
 }
 
 function autosaveHeader() {
@@ -1475,12 +1492,6 @@ function addStop() {
             </div>
         </div>
         <div class="form-group">
-            <button type="button" class="btn-scan-cmr" onclick="openCmrScanner('stop-${stopCount}')">
-                <span class="material-symbols-outlined">document_scanner</span>
-                <span>Nasnímať CMR</span>
-            </button>
-        </div>
-        <div class="form-group">
             <button type="button" class="btn-confirm" onclick="confirmStop(${stopCount})">
                 <span class="material-symbols-outlined">check_circle</span>
                 Potvrdiť
@@ -1708,12 +1719,6 @@ function confirmStop(id) {
                 <span class="confirmed-entry-value">${loaded || '0'} kg / ${unloaded || '0'} kg</span>
             </div>` : ''}
         </div>
-        <div class="form-group" style="margin-top: 12px;">
-            <button type="button" class="btn-scan-cmr" onclick="openCmrScanner('stop-${id}')">
-                <span class="material-symbols-outlined">document_scanner</span>
-                <span>Nasnímať CMR</span>
-            </button>
-        </div>
     `;
     entry.dataset.odometer = asNum(odometer) ?? '';
     
@@ -1832,12 +1837,6 @@ function editStop(id) {
                 <label>Vyložené (kg)</label>
                 <input type="number" name="stopUnloaded_${id}" value="${values.unloaded || ''}" step="0.1" placeholder="0">
             </div>
-        </div>
-        <div class="form-group">
-            <button type="button" class="btn-scan-cmr" onclick="openCmrScanner('stop-${id}')">
-                <span class="material-symbols-outlined">document_scanner</span>
-                <span>Nasnímať CMR</span>
-            </button>
         </div>
         <div class="form-group">
             <button type="button" class="btn-confirm" onclick="confirmStop(${id})">
@@ -2314,7 +2313,7 @@ async function generateDriveDisplayId(driverFullName, yearTwoDigits) {
     const secondInitial = parts[1]?.[0]?.toUpperCase() || '';
     const initials = `${firstInitial}${secondInitial}`;
     // Scan existing trips to find the biggest sequence for these initials
-    const ridesRef = db.collection('rides').doc(driverName).collection('trips');
+    const ridesRef = db.collection('DRIVERS_LOG').doc('drivers').collection(driverName);
     const snapshot = await ridesRef.limit(200).get();
     let maxSeq = 0;
     snapshot.forEach(doc => {
@@ -2376,7 +2375,7 @@ async function ensureCurrentRide() {
     
     try {
         // Check if there's an incomplete ride
-        const ridesRef = db.collection('rides').doc(driverName).collection('trips');
+        const ridesRef = db.collection('DRIVERS_LOG').doc('drivers').collection(driverName);
         // Query for rides where completed is false
         const snapshotFalse = await ridesRef.where('completed', '==', false).limit(1).get();
         
@@ -2407,7 +2406,7 @@ async function ensureCurrentRide() {
 async function loadRideData(tripId, readOnly = false) {
     if (!db || !driverName) return;
     
-    const docRef = db.collection('rides').doc(driverName).collection('trips').doc(tripId);
+    const docRef = db.collection('DRIVERS_LOG').doc('drivers').collection(driverName).doc(tripId);
     const doc = await docRef.get();
     
     if (!doc.exists) {
@@ -2707,31 +2706,6 @@ function restoreConfirmedEntry(entryId, data, prefix, num) {
                     <span class="confirmed-entry-value">${data.loaded || 0} kg / ${data.unloaded || 0} kg</span>
                 </div>` : ''}
             </div>
-            <div class="form-group" style="margin-top: 12px;">
-                <button type="button" class="btn-scan-cmr" onclick="openCmrScanner('stop-${num}')">
-                    <span class="material-symbols-outlined">document_scanner</span>
-                    <span>${data.cmrImageUrl ? 'Znova nasnímať CMR' : 'Nasnímať CMR'}</span>
-                </button>
-            </div>
-            ${data.cmrImageUrl ? `
-            <div class="cmr-preview-container">
-                <div class="cmr-thumbnail-wrapper">
-                    <img src="${data.cmrImageUrl}" alt="CMR scan" class="cmr-thumbnail" onclick="viewCmrFullscreen('${data.cmrImageUrl}')">
-                    <div class="cmr-thumbnail-actions">
-                        <button type="button" class="cmr-thumbnail-btn" onclick="viewCmrFullscreen('${data.cmrImageUrl}')" title="Zobraziť">
-                            <span class="material-symbols-outlined">fullscreen</span>
-                        </button>
-                        <button type="button" class="cmr-thumbnail-btn" onclick="openCmrScanner('stop-${num}')" title="Znova nasnímať">
-                            <span class="material-symbols-outlined">refresh</span>
-                        </button>
-                    </div>
-                </div>
-                <div class="cmr-scan-success">
-                    <span class="material-symbols-outlined">check_circle</span>
-                    CMR naskenované
-                </div>
-            </div>
-            ` : ''}
         `;
         entry.dataset.odometer = data.odometer != null ? data.odometer : '';
     }
@@ -2816,7 +2790,7 @@ async function loadRideHistory() {
     container.innerHTML = '<div class="loading-state"><div class="loading-spinner"></div><p>Načítavam históriu...</p></div>';
     
     try {
-        const ridesRef = db.collection('rides').doc(driverName).collection('trips');
+        const ridesRef = db.collection('DRIVERS_LOG').doc('drivers').collection(driverName);
         // Get all rides, we'll sort client-side
         const snapshot = await ridesRef.limit(50).get();
         
@@ -2864,14 +2838,12 @@ async function loadRideHistory() {
         // Sort by completedAt or lastUpdatedAt, newest first
         rides.sort((a, b) => b.sortKey - a.sortKey);
         
-        const INITIAL_VISIBLE_COUNT = 3;
-        const totalRides = rides.length;
-        
-        rides.forEach((ride, index) => {
+        rides.forEach(ride => {
             const isCompleted = ride.completed === true;
             const header = ride.header || {};
             const startDate = header.startDate || ride.id.split('_')[0] || 'Neznámy dátum';
             const endDate = header.endDate || null;
+            const driver = header.driver || driverName || 'Vodič';
             const vehicle = header.vehiclePlate || '-';
             const trailer = header.trailerPlate || '-';
             const rawStartOdo = header.startOdometer != null ? parseFloat(header.startOdometer) : null;
@@ -2880,6 +2852,9 @@ async function loadRideHistory() {
             if (!Number.isNaN(rawStartOdo) && !Number.isNaN(rawEndOdo) && rawEndOdo >= rawStartOdo) {
                 distance = (rawEndOdo - rawStartOdo).toFixed(1) + ' km';
             }
+            const startTime = header.startTime || '';
+            const endTime = header.endTime || '';
+            const timeRange = startTime || endTime ? `${startTime || '-'}${endTime ? ' - ' + endTime : ''}` : '-';
             const driveId = ride.displayDriveId || null;
             
             // Format date range: "start date - finish date" or "start date - present"
@@ -2887,11 +2862,11 @@ async function loadRideHistory() {
             if (endDate) {
                 dateRange += ' - ' + formatDate(endDate);
             } else if (!isCompleted) {
-                dateRange += ' - teraz';
+                dateRange += ' - present';
             }
             
             const item = document.createElement('div');
-            item.className = 'history-item-compact' + (index >= INITIAL_VISIBLE_COUNT ? ' history-item-hidden' : '');
+            item.className = 'history-item';
             
             // If ride is in progress, open it for editing, otherwise view-only
             if (isCompleted) {
@@ -2901,39 +2876,47 @@ async function loadRideHistory() {
             }
             
             item.innerHTML = `
-                <div class="history-item-compact-left">
-                    <div class="history-item-compact-title">${driveId ? driveId : dateRange}</div>
-                    <div class="history-item-compact-info">
-                        <span>${vehicle}</span>
-                        ${trailer !== '-' ? `<span class="history-item-compact-separator">•</span><span>${trailer}</span>` : ''}
-                        <span class="history-item-compact-separator">•</span>
-                        <span>${distance}</span>
+                <div class="history-item-header">
+                    <div class="history-item-title">
+                        <div class="history-item-id">${driveId ? driveId : dateRange}</div>
+                        <div class="history-item-dates">${dateRange}</div>
+                    </div>
+                    <div class="history-item-status ${isCompleted ? 'completed' : 'in-progress'}">
+                        ${isCompleted ? 'Dokončené' : 'Prebieha'}
                     </div>
                 </div>
-                <div class="history-item-compact-right">
-                    <div class="history-item-status-compact ${isCompleted ? 'completed' : 'in-progress'}">
-                        ${isCompleted ? 'Hotovo' : 'Aktívne'}
+                <div class="history-item-body">
+                    <div class="history-item-column">
+                        <div class="history-item-row">
+                            <span class="material-symbols-outlined history-item-icon">person</span>
+                            <span class="history-item-value">${driver}</span>
+                        </div>
+                        <div class="history-item-row">
+                            <span class="material-symbols-outlined history-item-icon">schedule</span>
+                            <span class="history-item-value">${timeRange}</span>
+                        </div>
+                        <div class="history-item-row">
+                            <span class="material-symbols-outlined history-item-icon">straighten</span>
+                            <span class="history-item-value">${distance}</span>
+                        </div>
                     </div>
-                    <span class="material-symbols-outlined history-item-arrow">chevron_right</span>
+                    <div class="history-item-column history-item-column-right">
+                        <div class="history-item-row">
+                            <span class="material-symbols-outlined history-item-icon">directions_car</span>
+                            <span class="history-item-value">${vehicle}</span>
+                        </div>
+                        ${trailer !== '-' ? `
+                        <div class="history-item-row">
+                            <span class="material-symbols-outlined history-item-icon">local_shipping</span>
+                            <span class="history-item-value">${trailer}</span>
+                        </div>
+                        ` : ''}
+                    </div>
                 </div>
             `;
             
             container.appendChild(item);
         });
-        
-        // Add "Show more" button if there are more than INITIAL_VISIBLE_COUNT rides
-        if (totalRides > INITIAL_VISIBLE_COUNT) {
-            const showMoreBtn = document.createElement('button');
-            showMoreBtn.className = 'btn-show-more-history';
-            showMoreBtn.id = 'showMoreHistoryBtn';
-            const hiddenCount = totalRides - INITIAL_VISIBLE_COUNT;
-            showMoreBtn.innerHTML = `
-                <span class="material-symbols-outlined">expand_more</span>
-                <span>Zobraziť ďalších ${hiddenCount} jázd</span>
-            `;
-            showMoreBtn.onclick = () => toggleHistoryExpand();
-            container.appendChild(showMoreBtn);
-        }
     } catch (e) {
         console.error('Error loading history:', e);
         container.innerHTML = '<p class="empty-state">Chyba pri načítaní histórie</p>';
@@ -2950,37 +2933,6 @@ function formatDate(dateStr) {
     }
 }
 
-// Toggle history expand/collapse
-function toggleHistoryExpand() {
-    const container = document.getElementById('historyContainer');
-    const btn = document.getElementById('showMoreHistoryBtn');
-    if (!container || !btn) return;
-    
-    const hiddenItems = container.querySelectorAll('.history-item-hidden');
-    const isExpanded = container.classList.contains('history-expanded');
-    
-    if (isExpanded) {
-        // Collapse
-        container.classList.remove('history-expanded');
-        hiddenItems.forEach(item => item.classList.add('history-item-hidden'));
-        const hiddenCount = hiddenItems.length;
-        btn.innerHTML = `
-            <span class="material-symbols-outlined">expand_more</span>
-            <span>Zobraziť ďalších ${hiddenCount} jázd</span>
-        `;
-    } else {
-        // Expand
-        container.classList.add('history-expanded');
-        container.querySelectorAll('.history-item-compact').forEach(item => {
-            item.classList.remove('history-item-hidden');
-        });
-        btn.innerHTML = `
-            <span class="material-symbols-outlined">expand_less</span>
-            <span>Zobraziť menej</span>
-        `;
-    }
-}
-
 // Load past ride in read-only view
 async function loadPastRide(tripId) {
     if (!db || !driverName) return;
@@ -2991,7 +2943,7 @@ async function loadPastRide(tripId) {
     container.innerHTML = '<p class="empty-state">Načítavam údaje...</p>';
     
     try {
-        const docRef = db.collection('rides').doc(driverName).collection('trips').doc(tripId);
+        const docRef = db.collection('DRIVERS_LOG').doc('drivers').collection(driverName).doc(tripId);
         
         // Load header from subcollection
         const headerSnapshot = await docRef.collection('header').limit(1).get();
@@ -3342,695 +3294,5 @@ async function logout() {
             loginOverlay.style.display = 'flex';
         }
         setupLogin();
-    }
-}
-
-// =====================================================
-// CMR Document Scanner
-// =====================================================
-
-// Scanner state
-let cmrScannerState = {
-    stream: null,
-    videoElement: null,
-    overlayCanvas: null,
-    previewCanvas: null,
-    corners: null,
-    autoDetect: true,
-    currentStopId: null,
-    detectionInterval: null,
-    isDragging: false,
-    activeCorner: null,
-    storage: null
-};
-
-// Initialize Firebase Storage
-function initCmrStorage() {
-    if (!cmrScannerState.storage && firebase.storage) {
-        cmrScannerState.storage = firebase.storage();
-    }
-    return cmrScannerState.storage;
-}
-
-// Open CMR scanner for a specific stop
-function openCmrScanner(stopId) {
-    cmrScannerState.currentStopId = stopId;
-    
-    const modal = document.getElementById('cmrScannerModal');
-    const cameraView = document.getElementById('cmrCameraView');
-    const previewView = document.getElementById('cmrPreviewView');
-    
-    if (!modal) return;
-    
-    modal.classList.remove('hidden');
-    cameraView.classList.remove('hidden');
-    previewView.classList.add('hidden');
-    
-    // Reset corners to default positions
-    resetCornerPositions();
-    
-    // Start camera
-    startCamera();
-}
-
-// Close CMR scanner
-function closeCmrScanner() {
-    stopCamera();
-    const modal = document.getElementById('cmrScannerModal');
-    if (modal) {
-        modal.classList.add('hidden');
-    }
-    cmrScannerState.currentStopId = null;
-}
-
-// Start camera stream
-async function startCamera() {
-    try {
-        cmrScannerState.videoElement = document.getElementById('cmrVideo');
-        cmrScannerState.overlayCanvas = document.getElementById('cmrOverlayCanvas');
-        cmrScannerState.previewCanvas = document.getElementById('cmrPreviewCanvas');
-        
-        // Request camera with rear camera preference for mobile
-        const constraints = {
-            video: {
-                facingMode: { ideal: 'environment' },
-                width: { ideal: 1920 },
-                height: { ideal: 1080 }
-            }
-        };
-        
-        cmrScannerState.stream = await navigator.mediaDevices.getUserMedia(constraints);
-        cmrScannerState.videoElement.srcObject = cmrScannerState.stream;
-        
-        // Wait for video to be ready
-        cmrScannerState.videoElement.onloadedmetadata = () => {
-            cmrScannerState.videoElement.play();
-            
-            // Set canvas size to match video
-            const video = cmrScannerState.videoElement;
-            cmrScannerState.overlayCanvas.width = video.videoWidth;
-            cmrScannerState.overlayCanvas.height = video.videoHeight;
-            
-            // Start detection if auto-detect is enabled
-            if (cmrScannerState.autoDetect) {
-                startDocumentDetection();
-            }
-            
-            // Setup corner dragging
-            setupCornerDragging();
-        };
-        
-    } catch (error) {
-        console.error('Error accessing camera:', error);
-        alert('Nepodarilo sa spustiť kameru. Skontrolujte povolenia.');
-        closeCmrScanner();
-    }
-}
-
-// Stop camera stream
-function stopCamera() {
-    if (cmrScannerState.detectionInterval) {
-        cancelAnimationFrame(cmrScannerState.detectionInterval);
-        cmrScannerState.detectionInterval = null;
-    }
-    
-    if (cmrScannerState.stream) {
-        cmrScannerState.stream.getTracks().forEach(track => track.stop());
-        cmrScannerState.stream = null;
-    }
-}
-
-// Reset corner positions to default
-function resetCornerPositions() {
-    const handles = document.querySelectorAll('.cmr-corner-handle');
-    handles.forEach(handle => {
-        const corner = handle.dataset.corner;
-        switch(corner) {
-            case 'tl': handle.style.left = '15%'; handle.style.top = '20%'; break;
-            case 'tr': handle.style.left = '85%'; handle.style.top = '20%'; break;
-            case 'bl': handle.style.left = '15%'; handle.style.top = '80%'; break;
-            case 'br': handle.style.left = '85%'; handle.style.top = '80%'; break;
-        }
-    });
-    updateCornersFromHandles();
-}
-
-// Get corner positions from handle elements
-function updateCornersFromHandles() {
-    const container = document.getElementById('cmrCameraView');
-    if (!container) return;
-    
-    const rect = container.getBoundingClientRect();
-    const handles = document.querySelectorAll('.cmr-corner-handle');
-    
-    cmrScannerState.corners = {};
-    handles.forEach(handle => {
-        const corner = handle.dataset.corner;
-        const left = parseFloat(handle.style.left) || 
-            (corner.includes('l') ? 15 : 85);
-        const top = parseFloat(handle.style.top) || 
-            (corner.includes('t') ? 20 : 80);
-        
-        cmrScannerState.corners[corner] = {
-            x: (left / 100) * rect.width,
-            y: (top / 100) * rect.height
-        };
-    });
-    
-    // Draw overlay
-    drawOverlay();
-}
-
-// Setup corner dragging
-function setupCornerDragging() {
-    const handles = document.querySelectorAll('.cmr-corner-handle');
-    const container = document.getElementById('cmrCameraView');
-    
-    handles.forEach(handle => {
-        // Touch events
-        handle.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            cmrScannerState.isDragging = true;
-            cmrScannerState.activeCorner = handle;
-        }, { passive: false });
-        
-        // Mouse events
-        handle.addEventListener('mousedown', (e) => {
-            e.preventDefault();
-            cmrScannerState.isDragging = true;
-            cmrScannerState.activeCorner = handle;
-        });
-    });
-    
-    // Move events
-    const moveHandler = (clientX, clientY) => {
-        if (!cmrScannerState.isDragging || !cmrScannerState.activeCorner) return;
-        
-        const rect = container.getBoundingClientRect();
-        let x = ((clientX - rect.left) / rect.width) * 100;
-        let y = ((clientY - rect.top) / rect.height) * 100;
-        
-        // Clamp values
-        x = Math.max(5, Math.min(95, x));
-        y = Math.max(5, Math.min(95, y));
-        
-        cmrScannerState.activeCorner.style.left = x + '%';
-        cmrScannerState.activeCorner.style.top = y + '%';
-        
-        updateCornersFromHandles();
-    };
-    
-    container.addEventListener('touchmove', (e) => {
-        if (cmrScannerState.isDragging) {
-            e.preventDefault();
-            const touch = e.touches[0];
-            moveHandler(touch.clientX, touch.clientY);
-        }
-    }, { passive: false });
-    
-    container.addEventListener('mousemove', (e) => {
-        moveHandler(e.clientX, e.clientY);
-    });
-    
-    // End events
-    const endHandler = () => {
-        cmrScannerState.isDragging = false;
-        cmrScannerState.activeCorner = null;
-    };
-    
-    document.addEventListener('touchend', endHandler);
-    document.addEventListener('mouseup', endHandler);
-}
-
-// Draw overlay showing detected/selected area
-function drawOverlay() {
-    const canvas = cmrScannerState.overlayCanvas;
-    const video = cmrScannerState.videoElement;
-    if (!canvas || !video) return;
-    
-    const ctx = canvas.getContext('2d');
-    const container = document.getElementById('cmrCameraView');
-    const rect = container.getBoundingClientRect();
-    
-    // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    if (!cmrScannerState.corners) return;
-    
-    // Scale factors
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    
-    const corners = cmrScannerState.corners;
-    
-    // Draw semi-transparent overlay outside the selection
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    // Clear the selected area
-    ctx.globalCompositeOperation = 'destination-out';
-    ctx.beginPath();
-    ctx.moveTo(corners.tl.x * scaleX, corners.tl.y * scaleY);
-    ctx.lineTo(corners.tr.x * scaleX, corners.tr.y * scaleY);
-    ctx.lineTo(corners.br.x * scaleX, corners.br.y * scaleY);
-    ctx.lineTo(corners.bl.x * scaleX, corners.bl.y * scaleY);
-    ctx.closePath();
-    ctx.fill();
-    
-    // Reset composite operation
-    ctx.globalCompositeOperation = 'source-over';
-    
-    // Draw border around selection
-    ctx.strokeStyle = '#10B981';
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.moveTo(corners.tl.x * scaleX, corners.tl.y * scaleY);
-    ctx.lineTo(corners.tr.x * scaleX, corners.tr.y * scaleY);
-    ctx.lineTo(corners.br.x * scaleX, corners.br.y * scaleY);
-    ctx.lineTo(corners.bl.x * scaleX, corners.bl.y * scaleY);
-    ctx.closePath();
-    ctx.stroke();
-}
-
-// Start document detection using OpenCV
-function startDocumentDetection() {
-    if (!window.cv || !window.openCVReady) {
-        console.log('OpenCV not ready yet, skipping auto-detection');
-        return;
-    }
-    
-    const detectFrame = () => {
-        if (!cmrScannerState.autoDetect || !cmrScannerState.videoElement) {
-            return;
-        }
-        
-        try {
-            detectDocument();
-        } catch (e) {
-            console.warn('Detection error:', e);
-        }
-        
-        cmrScannerState.detectionInterval = requestAnimationFrame(detectFrame);
-    };
-    
-    cmrScannerState.detectionInterval = requestAnimationFrame(detectFrame);
-}
-
-// Detect document edges using OpenCV
-function detectDocument() {
-    const video = cmrScannerState.videoElement;
-    if (!video || video.readyState !== 4) return;
-    
-    const cv = window.cv;
-    
-    // Create temporary canvas for video frame
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = video.videoWidth;
-    tempCanvas.height = video.videoHeight;
-    const tempCtx = tempCanvas.getContext('2d');
-    tempCtx.drawImage(video, 0, 0);
-    
-    // Convert to OpenCV Mat
-    let src = cv.imread(tempCanvas);
-    let gray = new cv.Mat();
-    let blurred = new cv.Mat();
-    let edges = new cv.Mat();
-    let contours = new cv.MatVector();
-    let hierarchy = new cv.Mat();
-    
-    try {
-        // Convert to grayscale
-        cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
-        
-        // Apply Gaussian blur
-        cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0);
-        
-        // Detect edges using Canny
-        cv.Canny(blurred, edges, 50, 150);
-        
-        // Dilate to close gaps
-        let kernel = cv.Mat.ones(3, 3, cv.CV_8U);
-        cv.dilate(edges, edges, kernel);
-        kernel.delete();
-        
-        // Find contours
-        cv.findContours(edges, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
-        
-        // Find the largest quadrilateral
-        let maxArea = 0;
-        let bestContour = null;
-        
-        for (let i = 0; i < contours.size(); i++) {
-            let contour = contours.get(i);
-            let area = cv.contourArea(contour);
-            
-            if (area > maxArea && area > (src.rows * src.cols * 0.1)) {
-                // Approximate the contour
-                let peri = cv.arcLength(contour, true);
-                let approx = new cv.Mat();
-                cv.approxPolyDP(contour, approx, 0.02 * peri, true);
-                
-                if (approx.rows === 4) {
-                    maxArea = area;
-                    if (bestContour) bestContour.delete();
-                    bestContour = approx;
-                } else {
-                    approx.delete();
-                }
-            }
-        }
-        
-        // Update corners if a document was found
-        if (bestContour) {
-            const container = document.getElementById('cmrCameraView');
-            const rect = container.getBoundingClientRect();
-            
-            // Get the four corner points
-            let points = [];
-            for (let i = 0; i < 4; i++) {
-                points.push({
-                    x: bestContour.data32S[i * 2],
-                    y: bestContour.data32S[i * 2 + 1]
-                });
-            }
-            
-            // Sort points to get consistent order (TL, TR, BR, BL)
-            points = orderPoints(points);
-            
-            // Convert to percentage positions
-            const scaleX = rect.width / video.videoWidth;
-            const scaleY = rect.height / video.videoHeight;
-            
-            // Update handle positions
-            const handles = document.querySelectorAll('.cmr-corner-handle');
-            const cornerOrder = ['tl', 'tr', 'br', 'bl'];
-            
-            handles.forEach(handle => {
-                const corner = handle.dataset.corner;
-                const idx = cornerOrder.indexOf(corner);
-                if (idx >= 0) {
-                    const px = (points[idx].x * scaleX / rect.width) * 100;
-                    const py = (points[idx].y * scaleY / rect.height) * 100;
-                    handle.style.left = Math.max(5, Math.min(95, px)) + '%';
-                    handle.style.top = Math.max(5, Math.min(95, py)) + '%';
-                }
-            });
-            
-            updateCornersFromHandles();
-            
-            // Update hint
-            const hint = document.getElementById('cmrDetectionHint');
-            if (hint) hint.classList.add('detected');
-            
-            bestContour.delete();
-        }
-        
-    } finally {
-        // Clean up
-        src.delete();
-        gray.delete();
-        blurred.delete();
-        edges.delete();
-        contours.delete();
-        hierarchy.delete();
-    }
-}
-
-// Order points consistently: top-left, top-right, bottom-right, bottom-left
-function orderPoints(points) {
-    // Sort by y coordinate first
-    points.sort((a, b) => a.y - b.y);
-    
-    // Top two points
-    let top = points.slice(0, 2);
-    // Bottom two points
-    let bottom = points.slice(2, 4);
-    
-    // Sort by x coordinate
-    top.sort((a, b) => a.x - b.x);
-    bottom.sort((a, b) => a.x - b.x);
-    
-    return [top[0], top[1], bottom[1], bottom[0]]; // TL, TR, BR, BL
-}
-
-// Toggle auto-detection
-function toggleAutoDetect() {
-    cmrScannerState.autoDetect = !cmrScannerState.autoDetect;
-    const btn = document.getElementById('cmrAutoDetectBtn');
-    
-    if (cmrScannerState.autoDetect) {
-        btn.classList.add('active');
-        startDocumentDetection();
-    } else {
-        btn.classList.remove('active');
-        if (cmrScannerState.detectionInterval) {
-            cancelAnimationFrame(cmrScannerState.detectionInterval);
-            cmrScannerState.detectionInterval = null;
-        }
-    }
-}
-
-// Capture the document
-function captureCmrDocument() {
-    const video = cmrScannerState.videoElement;
-    const previewCanvas = cmrScannerState.previewCanvas;
-    const container = document.getElementById('cmrCameraView');
-    
-    if (!video || !previewCanvas || !container) return;
-    
-    // Stop detection
-    if (cmrScannerState.detectionInterval) {
-        cancelAnimationFrame(cmrScannerState.detectionInterval);
-        cmrScannerState.detectionInterval = null;
-    }
-    
-    const rect = container.getBoundingClientRect();
-    const corners = cmrScannerState.corners;
-    
-    // Scale corners to video dimensions
-    const scaleX = video.videoWidth / rect.width;
-    const scaleY = video.videoHeight / rect.height;
-    
-    const srcPoints = [
-        { x: corners.tl.x * scaleX, y: corners.tl.y * scaleY },
-        { x: corners.tr.x * scaleX, y: corners.tr.y * scaleY },
-        { x: corners.br.x * scaleX, y: corners.br.y * scaleY },
-        { x: corners.bl.x * scaleX, y: corners.bl.y * scaleY }
-    ];
-    
-    // Calculate output dimensions (A4 aspect ratio approximately)
-    const maxWidth = 1240;
-    const maxHeight = 1754;
-    
-    // Apply perspective transformation if OpenCV is available
-    if (window.cv && window.openCVReady) {
-        applyPerspectiveTransform(video, srcPoints, previewCanvas, maxWidth, maxHeight);
-    } else {
-        // Fallback: just capture the frame without transformation
-        previewCanvas.width = video.videoWidth;
-        previewCanvas.height = video.videoHeight;
-        const ctx = previewCanvas.getContext('2d');
-        ctx.drawImage(video, 0, 0);
-    }
-    
-    // Show preview
-    document.getElementById('cmrCameraView').classList.add('hidden');
-    document.getElementById('cmrPreviewView').classList.remove('hidden');
-}
-
-// Apply perspective transformation using OpenCV
-function applyPerspectiveTransform(video, srcPoints, outputCanvas, width, height) {
-    const cv = window.cv;
-    
-    // Create source canvas
-    const srcCanvas = document.createElement('canvas');
-    srcCanvas.width = video.videoWidth;
-    srcCanvas.height = video.videoHeight;
-    const srcCtx = srcCanvas.getContext('2d');
-    srcCtx.drawImage(video, 0, 0);
-    
-    let src = cv.imread(srcCanvas);
-    let dst = new cv.Mat();
-    
-    try {
-        // Source points
-        let srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
-            srcPoints[0].x, srcPoints[0].y,
-            srcPoints[1].x, srcPoints[1].y,
-            srcPoints[2].x, srcPoints[2].y,
-            srcPoints[3].x, srcPoints[3].y
-        ]);
-        
-        // Destination points (rectangular output)
-        let dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
-            0, 0,
-            width, 0,
-            width, height,
-            0, height
-        ]);
-        
-        // Calculate perspective transform matrix
-        let M = cv.getPerspectiveTransform(srcTri, dstTri);
-        
-        // Apply transformation
-        let dsize = new cv.Size(width, height);
-        cv.warpPerspective(src, dst, M, dsize);
-        
-        // Set output canvas size
-        outputCanvas.width = width;
-        outputCanvas.height = height;
-        
-        // Copy result to output canvas
-        cv.imshow(outputCanvas, dst);
-        
-        // Clean up
-        srcTri.delete();
-        dstTri.delete();
-        M.delete();
-        
-    } finally {
-        src.delete();
-        dst.delete();
-    }
-}
-
-// Retake photo
-function retakeCmrPhoto() {
-    document.getElementById('cmrCameraView').classList.remove('hidden');
-    document.getElementById('cmrPreviewView').classList.add('hidden');
-    
-    // Reset hint
-    const hint = document.getElementById('cmrDetectionHint');
-    if (hint) hint.classList.remove('detected');
-    
-    // Restart detection
-    if (cmrScannerState.autoDetect) {
-        startDocumentDetection();
-    }
-}
-
-// Confirm and upload CMR scan
-async function confirmCmrScan() {
-    const previewCanvas = cmrScannerState.previewCanvas;
-    const stopId = cmrScannerState.currentStopId;
-    
-    if (!previewCanvas || !stopId) return;
-    
-    // Show upload progress
-    const progressEl = document.getElementById('cmrUploadProgress');
-    if (progressEl) progressEl.classList.remove('hidden');
-    
-    try {
-        // Initialize storage
-        const storage = initCmrStorage();
-        if (!storage) {
-            throw new Error('Firebase Storage not available');
-        }
-        
-        // Convert canvas to blob
-        const blob = await new Promise((resolve, reject) => {
-            previewCanvas.toBlob((b) => {
-                if (b) resolve(b);
-                else reject(new Error('Failed to create blob'));
-            }, 'image/jpeg', 0.8);
-        });
-        
-        // Create storage path
-        const timestamp = Date.now();
-        const path = `cmr-scans/${driverName}/${currentTripId}/${stopId}_${timestamp}.jpg`;
-        
-        // Upload to Firebase Storage
-        const ref = storage.ref(path);
-        const snapshot = await ref.put(blob);
-        const downloadUrl = await snapshot.ref.getDownloadURL();
-        
-        // Save URL to Firestore
-        await saveCmrImageUrl(stopId, downloadUrl);
-        
-        // Update UI with thumbnail
-        updateStopCmrThumbnail(stopId, downloadUrl);
-        
-        // Close scanner
-        closeCmrScanner();
-        
-    } catch (error) {
-        console.error('Error uploading CMR:', error);
-        alert('Nepodarilo sa nahrať CMR. Skúste to znova.');
-    } finally {
-        if (progressEl) progressEl.classList.add('hidden');
-    }
-}
-
-// Save CMR image URL to Firestore
-async function saveCmrImageUrl(stopId, imageUrl) {
-    if (!db || !driverName || !currentTripId) {
-        throw new Error('Missing required data');
-    }
-    
-    const stopNum = stopId.replace('stop-', '');
-    
-    await db.collection('DRIVERS_LOG')
-        .doc('trips')
-        .collection(driverName)
-        .doc(currentTripId)
-        .collection('stops')
-        .doc('stop_' + stopNum)
-        .set({ cmrImageUrl: imageUrl }, { merge: true });
-}
-
-// Update stop entry with CMR thumbnail
-function updateStopCmrThumbnail(stopId, imageUrl) {
-    const stopElement = document.getElementById(stopId);
-    if (!stopElement) return;
-    
-    // Find or create CMR preview container
-    let cmrContainer = stopElement.querySelector('.cmr-preview-container');
-    
-    if (!cmrContainer) {
-        // Find the scan button and add preview after it
-        const scanBtn = stopElement.querySelector('.btn-scan-cmr');
-        if (scanBtn) {
-            cmrContainer = document.createElement('div');
-            cmrContainer.className = 'cmr-preview-container';
-            scanBtn.parentNode.insertBefore(cmrContainer, scanBtn.nextSibling);
-        }
-    }
-    
-    if (cmrContainer) {
-        cmrContainer.innerHTML = `
-            <div class="cmr-thumbnail-wrapper">
-                <img src="${imageUrl}" alt="CMR scan" class="cmr-thumbnail" onclick="viewCmrFullscreen('${imageUrl}')">
-                <div class="cmr-thumbnail-actions">
-                    <button type="button" class="cmr-thumbnail-btn" onclick="viewCmrFullscreen('${imageUrl}')" title="Zobraziť">
-                        <span class="material-symbols-outlined">fullscreen</span>
-                    </button>
-                    <button type="button" class="cmr-thumbnail-btn" onclick="openCmrScanner('${stopId}')" title="Znova nasnímať">
-                        <span class="material-symbols-outlined">refresh</span>
-                    </button>
-                </div>
-            </div>
-            <div class="cmr-scan-success">
-                <span class="material-symbols-outlined">check_circle</span>
-                CMR naskenované
-            </div>
-        `;
-    }
-    
-    // Update button text
-    const scanBtn = stopElement.querySelector('.btn-scan-cmr span:last-child');
-    if (scanBtn) {
-        scanBtn.textContent = 'Znova nasnímať CMR';
-    }
-}
-
-// View CMR in fullscreen
-function viewCmrFullscreen(imageUrl) {
-    window.open(imageUrl, '_blank');
-}
-
-// Load existing CMR image for a stop (called when loading stops from Firestore)
-function loadStopCmrImage(stopId, cmrImageUrl) {
-    if (cmrImageUrl) {
-        updateStopCmrThumbnail(stopId, cmrImageUrl);
     }
 }

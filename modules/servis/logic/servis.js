@@ -111,6 +111,7 @@ class ServiceManager {
           tachograph: [],
           dpf: [],
           calibration: [],
+          geometry: [],
           'l-certificate': [],
           'engine-oil': [],
           'differential-oil': [],
@@ -575,6 +576,7 @@ class ServiceManager {
       'l-certificate': 'L-Certifikát',
       'engine-oil': 'Motorový olej',
       'differential-oil': 'Diferenciálny olej',
+      'transmission-oil': 'Prevodový olej',
       'geometry': 'Geometria',
       'annual-tractor': 'Ročná tahač',
       'annual-trailer': 'Ročná náves',
@@ -759,6 +761,11 @@ class ServiceManager {
         ['Ciachovanie', 'Datum', 'Poznamka'],
         this.services.calibration || [], 'ciachovanie', 'TableStyleMedium9');
       
+      // Create Geometria section
+      currentRow = this.createExcelSection(ws, 'B', 'D', currentRow,
+        ['Geometria', 'Datum', 'Poznamka'],
+        this.services.geometry || [], 'geometria', 'TableStyleMedium9');
+      
       // Create L-Certifikát section
       currentRow = this.createExcelSection(ws, 'B', 'D', currentRow,
         ['L-Certifikát', 'Datum', 'Poznamka'],
@@ -936,6 +943,7 @@ class ServiceManager {
       'tachograph': '3B82F6',    // Blue
       'dpf': '8B5CF6',          // Purple
       'ciachovanie': '06B6D4',   // Teal
+      'geometria': '14B8A6',     // Teal-green
       'l_certifikat': '10B981',  // Green
       'motor_olej': '3B82F6',    // Blue
       'difer_olej': '6366F1',    // Indigo
@@ -974,6 +982,9 @@ class ServiceManager {
     
     // Calibration
     if (n.includes('ciach')) return 'calibration';
+    
+    // Geometry
+    if (n.includes('geometri') || n.includes('nastavenie geometrie')) return 'geometry';
     
     // L-Certificate
     if (n.includes('l-cert')) return 'l-certificate';
